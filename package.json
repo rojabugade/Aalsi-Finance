@@ -1,0 +1,20 @@
+{
+  "name": "ai-finance-manager",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AI-powered financial management app for expenses, debt, salary, and US-India cross-border finances.",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @finance/web",
+    "dev:api": "npm run dev -w @finance/api",
+    "dev:web": "npm run dev -w @finance/web",
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
