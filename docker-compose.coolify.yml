@@ -1,0 +1,128 @@
+# Coolify compose: no host ports, no dev bind mounts. In Coolify, leave the
+# top-level Domains field empty and set a domain only on the `web` service.
+
+x-backend-env: &backend-env
+  ENVIRONMENT: production
+  DEBUG: "false"
+  # Single source of truth for OAuth callbacks, post-auth redirects, and CORS.
+  # Set APP_ORIGIN in Coolify to your public web URL, e.g. https://your-domain.
+  APP_ORIGIN: ${APP_ORIGIN:-http://localhost:3000}
+  CORS_ORIGINS: ${APP_ORIGIN:-http://localhost:3000}
+  DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-finance}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in Coolify}@postgres:5432/${POSTGRES_DB:-finance}
+  REDIS_URL: redis://redis:6379/0
+  CELERY_BROKER_URL: redis://redis:6379/1
+  CELERY_RESULT_BACKEND: redis://redis:6379/2
+  S3_ENDPOINT_URL: http://minio:9000
+  S3_ACCESS_KEY: ${S3_ACCESS_KEY:-minioadmin}
+  S3_SECRET_KEY: ${S3_SECRET_KEY:?Set S3_SECRET_KEY in Coolify}
+  S3_BUCKET: ${S3_BUCKET:-documents}
+  S3_REGION: ${S3_REGION:-us-east-1}
+  STORAGE_ENCRYPTION_KEY: ${STORAGE_ENCRYPTION_KEY:?Set STORAGE_ENCRYPTION_KEY in Coolify}
+  JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in Coolify}
+  LLM_PROVIDER: ${LLM_PROVIDER:-openai}
+  LLM_BASE_URL: ${LLM_BASE_URL:-}
+  LLM_API_KEY: ${LLM_API_KEY:-}
+  CHAT_MODEL: ${CHAT_MODEL:-gpt-4o-mini}
+  VISION_MODEL: ${VISION_MODEL:-gpt-4o-mini}
+  EMBED_MODEL: ${EMBED_MODEL:-text-embedding-3-small}
+  # --- Integration credentials ---
+  # OAuth callbacks are derived from APP_ORIGIN by the backend as
+  # <APP_ORIGIN>/api/<provider>/oauth/callback (routed via the web /api proxy).
+  # Register that exact URL as the Callback URL in each provider's app.
+  SPLITWISE_CONSUMER_KEY: ${SPLITWISE_CONSUMER_KEY:-}
+  SPLITWISE_SECRET: ${SPLITWISE_SECRET:-}
+  GMAIL_CLIENT_ID: ${GMAIL_CLIENT_ID:-}
+  GMAIL_CLIENT_SECRET: ${GMAIL_CLIENT_SECRET:-}
+  PLAID_CLIENT_ID: ${PLAID_CLIENT_ID:-}
+  PLAID_SECRET: ${PLAID_SECRET:-}
+  PLAID_ENVIRONMENT: ${PLAID_ENVIRONMENT:-sandbox}
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-finance}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in Coolify}
+      POSTGRES_DB: ${POSTGRES_DB:-finance}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-finance}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    command: server /data
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:?Set S3_SECRET_KEY in Coolify}
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: ./backend
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    environment: *backend-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
+  worker:
+    build: ./backend
+    command: celery -A app.celery_app.celery worker --loglevel=info
+    environment: *backend-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
+  beat:
+    build: ./backend
+    command: celery -A app.celery_app.celery beat --loglevel=info
+    environment: *backend-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: web/Dockerfile.coolify
+    environment:
+      NODE_ENV: production
+      HOSTNAME: 0.0.0.0
+      PORT: "3000"
+      NEXT_PUBLIC_API_URL: /api
+      API_INTERNAL_URL: http://api:8000
+    expose:
+      - "3000"
+    depends_on:
+      - api
+
+volumes:
+  postgres-data:
+  minio-data:

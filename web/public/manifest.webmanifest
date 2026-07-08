@@ -1,0 +1,41 @@
+{
+  "name": "CodeName-Finance",
+  "short_name": "Finance",
+  "description": "Document-driven, AI-assisted personal finance.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "browser"],
+  "orientation": "portrait",
+  "background_color": "#f1f1fa",
+  "theme_color": "#f1f1fa",
+  "categories": ["finance", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Capture receipt",
+      "short_name": "Capture",
+      "url": "/capture",
+      "icons": [{ "src": "/icons/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Review queue",
+      "short_name": "Review",
+      "url": "/review",
+      "icons": [{ "src": "/icons/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    }
+  ],
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

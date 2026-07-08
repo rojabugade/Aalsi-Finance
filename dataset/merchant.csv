@@ -1,0 +1,29 @@
+id,household_id,canonical_name,aliases,default_category_id
+a00cde6f-8b9f-5006-9541-fdeeb8008d4f,,Amazon,"['amazon.com', 'amzn', 'amazon mktp']",42588061-2aa5-523f-8878-55cc3c8c546f
+d553f2a4-b2c8-570b-8de4-81fa86437869,,Walmart,"['wal-mart', 'walmart.com']",83564403-ac9f-5db5-a4fb-344879db34db
+4af9f4ae-4781-5cb6-8281-5c9f09d25ac0,,Target,['target.com'],42588061-2aa5-523f-8878-55cc3c8c546f
+68f0922a-39b9-507c-92a6-e2500de5f321,,Costco,['costco whse'],83564403-ac9f-5db5-a4fb-344879db34db
+b7475634-9a3f-5b47-9978-5578a1ceb107,,Macy's,"['macys', 'macy s']",42588061-2aa5-523f-8878-55cc3c8c546f
+158297b6-5a99-547c-9a9d-4e9a859d9dab,,Starbucks,['sbux'],26d7519c-5ead-5c23-89b2-24970637e115
+7d5663eb-5e52-5077-9815-788af0c1bfc3,,McDonald's,['mcdonalds'],26d7519c-5ead-5c23-89b2-24970637e115
+234091f8-66bb-5bb3-84d3-5acfb26b89bb,,Uber,"['uber trip', 'uber eats']",95227dee-05ea-5281-893b-54e843f6b2f5
+808b3755-614e-5b7e-ba90-ef88c5558ae5,,Lyft,[],95227dee-05ea-5281-893b-54e843f6b2f5
+8989e0bc-e443-55e5-9e3f-e2a8f32ee6d7,,Netflix,['netflix.com'],f3623420-6d16-5c10-9940-28700f25fa86
+aed3c2eb-e1aa-5aab-aed0-039beaa9a52d,,Spotify,['spotify'],f3623420-6d16-5c10-9940-28700f25fa86
+f2a9ca2a-37af-503e-8036-0623ac1a9dbc,,Apple,"['apple.com/bill', 'itunes']",42588061-2aa5-523f-8878-55cc3c8c546f
+16a24acb-ea67-57eb-a942-246e8cd94297,,Google,"['google *', 'google services']",f3623420-6d16-5c10-9940-28700f25fa86
+c905592e-a82b-5c8e-904a-d39c475430ef,,Shell,['shell oil'],95227dee-05ea-5281-893b-54e843f6b2f5
+5813fb16-6db8-5fd5-9486-97b3414b3ad6,,Whole Foods,"['whole foods market', 'wfm']",83564403-ac9f-5db5-a4fb-344879db34db
+b8eadc23-f654-5613-9f2a-cf111cf0ed88,,Trader Joe's,[],83564403-ac9f-5db5-a4fb-344879db34db
+c9ef2dab-c18a-5c65-bdc7-b6b34f18356e,,CVS Pharmacy,[],a1b9748d-4932-5774-a003-e66e7f25e31d
+bbc36a1d-bf0a-5d6c-ae4f-ff309f63cf39,,Best Buy,[],42588061-2aa5-523f-8878-55cc3c8c546f
+2d8b3f27-58fe-5583-8d7e-995c79ade98a,,Kroger,[],83564403-ac9f-5db5-a4fb-344879db34db
+bea56dd3-0d8f-5b9e-8688-1f2c3fcc2a11,,Chipotle,[],26d7519c-5ead-5c23-89b2-24970637e115
+f573b94f-d6d1-51c3-a8dd-9f4c61a57329,,Verizon,['verizon wireless'],2b4fcaba-0f8e-5d26-96e7-08e4d118ddc2
+2b4a9416-2f9a-5c84-8a99-089c2a8da440,,Comcast,['xfinity'],2b4fcaba-0f8e-5d26-96e7-08e4d118ddc2
+78bab17d-4ce4-5345-97e7-6969d2e7a5e9,,Delta Air Lines,['delta'],7def0bf1-0c26-565f-858e-45cc51160559
+1796e996-84d5-5ef5-a717-a953e2e49c08,,Marriott,['marriott hotels'],7def0bf1-0c26-565f-858e-45cc51160559
+4070c9b0-7b80-5ca4-9dcd-613c6df99208,,Hilton,['hilton hotels'],7def0bf1-0c26-565f-858e-45cc51160559
+8b093965-626b-562e-ba34-3a2ae16c7328,,Planet Fitness,[],31c13f26-cee8-5dec-b555-da8ffa5d9388
+d97309cb-eeb8-505a-9948-eec2d33394db,,Home Depot,[],d52a5b76-a6a0-5569-9c84-6d84f082e4c6
+41d50eda-694c-5967-8780-12cd00399dab,,Dunkin',[],26d7519c-5ead-5c23-89b2-24970637e115

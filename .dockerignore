@@ -1,0 +1,14 @@
+.git
+.planning
+.pytest_cache
+.venv
+.env
+.env.*
+**/.env
+**/.env.*
+**/node_modules
+**/.next
+**/coverage
+**/dist
+backend
+docs

@@ -1,0 +1,6 @@
+id,household_id,email,password_hash,display_name,locale,role,mfa_secret,created_at
+6a8ed953-2c24-5301-8d91-e6aa9dcfeadf,532788bd-1641-5dc9-b246-c4397ed4af60,p1_1@example.com,<placeholder>,Person 1-1,en-US,owner,,2025-01-01T00:00:00
+3a7e0274-a2ff-5550-9643-b3b1bff75f60,532788bd-1641-5dc9-b246-c4397ed4af60,p1_2@example.com,<placeholder>,Person 1-2,en-US,member,,2025-01-01T00:00:00
+dac49113-c1bb-5b26-8af5-745de0febf46,fb1ad2c1-a5b0-5ae0-9d88-507024507a14,p2_1@example.com,<placeholder>,Person 2-1,en-US,owner,,2025-01-01T00:00:00
+55ce22b3-98c8-599d-8738-db5727fc2afb,fb1ad2c1-a5b0-5ae0-9d88-507024507a14,p2_2@example.com,<placeholder>,Person 2-2,en-US,member,,2025-01-01T00:00:00
+b0074e20-40fa-5b09-b86e-ba06bd06ec34,fb1ad2c1-a5b0-5ae0-9d88-507024507a14,p2_3@example.com,<placeholder>,Person 2-3,en-US,viewer,,2025-01-01T00:00:00

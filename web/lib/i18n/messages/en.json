@@ -1,0 +1,43 @@
+{
+  "app": { "name": "CodeName-Finance" },
+  "nav": {
+    "dashboard": "Dashboard",
+    "capture": "Capture",
+    "review": "Review",
+    "transactions": "Transactions",
+    "analytics": "Analytics",
+    "budgets": "Budgets",
+    "debt": "Debt",
+    "income": "Money",
+    "guidance": "Guidance",
+    "notifications": "Notifications",
+    "connections": "Connections",
+    "settings": "Settings",
+    "logout": "Log out"
+  },
+  "auth": {
+    "authMode": "Authentication mode",
+    "loginTab": "Sign in",
+    "signupTab": "Create account",
+    "loginTitle": "Sign in",
+    "signupTitle": "Create your account",
+    "loginDescription": "Welcome back. Enter your details to continue.",
+    "signupDescription": "Set up your profile and household to get started.",
+    "email": "Email",
+    "password": "Password",
+    "passwordHint": "Use at least 8 characters.",
+    "confirmPassword": "Confirm password",
+    "passwordMismatch": "Passwords do not match.",
+    "displayName": "Display name (optional)",
+    "displayNamePlaceholder": "Your name",
+    "householdName": "Household (optional)",
+    "householdPlaceholder": "My household",
+    "baseCurrency": "Currency",
+    "totp": "Authenticator code",
+    "totpHint": "Enter your 6-digit code if MFA is enabled.",
+    "submit": "Sign in",
+    "signupSubmit": "Create account",
+    "error": "Sign in failed. Check your credentials.",
+    "signupError": "Account creation failed. The email may already be in use."
+  }
+}

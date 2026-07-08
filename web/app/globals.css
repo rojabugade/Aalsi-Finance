@@ -1,0 +1,297 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   M15 redesign theme system — 3 palettes × light/dark.
+   data-theme="{emerald|indigo|ink}-{light|dark}" on <html>.
+   Token values are verbatim from the spec (§4). Do not alter.
+   ============================================================ */
+@layer base {
+  :root,
+  [data-theme="indigo-light"] {
+    --app-bg:#f1f1fa; --fg:#16132b; --muted:#716e8a; --accent:#6b5bf0; --accent-soft:#e7e3fd; --on-accent:#fff;
+    --c2:#e0653f; --soft2:#fce4dc; --c3:#1aa37a; --soft3:#d8f3ea; --card:#fff; --border:#ebe9f7;
+    --card-shadow:0 2px 12px -4px rgba(40,30,90,.12); --chip:#e7e4f7; --track:#ebe9f7;
+    --hero:linear-gradient(135deg,#7c6bf2,#5b46d6 58%,#4733b8); --hero-shadow:0 16px 36px -12px rgba(91,70,214,.45);
+    --glass:rgba(241,241,250,.7); --glass-stroke:rgba(255,255,255,.7); --glass-hi:rgba(255,255,255,.85);
+  }
+  [data-theme="indigo-dark"] {
+    --app-bg:#0e0d16; --fg:#ece9fb; --muted:#8a86a6; --accent:#8b7bff; --accent-soft:#1f1b33; --on-accent:#0a0820;
+    --c2:#f0794f; --soft2:#2a1a14; --c3:#3fc79a; --soft3:#10241d; --card:#181527; --border:#262338;
+    --card-shadow:none; --chip:#1b1830; --track:#262338;
+    --hero:linear-gradient(135deg,#7c6bf2,#5238c4 58%,#3a2796); --hero-shadow:0 16px 36px -16px rgba(0,0,0,.6);
+    --glass:rgba(16,14,26,.62); --glass-stroke:rgba(255,255,255,.08); --glass-hi:rgba(255,255,255,.06);
+  }
+  [data-theme="emerald-light"] {
+    --app-bg:#eef3f0; --fg:#0c1f1a; --muted:#6a7d77; --accent:#0f9d76; --accent-soft:#dcf3ea; --on-accent:#fff;
+    --c2:#d98324; --soft2:#fbeede; --c3:#5b8def; --soft3:#e3edff; --card:#fff; --border:#e3ebe7;
+    --card-shadow:0 2px 10px -4px rgba(15,40,32,.1); --chip:#e3ebe7; --track:#e3ebe7;
+    --hero:linear-gradient(135deg,#0f9d76,#0b6e57 60%,#0a5546); --hero-shadow:0 16px 32px -12px rgba(11,110,87,.45);
+    --glass:rgba(238,243,240,.7); --glass-stroke:rgba(255,255,255,.7); --glass-hi:rgba(255,255,255,.8);
+  }
+  [data-theme="emerald-dark"] {
+    --app-bg:#0b1512; --fg:#e8f3ee; --muted:#7e9991; --accent:#19c08e; --accent-soft:#14241e; --on-accent:#04130d;
+    --c2:#e0a44e; --soft2:#241c12; --c3:#6f9bff; --soft3:#16203a; --card:#111d18; --border:#1d2b26;
+    --card-shadow:none; --chip:#16221d; --track:#1e2c27;
+    --hero:linear-gradient(135deg,#0f9d76,#0a5e4a 60%,#073f33); --hero-shadow:0 16px 36px -16px rgba(0,0,0,.6);
+    --glass:rgba(13,22,19,.6); --glass-stroke:rgba(255,255,255,.08); --glass-hi:rgba(255,255,255,.06);
+  }
+  [data-theme="ink-light"] {
+    --app-bg:#f3f5f8; --fg:#0d0f14; --muted:#5d636f; --accent:#2f6bff; --accent-soft:#e4ecff; --on-accent:#fff;
+    --c2:#e0653f; --soft2:#fce3da; --c3:#19b48a; --soft3:#d6f4ea; --card:#fff; --border:#e7eaef;
+    --card-shadow:0 2px 10px -4px rgba(20,30,60,.1); --chip:#eaedf2; --track:#e7eaef;
+    --hero:linear-gradient(135deg,#2b3a63,#1c294a 60%,#141d36); --hero-shadow:0 16px 32px -14px rgba(20,30,60,.4);
+    --glass:rgba(243,245,248,.7); --glass-stroke:rgba(255,255,255,.7); --glass-hi:rgba(255,255,255,.85);
+  }
+  [data-theme="ink-dark"] {
+    --app-bg:#0c0e12; --fg:#f1f4f8; --muted:#8a909c; --accent:#5b8cff; --accent-soft:#1a2336; --on-accent:#06122e;
+    --c2:#f0794f; --soft2:#2a1812; --c3:#2fd0a0; --soft3:#0c2620; --card:#15181f; --border:#20242e;
+    --card-shadow:none; --chip:#1a1e26; --track:#222732;
+    --hero:linear-gradient(135deg,#2b3a63,#16203a 60%,#11192e); --hero-shadow:0 16px 40px -16px rgba(0,0,0,.7);
+    --glass:rgba(12,14,18,.6); --glass-stroke:rgba(255,255,255,.08); --glass-hi:rgba(255,255,255,.06);
+  }
+
+  /* ---- slice E named theme presets (§18) ---- */
+  [data-theme="dollar-light"] {
+    --app-bg:#eef2e9; --fg:#1b2a1f; --muted:#5f7064; --accent:#2f7d4f; --accent-soft:#dcebdf; --on-accent:#fff;
+    --c2:#b8860b; --soft2:#f3ecd6; --c3:#3a6e8f; --soft3:#dde8ef; --card:#f8faf4; --border:#dde4d6;
+    --card-shadow:0 2px 10px -4px rgba(30,50,35,.12); --chip:#e3ebdc; --track:#dde4d6;
+    --hero:linear-gradient(135deg,#3a9461,#2f7d4f 60%,#245f3c); --hero-shadow:0 16px 32px -12px rgba(47,125,79,.4);
+    --glass:rgba(238,242,233,.7); --glass-stroke:rgba(255,255,255,.7); --glass-hi:rgba(255,255,255,.85);
+  }
+  [data-theme="glass-dark"] {
+    --app-bg:#0a0e16; --fg:#eaf1fb; --muted:#8b97ac; --accent:#5ec8ff; --accent-soft:#11243a; --on-accent:#04121f;
+    --c2:#f0a04f; --soft2:#241a12; --c3:#7d8cff; --soft3:#161a36; --card:#121826; --border:#222a3c;
+    --card-shadow:none; --chip:#161d2e; --track:#222a3c;
+    --hero:linear-gradient(135deg,#4aa9e6,#2f6fb0 58%,#21507f); --hero-shadow:0 16px 40px -16px rgba(0,0,0,.7);
+    --glass:rgba(12,16,26,.55); --glass-stroke:rgba(255,255,255,.12); --glass-hi:rgba(255,255,255,.1);
+  }
+  [data-theme="editorial-light"] {
+    --app-bg:#f7f6f3; --fg:#111111; --muted:#6b6862; --accent:#c0392b; --accent-soft:#f6e0dc; --on-accent:#fff;
+    --c2:#1f1f1f; --soft2:#e7e6e3; --c3:#8a6d3b; --soft3:#efe7d6; --card:#ffffff; --border:#e4e2dc;
+    --card-shadow:0 2px 10px -5px rgba(0,0,0,.14); --chip:#ecebe6; --track:#e4e2dc;
+    --hero:linear-gradient(135deg,#2a2a2a,#111111 60%,#000000); --hero-shadow:0 16px 32px -14px rgba(0,0,0,.35);
+    --glass:rgba(247,246,243,.72); --glass-stroke:rgba(255,255,255,.7); --glass-hi:rgba(255,255,255,.85);
+  }
+  [data-theme="neon-dark"] {
+    --app-bg:#06080b; --fg:#e6fff4; --muted:#6f8a82; --accent:#3df5a0; --accent-soft:#0c2a1d; --on-accent:#022012;
+    --c2:#ff5cf0; --soft2:#2a0c28; --c3:#41d6ff; --soft3:#082631; --card:#0d1117; --border:#1b2128;
+    --card-shadow:none; --chip:#11161d; --track:#1b2128;
+    --hero:linear-gradient(135deg,#3df5a0,#16b074 58%,#0b7d52); --hero-shadow:0 16px 40px -16px rgba(0,0,0,.8);
+    --glass:rgba(6,8,11,.6); --glass-stroke:rgba(61,245,160,.14); --glass-hi:rgba(255,255,255,.05);
+  }
+  [data-theme="midnight-dark"] {
+    --app-bg:#0b1020; --fg:#e9ecfb; --muted:#7e87a8; --accent:#7c6cff; --accent-soft:#1b1838; --on-accent:#0a0820;
+    --c2:#f0794f; --soft2:#2a1814; --c3:#41d6ff; --soft3:#0c2233; --card:#121829; --border:#222a44;
+    --card-shadow:none; --chip:#171d31; --track:#222a44;
+    --hero:linear-gradient(135deg,#7c6cff,#5b4ad6 58%,#3a2fa0); --hero-shadow:0 16px 40px -16px rgba(0,0,0,.8);
+    --glass:rgba(11,16,32,.6); --glass-stroke:rgba(124,108,255,.16); --glass-hi:rgba(255,255,255,.05);
+  }
+  [data-theme="softmin-light"] {
+    --app-bg:#f4f4f5; --fg:#26272b; --muted:#8a8b91; --accent:#7c7f8a; --accent-soft:#e7e8ea; --on-accent:#fff;
+    --c2:#a98a76; --soft2:#efe9e4; --c3:#7d93a6; --soft3:#e6ecf0; --card:#fbfbfc; --border:#e8e8ea;
+    --card-shadow:0 1px 8px -4px rgba(20,20,25,.08); --chip:#ededef; --track:#e8e8ea;
+    --hero:linear-gradient(135deg,#9a9da8,#7c7f8a 60%,#62646e); --hero-shadow:0 14px 30px -14px rgba(60,60,70,.3);
+    --glass:rgba(244,244,245,.72); --glass-stroke:rgba(255,255,255,.7); --glass-hi:rgba(255,255,255,.8);
+  }
+  [data-theme="softmin-dark"] {
+    --app-bg:#141416; --fg:#e6e6e9; --muted:#85868d; --accent:#a6a8b2; --accent-soft:#222226; --on-accent:#121214;
+    --c2:#c2a08c; --soft2:#241e1a; --c3:#92a7ba; --soft3:#1a2228; --card:#1b1b1f; --border:#27272c;
+    --card-shadow:none; --chip:#1f1f24; --track:#27272c;
+    --hero:linear-gradient(135deg,#8a8c96,#6a6c75 60%,#515259); --hero-shadow:0 16px 36px -16px rgba(0,0,0,.6);
+    --glass:rgba(20,20,22,.6); --glass-stroke:rgba(255,255,255,.08); --glass-hi:rgba(255,255,255,.05);
+  }
+
+  /* Bridge tokens for shadcn/radix primitives (not in the spec set). */
+  [data-theme$="-light"] { --destructive:#dc4c3e; --on-destructive:#ffffff; }
+  [data-theme$="-dark"]  { --destructive:#f0795f; --on-destructive:#1b0d09; }
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  html {
+    color-scheme: light;
+  }
+  /* Hard scroll limit (no elastic rubber-band). Global, so scroll
+     feel is consistent whether the analyst pane is open or not. */
+  html, body {
+    overscroll-behavior: none;
+  }
+  html[data-theme$="-dark"] {
+    color-scheme: dark;
+  }
+  body {
+    background-color: var(--app-bg);
+    color: var(--fg);
+    -webkit-font-smoothing: antialiased;
+    /* iOS standalone safe areas (used by bars/FAB in R3). */
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    /* Ledger signature: a real monospaced face for every figure. System-hosted
+       so the PWA stays offline-safe (SF Mono on the primary darwin/desktop
+       target). This is the single biggest move off the Inter-everywhere look. */
+    --font-mono: ui-monospace, "SF Mono", "SFMono-Regular", "Cascadia Code",
+      "Roboto Mono", Menlo, Consolas, monospace;
+  }
+  h1, h2, h3, .tracking-tight-2 {
+    letter-spacing: -0.02em;
+  }
+  /* Ledger signature, applied app-wide: every tabular figure renders in the
+     monospaced face. One rule re-skins all existing `.tabular-nums` call sites
+     (hero, net worth, widgets, spend, debt) without touching each component. */
+  .tabular-nums,
+  [data-numeric] {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1, "lnum" 1;
+    letter-spacing: -0.01em;
+  }
+}
+
+/* ============================================================
+   Ledger visual language — theme-agnostic structural layer.
+   Sits on top of all palettes; derives entirely from theme tokens.
+   ============================================================ */
+@layer base {
+  /* Chart series — derived per-theme from the palette accents so every chart
+     re-colours itself across all 11 themes instead of hardcoding indigo. */
+  :root,
+  [data-theme] {
+    --series-1: var(--accent);
+    --series-2: var(--c2);
+    --series-3: var(--c3);
+    --series-4: color-mix(in srgb, var(--accent) 52%, var(--card));
+    --series-5: color-mix(in srgb, var(--c2) 52%, var(--card));
+    --series-6: color-mix(in srgb, var(--c3) 52%, var(--card));
+    --series-other: color-mix(in srgb, var(--muted) 38%, var(--card));
+  }
+}
+
+@layer components {
+  /* `.num` — apply to any money/figure. Monospaced, tabular, tuned tracking so
+     ledgers align column-perfect and read as data, not prose. */
+  .num {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1, "lnum" 1, "cv01" 1;
+    letter-spacing: -0.01em;
+  }
+  /* Hairline section rule used by the editorial-leaning surfaces. */
+  .rule {
+    border-bottom: 1px solid var(--border);
+  }
+}
+
+/* slice E appearance knobs — board-scoped, additive, no-op at defaults (0).
+   --board-glass: card transparency; --board-shadow: accent glow/shadow strength. */
+@layer base {
+  :root { --board-glass: 0; --board-shadow: 0; }
+}
+@layer components {
+  [data-testid="dashboard-grid"] .rounded-card-sm {
+    background: color-mix(in srgb, var(--card) calc((1 - var(--board-glass)) * 100%), transparent);
+    box-shadow:
+      var(--card-shadow),
+      0 10px 34px -14px color-mix(in srgb, var(--accent) calc(var(--board-shadow) * 70%), transparent);
+  }
+}
+
+/* Liquid glass — chrome only (top bar, bottom bar, drawer). Never on content. */
+@layer components {
+  .glass {
+    background: var(--glass);
+    -webkit-backdrop-filter: blur(22px) saturate(180%);
+    backdrop-filter: blur(22px) saturate(180%);
+    border: 1px solid var(--glass-stroke);
+    box-shadow: inset 0 1px 0 var(--glass-hi);
+  }
+}
+
+/* Analyst pane glass treatment. */
+.analyst-liquid-glass {
+  isolation: isolate;
+  /* Opaque base so the panel renders solid. No backdrop-filter to keep the
+     glass look opaque. */
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--glass-hi) 74%, transparent) 0%, transparent 34%),
+    linear-gradient(325deg, color-mix(in srgb, var(--accent) 9%, transparent), transparent 45%),
+    var(--app-bg);
+  border: 1px solid color-mix(in srgb, var(--glass-stroke) 88%, var(--accent) 12%);
+  box-shadow:
+    0 28px 70px -24px rgba(0, 0, 0, .42),
+    0 8px 24px -16px color-mix(in srgb, var(--accent) 38%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 30%, transparent),
+    inset 1px 0 0 color-mix(in srgb, white 14%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.analyst-liquid-glass::before,
+.analyst-liquid-glass::after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+}
+.analyst-liquid-glass::before {
+  inset: 0;
+  border-radius: inherit;
+  /* Two layers: the glass tint for colour character, then a solid --app-bg
+     backing. --glass already carries its own alpha (~.62), so an opaque backing
+     stops bright cards punching through unevenly. */
+  background:
+    radial-gradient(ellipse 85% 38% at 14% -8%, color-mix(in srgb, white 28%, transparent), transparent 66%),
+    radial-gradient(ellipse 68% 36% at 105% 105%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 68%),
+    color-mix(in srgb, var(--glass) 100%, transparent),
+    var(--app-bg);
+  opacity: 1;
+}
+.analyst-liquid-glass::after {
+  top: 0;
+  right: 24%;
+  width: 36%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, white 32%, transparent), transparent);
+  filter: blur(.3px);
+}
+
+/* Mobile content scroll region: fixed-height frame so overflow-y actually
+   scrolls (under the glass chrome) instead of getting clipped. */
+.app-scroll {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ---- X-style drawer motion (§6). Transform/opacity/filter only. ---- */
+.app-window {
+  transform-origin: left center;
+  transition: none;
+}
+.app-window[data-open="true"] {
+  transform: none;
+}
+.app-drawer {
+  transform: translateX(-100%);
+  opacity: 1;
+  transition:
+    transform 0.42s cubic-bezier(0.32, 0.72, 0, 1),
+    box-shadow 0.42s;
+  will-change: transform;
+}
+.app-drawer[data-open="true"] {
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.001ms !important;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+  }
+  .app-window,
+  .app-drawer {
+    transition: none !important;
+  }
+}

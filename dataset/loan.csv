@@ -1,0 +1,3 @@
+id,household_id,owner_user_id,name,type,schedule_kind,principal,currency,interest_rate,compounding,min_or_emi_amount,due_day,penalty_rules,start_date,end_date
+3c986045-865c-5934-a279-05016217046e,532788bd-1641-5dc9-b246-c4397ed4af60,6a8ed953-2c24-5301-8d91-e6aa9dcfeadf,Home Loan,home,amortizing,450000,USD,6.5,monthly,2840.0,1,{'late_fee_pct': '0.05'},2024-06-01,2039-06-01
+fc4f6e14-1530-5bfc-a695-fb15e4ed8606,fb1ad2c1-a5b0-5ae0-9d88-507024507a14,dac49113-c1bb-5b26-8af5-745de0febf46,Auto Loan,auto,amortizing,35000,USD,4.2,monthly,645.0,15,{'late_fee_pct': '0.05'},2025-03-01,2030-03-01

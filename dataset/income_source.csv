@@ -1,0 +1,6 @@
+id,household_id,owner_user_id,employer,country,currency,frequency,gross,net,withholding
+62794915-0aa9-5472-8f16-1a129bdb7c0e,532788bd-1641-5dc9-b246-c4397ed4af60,6a8ed953-2c24-5301-8d91-e6aa9dcfeadf,Acme Corp,US,USD,semimonthly,4000,3000,"{'federal': 0.15, 'state': 0.05, 'social_security': 0.062}"
+4d41e202-184f-5abc-9cc8-b04235d6bdec,532788bd-1641-5dc9-b246-c4397ed4af60,3a7e0274-a2ff-5550-9643-b3b1bff75f60,TechGlobal Inc,US,USD,semimonthly,5500,4000,"{'federal': 0.15, 'state': 0.05, 'social_security': 0.062}"
+d7ed57bf-fe00-56f1-a609-75b06a4d6035,fb1ad2c1-a5b0-5ae0-9d88-507024507a14,dac49113-c1bb-5b26-8af5-745de0febf46,Person 2-1,US,USD,monthly,4000,3000,"{'federal': 0.15, 'state': 0.05, 'social_security': 0.062}"
+453e7198-e2d1-59a4-834d-d3f99cd98bcf,fb1ad2c1-a5b0-5ae0-9d88-507024507a14,55ce22b3-98c8-599d-8738-db5727fc2afb,EduSkills Ltd,GB,GBP,monthly,4500,3500,"{'federal': 0.15, 'state': 0.05, 'social_security': 0.062}"
+00afb4a9-0f8e-5f0f-b810-cfc676ed4196,fb1ad2c1-a5b0-5ae0-9d88-507024507a14,b0074e20-40fa-5b09-b86e-ba06bd06ec34,EduSkills Ltd,GB,GBP,monthly,4500,3500,"{'federal': 0.15, 'state': 0.05, 'social_security': 0.062}"

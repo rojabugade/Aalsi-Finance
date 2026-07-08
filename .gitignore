@@ -1,8 +1,59 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Celery (generated runtime artifacts)
+celerybeat-schedule
+celerybeat-schedule.*
+celerybeat.pid
+
+# Node / Next
 node_modules/
-dist/
+.next/
+out/
+web/.env.local
+
+# Env / secrets
 .env
-.env.*
+*.env
+!*.env.example
 !.env.example
+
+# Data / storage
+data/
+minio-data/
+postgres-data/
+*.sqlite3
+
+# OS
 .DS_Store
-npm-debug.log*
-*.log
+
+# Generated
+shared/*.ts
+!shared/api-schema.ts
+!shared/.gitkeep
+
+# Serwist-generated service worker (built by next build)
+web/public/sw.js
+web/public/sw.js.map
+web/public/swe-worker-*.js
+
+# Playwright
+web/playwright-report/
+web/test-results/
+
+web/tsconfig.tsbuildinfo
+*.tsbuildinfo
+
+# Superpowers brainstorm scratch
+.superpowers/
+Finance.md
+mockup images
+claude_design
+repomix-output.xml

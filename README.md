@@ -1,71 +1,162 @@
-# AI Financial Management App
+# CodeName-Missing
 
-AI-powered personal financial management app for expense tracking, debt management, salary tracking, and US-India cross-border finance. The product is designed for mobile app and desktop web app compatibility without requiring direct bank API connections in the MVP.
+**AI-assisted, privacy-first personal finance app.** Self-hosted, human-in-the-loop, cross-border aware. Built as an installable PWA with a FastAPI backend — document-driven ingestion, Plaid bank linking, and an AI analyst that remembers you.
 
-## Project Documents
+> Money-moving writes stay `draft` until you confirm. Bank credentials are never stored. Financial data is encrypted at rest.
 
-- [Product Requirements Document](docs/PRD.md)
-- [MVP Execution Roadmap](docs/ROADMAP.md)
-- [Technical Architecture And Feasibility](docs/ARCHITECTURE.md)
+---
 
-## MVP Direction
+## Features
 
-The first build should focus on:
+### Multi-modal ingestion
+- **Document OCR** — snap a receipt, upload a PDF statement, or drop a CSV/XLSX export. PaddleOCR + vision-LLM extraction reads it; you confirm what lands.
+- **Plaid bank linking** — connect US checking/savings/credit cards/loans. Transactions sync automatically, with refund detection, loan-payment auto-registration, and daily balance snapshots.
+- **Gmail ingestion** — inbox scanning parses bank alerts and merchant receipts into draft transactions. Attachments flow through the OCR pipeline.
+- **SMS ingestion** — Android forwarder webhook for SMS-based transaction alerts.
+- **Manual entry** — quick-add transactions with category, merchant, and amount.
+- **Batch uploads** — drag multiple receipts at once; the app auto-groups pages of the same receipt and keeps different purchases separate.
 
-- Manual expense tracking.
-- Deep category, merchant, item, and tag filtering.
-- Debt and salary basics.
-- Multi-currency support.
-- Receipt/document upload with OCR review.
-- Plain-English AI insights.
-- US-India transfer tracking.
+### AI Analyst with memory (4 modes)
+- **Monitor** — proactive alerts on overspending, upcoming bills, cross-domain correlations (e.g. medical flag + recent purchases)
+- **Explain** — ask anything about your finances in plain language; the analyst cites its sources
+- **Plan** — payoff strategies, budget scenarios, cross-border investment guidance
+- **Action** — one-tap actions (edit categories, confirm transactions, adjust budgets)
 
-Avoid depending on direct bank APIs, automatic iOS SMS extraction, full mailbox access, or regulated personalized financial advice in the MVP.
+The analyst sees **every** transaction, debt, and document you upload. It retains durable facts in a pgvector-backed memory store and always knows what page and entity you are looking at. Alerts acknowledge but auto-resolve only when the underlying condition clears.
 
-## Recommended Next Step
+### Spend analytics
+- **Categories-first spend view** — share donut, top merchants, spend-over-time bars
+- **Merchant drill-down** — products and patterns per merchant, period comparisons
+- **Filter toolbar** — date range, category, merchant, account
+- **Transfer/refund-aware** — payment legs and refunds are netted correctly; spend numbers are real
 
-Convert the roadmap into an implementation backlog, then scaffold the selected app stack. Recommended default stack:
+### Money overview
+- **Monthly leftover (disposable income)** — authoritative single number: income − recurring − EMIs − card minimums − discretionary spend
+- **Recurring detection** — auto-detects bills, subscriptions, and income series from transaction patterns
+- **Assets & equity** — RSU/ESPP/options, holdings, cash reserves
+- **Safe-to-spend widget** — backed by real leftover calculation, not a hollow fallback
 
-- Web: Next.js with TypeScript.
-- Mobile: React Native with Expo.
-- Backend: NestJS with TypeScript.
-- Database: PostgreSQL with Prisma.
-- Jobs/cache: Redis.
-- Storage: S3-compatible object storage.
+### Debt & credit cards
+- **Cards page** — all credit cards with statement balances, due dates, minimums, and usage
+- **Debt overview** — payoff projection, smart prioritization, debt coach with scenario planning
+- **Loan detail** — EMI tracking, payment history, payoff comparison (snowball vs. avalanche)
+- **Upcoming payments strip** — pinned due-date alerts that don't get lost in the activity feed
 
-## Current Implementation
+### Dashboard
+- **Customizable widget grid** — drag, resize, add/remove widgets. Personalize appearance (theme, glass, radius, shadow, accent).
+- **Onboarding templates** — pick a preset layout to get started
+- **Widgets** — safe-to-spend, net worth, cash flow sankey, budget status, AI alerts, recent activity, top movers, debt overview, recurring, and more
 
-This repository now contains a runnable MVP scaffold:
+### Cross-border
+- **Multi-currency** — FX rates, base-currency normalization across all modules
+- **Financial guidance** — AI ask + planning wizard with RAG-backed citations from the /corpus
+- **Cross-border module** — India/US compliance checklists, remittance guidance, tax-year overviews
 
-- `packages/shared`: shared finance types, formatting helpers, category summaries, merchant item summaries, and debt payoff calculations.
-- `apps/api`: Express API with seeded transactions, debt, salary, transfer, and insight data.
-- `apps/web`: Vite React dashboard with manual expense entry, insight cards, category summaries, merchant item breakdowns, salary, debt, and US-India transfer cards.
+### Multi-user & security
+- **Household model** — invite family members, shared visibility with per-user accounts
+- **Auth** — email+password (argon2), TOTP MFA, JWT + rotating refresh tokens, optional WebAuthn/passkeys in the PWA
+- **Rate limiting** — auth, ingestion, and analyst surfaces hardened
+- **Encryption at rest** — AES-256-GCM for all uploaded documents (MinIO)
+- **LLM awareness** — your data goes through your own LLM gateway; privacy-first by default
 
-## Run Locally
+### PWA (offline-tolerant)
+Install on iOS/Android home screen. Capture receipts offline — they sync when you're back online.
 
-Install dependencies:
+---
 
-```bash
-npm install
+## Architecture
+
+```
+/backend   FastAPI (async) + Celery workers (Python 3.12)
+/web       Next.js App Router PWA (TypeScript, Tailwind, shadcn/ui)
+/shared    Generated OpenAPI TypeScript client
+/infra     Compose files, env templates
+/corpus    Financial guidance source docs (RAG corpus)
+/scripts   Dev scripts (type generation, Plaid sync trigger)
 ```
 
-Start the API:
+**Stack:** PostgreSQL 16 + pgvector · Redis · MinIO (S3) · Celery + Celery Beat · PaddleOCR + vision-LLM · OpenAI-compatible LLM gateway
+
+---
+
+## Quick start
+
+Prereqs: Docker + Docker Compose.
 
 ```bash
-npm run dev:api
+cp .env.example .env          # fill in secrets (LLM API key at minimum)
+make dev                      # or: docker compose up --build
 ```
 
-Start the web app in another terminal:
+Then:
+
+| Service | URL |
+|---|---|
+| Web app | http://localhost:3000 |
+| API health | http://localhost:8000/health |
+| API docs (OpenAPI) | http://localhost:8000/docs |
+| MinIO console | http://localhost:9001 |
+
+Regenerate the shared TypeScript client from a running API:
 
 ```bash
-npm run dev:web
+make gen-types
 ```
 
-Then open the Vite URL, usually `http://localhost:5173`.
+### Configuring LLM
 
-Verify the code:
+Swap providers by changing `LLM_BASE_URL` and models in `.env`:
+
+| Provider | base_url |
+|---|---|
+| OpenAI | `https://api.openai.com/v1` |
+| OpenRouter | `https://openrouter.ai/api/v1` |
+| LM Studio | `http://localhost:1234/v1` (blank CHAT_MODEL) |
+| Ollama | `http://localhost:11434/v1` |
+
+### Enabling Plaid (optional)
+
+Set `PLAID_CLIENT_ID`, `PLAID_SECRET`, `PLAID_ENVIRONMENT=sandbox` in `.env`. Connect accounts from the Connections page. For sandbox testing with realistic data, log into Link with `user_transactions_dynamic` / `pass_good`.
+
+Trigger a manual sandbox sync:
 
 ```bash
-npm run typecheck
-npm run build
+make plaid-sync       # local (docker exec)
+make plaid-sync-prod  # production
 ```
+
+### Enabling Gmail ingestion (optional)
+
+Set `GMAIL_CLIENT_ID` and `GMAIL_CLIENT_SECRET` in `.env`. Register the redirect URI as `http://localhost:3000/api/gmail/oauth/callback` in GCP. Authorize from the Connections page.
+
+---
+
+## Local backend (no Docker)
+
+```bash
+cd backend
+uv venv && source .venv/bin/activate
+uv pip install -r requirements.txt
+uvicorn app.main:app --reload
+```
+
+Tests:
+
+```bash
+make test                # or: cd backend && uv run --no-project pytest -q
+```
+
+---
+
+## Project documentation
+
+- [**Build Spec v2**](./FinanceApp_Build_Spec_v2.md) — module-by-module spec (M0–M16)
+- [**Master Build Spec**](./FinanceApp_Master_Build_Spec.md) — original PRD + technical specification
+- [**Finance.md**](./Finance.md) — original feature wishlist
+- `docs/superpowers/` — design specs and implementation plans for post-M16 features
+
+---
+
+## Build philosophy
+
+Personal/self-hosted tool: prioritize working features and clarity over production-grade hardening. Never store bank credentials. Always encrypt financial data at rest. Money-affecting writes stay `draft` until you confirm.

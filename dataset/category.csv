@@ -1,0 +1,81 @@
+id,household_id,parent_id,name,kind,is_system
+60359a9a-4426-525f-8612-e3851f2c268b,,,Income,category,t
+6c0c2abf-7cfa-5a47-8849-03157cb7d806,,60359a9a-4426-525f-8612-e3851f2c268b,Salary,subcategory,t
+36f59e03-7713-520f-b38d-eeb9972462cf,,60359a9a-4426-525f-8612-e3851f2c268b,Bonus,subcategory,t
+e2e266be-946d-56a7-944d-0311faaabeb9,,60359a9a-4426-525f-8612-e3851f2c268b,Interest,subcategory,t
+3706471e-7584-5261-afa4-129c511d9b26,,60359a9a-4426-525f-8612-e3851f2c268b,Dividends,subcategory,t
+51cdbe66-2fe8-5410-b1bb-11013efbb792,,60359a9a-4426-525f-8612-e3851f2c268b,Refunds,subcategory,t
+26d7519c-5ead-5c23-89b2-24970637e115,,,Food & Dining,category,t
+fa112a1b-3269-5304-b7dc-1ef8de5dddc0,,26d7519c-5ead-5c23-89b2-24970637e115,Restaurants,subcategory,t
+6beed52e-4ccd-593d-890d-ce94bd2b2745,,26d7519c-5ead-5c23-89b2-24970637e115,Coffee Shops,subcategory,t
+de3f2bc4-947e-5d7b-a51e-d6da6178c1df,,26d7519c-5ead-5c23-89b2-24970637e115,Fast Food,subcategory,t
+5638caff-364a-55b0-9433-607e4844f64b,,26d7519c-5ead-5c23-89b2-24970637e115,Alcohol & Bars,subcategory,t
+83564403-ac9f-5db5-a4fb-344879db34db,,,Groceries,category,t
+42588061-2aa5-523f-8878-55cc3c8c546f,,,Shopping,category,t
+d4c1f95d-47e8-52f6-8df9-eeb79b606fda,,42588061-2aa5-523f-8878-55cc3c8c546f,Clothing,subcategory,t
+ba8264d5-be92-573d-bee0-fc77ba1eba53,,42588061-2aa5-523f-8878-55cc3c8c546f,Electronics,subcategory,t
+af424ab5-dcc2-5aa4-802d-53e8e99d4579,,42588061-2aa5-523f-8878-55cc3c8c546f,Home & Furniture,subcategory,t
+12915486-2f7b-557e-9d40-6d2f4442ed6d,,42588061-2aa5-523f-8878-55cc3c8c546f,Hobbies,subcategory,t
+95227dee-05ea-5281-893b-54e843f6b2f5,,,Transportation,category,t
+f43ab923-88d2-5d30-b514-e67d3c90367a,,95227dee-05ea-5281-893b-54e843f6b2f5,Fuel,subcategory,t
+faa9d7bb-1220-5a93-8675-adf7fee33a10,,95227dee-05ea-5281-893b-54e843f6b2f5,Public Transit,subcategory,t
+d765f3b4-e63d-5ea7-8e05-58458f986634,,95227dee-05ea-5281-893b-54e843f6b2f5,Rideshare,subcategory,t
+938be465-3e19-5055-b08e-939e392f553f,,95227dee-05ea-5281-893b-54e843f6b2f5,Parking,subcategory,t
+51fda6e9-fdf8-5107-ac9c-83867d45beb7,,95227dee-05ea-5281-893b-54e843f6b2f5,Auto Maintenance,subcategory,t
+d52a5b76-a6a0-5569-9c84-6d84f082e4c6,,,Housing,category,t
+ccb8e507-d6df-51d3-9c6b-2af43847184c,,d52a5b76-a6a0-5569-9c84-6d84f082e4c6,Rent,subcategory,t
+90094923-90ad-5328-83cd-fe85ced4b8eb,,d52a5b76-a6a0-5569-9c84-6d84f082e4c6,Mortgage,subcategory,t
+077786c2-88f8-517e-9a65-266b802523c4,,d52a5b76-a6a0-5569-9c84-6d84f082e4c6,Property Tax,subcategory,t
+bdba84aa-8286-5caf-8252-985e2f2f3c1a,,d52a5b76-a6a0-5569-9c84-6d84f082e4c6,Home Maintenance,subcategory,t
+2b4fcaba-0f8e-5d26-96e7-08e4d118ddc2,,,Utilities,category,t
+0c9330d7-1154-5540-9033-ff3ccdfd842d,,2b4fcaba-0f8e-5d26-96e7-08e4d118ddc2,Electricity,subcategory,t
+bf16b8ec-849c-50c6-9240-c9ae62d9ba69,,2b4fcaba-0f8e-5d26-96e7-08e4d118ddc2,Water,subcategory,t
+7c8fb462-7d13-54a2-8a1d-9974bce7d252,,2b4fcaba-0f8e-5d26-96e7-08e4d118ddc2,Gas,subcategory,t
+2d123316-c022-5b31-8284-b23e61b8e6d0,,2b4fcaba-0f8e-5d26-96e7-08e4d118ddc2,Internet,subcategory,t
+06a5f4d3-67e1-5147-a99f-8e6859ddba5e,,2b4fcaba-0f8e-5d26-96e7-08e4d118ddc2,Mobile Phone,subcategory,t
+a1b9748d-4932-5774-a003-e66e7f25e31d,,,Health & Medical,category,t
+78973b8a-ca75-5365-a413-1efb5fe538d0,,a1b9748d-4932-5774-a003-e66e7f25e31d,Doctor,subcategory,t
+71b656bc-548e-5020-b191-229e68650021,,a1b9748d-4932-5774-a003-e66e7f25e31d,Pharmacy,subcategory,t
+f4256214-1f20-597d-abac-553feefc5cd8,,a1b9748d-4932-5774-a003-e66e7f25e31d,Dental,subcategory,t
+dbdc8686-ec42-5ce3-ba3f-5424fe985322,,a1b9748d-4932-5774-a003-e66e7f25e31d,Insurance Premiums,subcategory,t
+f3623420-6d16-5c10-9940-28700f25fa86,,,Entertainment,category,t
+b2297a61-f8d6-53cc-b11d-49ea16c81db3,,f3623420-6d16-5c10-9940-28700f25fa86,Streaming,subcategory,t
+8186f853-4ffe-5357-8ca5-adc11ba52b8a,,f3623420-6d16-5c10-9940-28700f25fa86,Movies & Events,subcategory,t
+65728c1d-c5db-50c9-baf0-84bb2cf68d11,,f3623420-6d16-5c10-9940-28700f25fa86,Games,subcategory,t
+ea950238-0d12-58ed-8e20-085ecb1a6754,,f3623420-6d16-5c10-9940-28700f25fa86,Subscriptions,subcategory,t
+7def0bf1-0c26-565f-858e-45cc51160559,,,Travel,category,t
+79c60cc2-48aa-5f74-8871-3cb616b26e25,,7def0bf1-0c26-565f-858e-45cc51160559,Flights,subcategory,t
+b7ec2236-fab9-5f74-9e59-c0476c5dccf2,,7def0bf1-0c26-565f-858e-45cc51160559,Hotels,subcategory,t
+7dc4d185-914f-5736-9f4d-8756e08d9766,,7def0bf1-0c26-565f-858e-45cc51160559,Car Rental,subcategory,t
+24dee985-77d9-596c-924d-7529b3fd7f7a,,,Education,category,t
+c41a2c56-8547-5a0c-aaec-8c24b93da49d,,24dee985-77d9-596c-924d-7529b3fd7f7a,Tuition,subcategory,t
+bcbbc4c0-8642-5b1f-ad56-562045f80345,,24dee985-77d9-596c-924d-7529b3fd7f7a,Books & Supplies,subcategory,t
+961ca9c0-9d0b-50b0-8dad-f7ef999ec988,,24dee985-77d9-596c-924d-7529b3fd7f7a,Courses,subcategory,t
+31c13f26-cee8-5dec-b555-da8ffa5d9388,,,Personal Care,category,t
+8d5d7df5-91ea-5998-8eea-33179599a118,,31c13f26-cee8-5dec-b555-da8ffa5d9388,Salon & Spa,subcategory,t
+a519e456-2deb-59d8-a983-e0e4e0e88abb,,31c13f26-cee8-5dec-b555-da8ffa5d9388,Gym & Fitness,subcategory,t
+a3344a05-9e0d-5659-93ff-38409b83c647,,31c13f26-cee8-5dec-b555-da8ffa5d9388,Cosmetics,subcategory,t
+fa5cfe13-fd9f-52dd-8f94-b42ef37732d9,,,Financial,category,t
+f2850b85-9969-5af6-b56a-5ce98c37a2c2,,fa5cfe13-fd9f-52dd-8f94-b42ef37732d9,Bank Fees,subcategory,t
+c369477e-0a32-517e-a80a-ebe9a53129b4,,fa5cfe13-fd9f-52dd-8f94-b42ef37732d9,Interest Charges,subcategory,t
+9b866844-f40f-5d1b-82db-6ffecf625e4b,,fa5cfe13-fd9f-52dd-8f94-b42ef37732d9,Investments,subcategory,t
+14cade34-7bcc-565c-bf70-52b0c7873a05,,fa5cfe13-fd9f-52dd-8f94-b42ef37732d9,Taxes,subcategory,t
+9e634cc6-0acc-5397-bdb8-d4dd3b96c2c1,,,Transfers,category,t
+38c67456-f4f2-59aa-8c5c-90508d9c71cd,,9e634cc6-0acc-5397-bdb8-d4dd3b96c2c1,Cross-Border Transfer,subcategory,t
+de51e9a9-c191-538e-97c9-b2c541a9d79c,,9e634cc6-0acc-5397-bdb8-d4dd3b96c2c1,Internal Transfer,subcategory,t
+a5f31862-71b8-5c5d-92de-3f3f4fd15890,,9e634cc6-0acc-5397-bdb8-d4dd3b96c2c1,Credit Card Payment,subcategory,t
+aee92619-ae79-565c-a988-70e59f94bc78,,,Gifts & Donations,category,t
+5b6224e3-5104-5a5d-9c60-1885fbb5a763,,,Business,category,t
+83dc9130-d80c-5b27-8b0d-5282d1997e24,,5b6224e3-5104-5a5d-9c60-1885fbb5a763,Office Supplies,subcategory,t
+f64a0139-fb5a-5da1-8cdb-76e06c26a71e,,5b6224e3-5104-5a5d-9c60-1885fbb5a763,Software,subcategory,t
+859aa0bd-c610-51e0-bada-f50dda8486bb,,5b6224e3-5104-5a5d-9c60-1885fbb5a763,Travel & Meals,subcategory,t
+c163ef62-5201-5cb2-bf0d-781443a4e5aa,,,Miscellaneous,category,t
+95b5aa5e-4831-5a09-8b4c-36da6ac64ad5,,,Apparel,item_type,t
+875ccc19-66e7-5835-86a5-73be20384685,,,Cosmetics,item_type,t
+dfc56eef-4ac9-50ce-b4c8-81cc669c4374,,,Electronics Item,item_type,t
+968cb096-c18d-575b-81f5-6d06a9ee3a17,,,Grocery Item,item_type,t
+b37366c7-b51f-5b63-95f1-e4bd96f6ad3e,,,Household Item,item_type,t
+a0c8e4f4-727a-54fd-8788-686976c4a82e,,,Toy,item_type,t
+a9848b00-9c7c-507a-b1f6-7ae28230a56b,,,Book,item_type,t
+9f0065b4-325d-5ecd-9328-d24b02759cfc,,,Food Item,item_type,t
+1f008adf-0619-503a-a18b-d7efc791afea,,,Beverage,item_type,t
