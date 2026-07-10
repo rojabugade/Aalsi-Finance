@@ -71,8 +71,10 @@ async def signup(session: AsyncSession, data: SignupIn) -> tuple[str, str]:
         raise HTTPException(status.HTTP_409_CONFLICT, "Email already registered")
 
     household = Household(
-        name=data.household_name or f"{data.display_name or data.email}'s household",
+        name=data.household_name or data.display_name or data.email,
         base_currency=data.base_currency.upper(),
+        # Supplying a name is the explicit API-level opt-in for a shared household.
+        sharing_enabled=bool(data.household_name),
     )
     session.add(household)
     await session.flush()  # populate household.id
@@ -87,7 +89,7 @@ async def signup(session: AsyncSession, data: SignupIn) -> tuple[str, str]:
     session.add(user)
     await session.flush()
 
-    await _audit(session, household.id, user.id, "household.create", "household")
+    await _audit(session, household.id, user.id, "account.create", "user")
     tokens = await _issue_tokens(session, user)
     await session.commit()
     return tokens
@@ -179,8 +181,40 @@ async def mfa_verify(session: AsyncSession, user: User, code: str) -> None:
 
 # --- Household membership ----------------------------------------------------
 
-def create_invite(household_id: uuid.UUID, email: str, role: str) -> str:
-    return security.create_invite_token(household_id, email, role)
+async def enable_household_sharing(
+    session: AsyncSession, actor: User, name: str
+) -> Household:
+    household = await session.get(Household, actor.household_id)
+    if household is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Workspace not found")
+
+    if household.sharing_enabled:
+        if household.name == name:
+            return household
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "Household sharing is already enabled"
+        )
+
+    household.name = name
+    household.sharing_enabled = True
+    await _audit(session, household.id, actor.id, "household.create", "household")
+    await session.commit()
+    await session.refresh(household)
+    return household
+
+
+async def create_invite(
+    session: AsyncSession, actor: User, email: str, role: str
+) -> str:
+    household = await session.get(Household, actor.household_id)
+    if household is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Workspace not found")
+    if not household.sharing_enabled:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "Create a household before inviting people",
+        )
+    return security.create_invite_token(household.id, email, role)
 
 
 async def join(session: AsyncSession, data) -> tuple[str, str]:

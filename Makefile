@@ -2,16 +2,16 @@
 
 # Bring up the full stack (postgres+pgvector, redis, minio, api, worker, beat, web).
 dev up:
-	docker compose up --build
+	docker compose -f docker-compose.dev.yml up --build
 
 down:
-	docker compose down
+	docker compose -f docker-compose.dev.yml down
 
 logs:
-	docker compose logs -f
+	docker compose -f docker-compose.dev.yml logs -f
 
 build:
-	docker compose build
+	docker compose -f docker-compose.dev.yml build
 
 # Regenerate the shared OpenAPI TypeScript client (API must be running).
 gen-types:

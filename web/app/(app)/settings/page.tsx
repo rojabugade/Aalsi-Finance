@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import {
   downloadExport,
   useConsents,
+  useCreateHousehold,
   useDeleteAccount,
   useHousehold,
   useMembers,
@@ -123,7 +124,7 @@ function LlmSettingsCard() {
         <div>
           <h2 className="text-base font-bold tracking-tight">LLM testing override</h2>
           <p className="text-sm text-muted">
-            Temporary household-level settings. Saved values take precedence over .env.
+            Temporary workspace-level settings. Saved values take precedence over .env.
           </p>
         </div>
         <Badge variant="secondary">
@@ -188,6 +189,66 @@ function LlmSettingsCard() {
 function HouseholdCard() {
   const household = useHousehold();
   const members = useMembers();
+  const create = useCreateHousehold();
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+
+  async function createHousehold(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    try {
+      await create.mutateAsync({ name: name.trim() });
+      toast.success("Household created");
+      setOpen(false);
+    } catch {
+      toast.error("Couldn't create household");
+    }
+  }
+
+  if (household.isLoading) return <Skeleton className="h-32" />;
+  if (!household.data) return null;
+
+  if (!household.data.sharing_enabled) {
+    return (
+      <div className="rounded-card-sm border border-border bg-card p-4 shadow-card">
+        <div className="mb-4">
+          <h2 className="text-base font-bold tracking-tight">Share with others</h2>
+          <p className="text-sm text-muted">
+            Your finances are personal by default. Create a household only when you want to invite people.
+          </p>
+        </div>
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button>Create household</Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create a household</DialogTitle>
+              <DialogDescription>
+                Give your shared workspace a name. Your existing financial records remain personal.
+              </DialogDescription>
+            </DialogHeader>
+            <form className="space-y-4" onSubmit={createHousehold}>
+              <div className="space-y-1.5">
+                <Label htmlFor="new_household_name">Household name</Label>
+                <Input
+                  id="new_household_name"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  placeholder="The Smiths"
+                  autoFocus
+                />
+              </div>
+              <DialogFooter>
+                <Button type="submit" disabled={!name.trim() || create.isPending}>
+                  {create.isPending ? "Creating…" : "Create household"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-card-sm border border-border bg-card p-4 shadow-card">
@@ -263,7 +324,7 @@ function PreferencesCard() {
     <div className="rounded-card-sm border border-border bg-card p-4 shadow-card">
       <div className="mb-3">
         <h2 className="text-base font-bold tracking-tight">Preferences</h2>
-        <p className="text-sm text-muted">Currency and locale for this household.</p>
+        <p className="text-sm text-muted">Currency, locale, and language for your workspace.</p>
       </div>
       <div className="space-y-4">
         <div className="grid grid-cols-3 gap-3">

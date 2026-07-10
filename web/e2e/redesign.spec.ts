@@ -38,6 +38,13 @@ test.describe("redesign shell", () => {
     await expect(page.getByRole("link", { name: /^insights$/i })).toBeVisible();
   });
 
+  test("reserves the root scrollbar gutter so shell navigation does not shift", async ({ page, request }) => {
+    await authenticate(page, await signup(request));
+    await page.goto("/dashboard");
+
+    await expect(page.locator("html")).toHaveCSS("scrollbar-gutter", "stable");
+  });
+
   test("theme switch persists across reload and updates theme-color", async ({ page, request }) => {
     await authenticate(page, await signup(request));
     await page.goto("/dashboard");

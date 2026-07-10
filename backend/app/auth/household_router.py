@@ -13,6 +13,7 @@ from app.auth.deps import get_current_user, require_role
 from app.auth.schemas import (
     AccessToken,
     HouseholdBaseCurrencyPatch,
+    HouseholdCreateIn,
     HouseholdOut,
     InviteIn,
     InviteOut,
@@ -34,6 +35,15 @@ async def get_household(
     return await session.get(Household, user.household_id)
 
 
+@router.post("", response_model=HouseholdOut)
+async def create_household(
+    data: HouseholdCreateIn,
+    session: AsyncSession = Depends(get_session),
+    owner: User = Depends(require_role("owner")),
+) -> Household:
+    return await service.enable_household_sharing(session, owner, data.name)
+
+
 @router.patch("/base-currency", response_model=HouseholdOut)
 async def update_base_currency(
     data: HouseholdBaseCurrencyPatch,
@@ -46,9 +56,10 @@ async def update_base_currency(
 @router.post("/invite", response_model=InviteOut)
 async def invite_member(
     data: InviteIn,
+    session: AsyncSession = Depends(get_session),
     owner: User = Depends(require_role("owner")),
 ) -> InviteOut:
-    token = service.create_invite(owner.household_id, data.email, data.role)
+    token = await service.create_invite(session, owner, data.email, data.role)
     return InviteOut(invite_token=token, email=data.email, role=data.role)
 
 

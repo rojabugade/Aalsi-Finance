@@ -13,7 +13,7 @@ import {
   type MerchantRow,
 } from "@/lib/spend/derive";
 import { inRange, ymd } from "@/lib/spend/period";
-import styles from "@/components/roja/roja.module.css";
+import styles from "@/components/new-dashboard/new-dashboard.module.css";
 
 type Tab = "transactions" | "merchants" | "items" | "recurring";
 
@@ -30,7 +30,7 @@ function daysAgo(days: number) {
   return ymd(d);
 }
 
-export function RojaSpend() {
+export function NewSpend() {
   const [tab, setTab] = useState<Tab>("transactions");
   const txns = useTransactions();
   const cats = useCategories();
@@ -50,7 +50,7 @@ export function RojaSpend() {
   const spend = recent.reduce((sum, t) => sum + spendAmount(t, byId), 0);
 
   return (
-    <div className={styles.roja} data-testid="roja-spend">
+    <div className={styles.newDashboard} data-testid="new-spend">
       <div className={styles.topLine}>
         <div className={styles.tabs} role="tablist" aria-label="Spend tabs">
           {TABS.map((item) => (
@@ -68,7 +68,7 @@ export function RojaSpend() {
         </div>
       </div>
 
-      <RojaQuickAdd categories={allCats} defaultCurrency={currency} />
+      <NewQuickAdd categories={allCats} defaultCurrency={currency} />
 
       <section className={styles.pageStack}>
         <SectionIntro title="Expense and merchant intelligence" text="Track fixed costs, variable spending, merchants, item types, and recurring patterns from statements and receipts." />
@@ -110,7 +110,7 @@ export function RojaSpend() {
   );
 }
 
-function RojaQuickAdd({ categories, defaultCurrency }: { categories: Category[]; defaultCurrency: string }) {
+function NewQuickAdd({ categories, defaultCurrency }: { categories: Category[]; defaultCurrency: string }) {
   const create = useCreateTransaction();
   const [form, setForm] = useState({
     amount: "",
@@ -145,7 +145,7 @@ function RojaQuickAdd({ categories, defaultCurrency }: { categories: Category[];
   }
 
   return (
-    <form className={styles.quickAdd} onSubmit={submitTransaction} data-testid="roja-quick-add">
+    <form className={styles.quickAdd} onSubmit={submitTransaction} data-testid="new-quick-add">
       <button className={styles.primaryButton} type="submit">{create.isPending ? "Saving" : "Log"}</button>
       <input required type="number" min="0" step="0.01" value={form.amount} onChange={(event) => setForm({ ...form, amount: event.target.value })} placeholder="Amount" />
       <input required value={form.merchant} onChange={(event) => setForm({ ...form, merchant: event.target.value })} placeholder="Merchant" />

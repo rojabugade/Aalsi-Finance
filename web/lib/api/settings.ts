@@ -7,6 +7,7 @@ export type Settings = components["schemas"]["SettingsOut"];
 export type SettingsPatch = components["schemas"]["SettingsPatch"];
 export type Consent = components["schemas"]["ConsentOut"];
 export type Household = components["schemas"]["HouseholdOut"];
+export type HouseholdCreate = components["schemas"]["HouseholdCreateIn"];
 export type Member = components["schemas"]["MemberOut"];
 
 async function unwrap<T>(p: Promise<{ data?: T; error?: unknown }>): Promise<T> {
@@ -56,6 +57,14 @@ export function useHousehold() {
   return useQuery<Household>({
     queryKey: ["household"],
     queryFn: () => unwrap(api.GET("/household", {})),
+  });
+}
+
+export function useCreateHousehold() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: HouseholdCreate) => unwrap(api.POST("/household", { body })),
+    onSuccess: (data) => qc.setQueryData(["household"], data),
   });
 }
 

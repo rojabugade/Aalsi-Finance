@@ -63,7 +63,7 @@ test.describe("spend overview", () => {
     await authenticate(page, await signup(request));
     await page.goto("/transactions");
 
-    await expect(page.getByTestId("roja-spend")).toBeVisible();
+    await expect(page.getByTestId("new-spend")).toBeVisible();
     await page.getByRole("tab", { name: "Merchants" }).click();
     await expect(page.getByText("Merchant intelligence")).toBeVisible();
 
@@ -78,6 +78,6 @@ test.describe("spend overview", () => {
     await expect(page.getByTestId("spend-insight-strip")).toBeVisible();
     await page.getByRole("link", { name: "New" }).first().click();
     await expect(page).toHaveURL(/\/transactions$/);
-    await expect(page.getByTestId("roja-spend")).toBeVisible();
+    await expect(page.getByTestId("new-spend")).toBeVisible();
   });
 });

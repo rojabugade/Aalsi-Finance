@@ -9,7 +9,7 @@ import { monthlyFromCadence } from "@/components/dashboard/widgets/recurring-wid
 import { formatCurrency } from "@/lib/format";
 import { rangeIncome, rangeSpend, spendAmount } from "@/lib/spend/derive";
 import { ymd } from "@/lib/spend/period";
-import styles from "@/components/roja/roja.module.css";
+import styles from "@/components/new-dashboard/new-dashboard.module.css";
 
 type HomeTab = "overview" | "goals" | "recommendations";
 
@@ -23,7 +23,7 @@ function pct(value: number) {
   return Math.max(0, Math.min(100, Math.round(value)));
 }
 
-export function RojaDashboard() {
+export function NewDashboard() {
   const searchParams = useSearchParams();
   const txns = useTransactions();
   const cats = useCategories();
@@ -63,7 +63,7 @@ export function RojaDashboard() {
   const asOfLabel = `As of ${to} · last 30 days`;
 
   return (
-    <div className={styles.roja} data-testid="roja-dashboard">
+    <div className={styles.newDashboard} data-testid="new-dashboard">
       <div className={styles.topLine}>
         <div className={styles.tabs} role="tablist" aria-label="Dashboard sections">
           <DashboardTab active={activeTab === "overview"} href="/dashboard" label="Overview" />

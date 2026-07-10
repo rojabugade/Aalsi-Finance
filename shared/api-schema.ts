@@ -150,7 +150,8 @@ export interface paths {
         /** Get Household */
         get: operations["get_household_household_get"];
         put?: never;
-        post?: never;
+        /** Create Household */
+        post: operations["create_household_household_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2975,6 +2976,11 @@ export interface components {
             /** Base Currency */
             base_currency: string;
         };
+        /** HouseholdCreateIn */
+        HouseholdCreateIn: {
+            /** Name */
+            name: string;
+        };
         /** HouseholdOut */
         HouseholdOut: {
             /**
@@ -2986,6 +2992,8 @@ export interface components {
             name: string;
             /** Base Currency */
             base_currency: string;
+            /** Sharing Enabled */
+            sharing_enabled: boolean;
         };
         /** IncomeSourceIn */
         IncomeSourceIn: {
@@ -4946,6 +4954,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HouseholdOut"];
+                };
+            };
+        };
+    };
+    create_household_household_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HouseholdCreateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HouseholdOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

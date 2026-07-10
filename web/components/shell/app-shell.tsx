@@ -25,13 +25,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const householdQ = useHousehold();
   const membersQ = useMembers();
 
-  const name = householdQ.data?.name ?? "Household";
+  const householdName = householdQ.data?.name ?? "Household";
   const currency = (householdQ.data as { base_currency?: string } | undefined)?.base_currency ?? "USD";
   const memberCount = membersQ.data?.length ?? 0;
+  const isSharedHousehold = householdQ.data?.sharing_enabled ?? false;
+  const soloName = membersQ.data?.[0]?.display_name?.trim() || householdName.replace(/'s household$/i, "");
+  const name = isSharedHousehold ? householdName : soloName;
   const household = {
     name,
     initial: name.slice(0, 1).toUpperCase(),
-    meta: `Household · ${currency}${memberCount ? ` · ${memberCount} members` : ""}`,
+    meta: isSharedHousehold ? `Household · ${currency}${memberCount > 1 ? ` · ${memberCount} members` : ""}` : currency,
     // Net worth is not a dedicated endpoint; show a placeholder R2 may wire to analytics.
     netWorth: formatCurrency(0, { currency }),
   };

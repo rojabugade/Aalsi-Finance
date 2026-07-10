@@ -114,6 +114,10 @@
   }
   html {
     color-scheme: light;
+    /* Keep the layout viewport width stable as routes switch between short and
+       scrollable content. Without a reserved gutter, the root scrollbar
+       appearing/disappearing nudges sticky and fixed navigation sideways. */
+    scrollbar-gutter: stable;
   }
   /* Hard scroll limit (no elastic rubber-band). Global, so scroll
      feel is consistent whether the analyst pane is open or not. */

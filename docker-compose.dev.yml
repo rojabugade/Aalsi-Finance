@@ -50,7 +50,10 @@ services:
 
   api:
     build: ./backend
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    # Keep the database revision in step with the code before the API advertises
+    # itself as ready. A fresh named volume otherwise has no application tables,
+    # causing every login to fail with `relation "user" does not exist`.
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
     env_file: .env
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-finance}:${POSTGRES_PASSWORD:-finance}@postgres:5432/${POSTGRES_DB:-finance}
@@ -83,6 +86,8 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+      api:
+        condition: service_started
 
   beat:
     build: ./backend
@@ -96,6 +101,8 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+      api:
+        condition: service_started
 
   web:
     build: ./web

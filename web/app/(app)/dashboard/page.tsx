@@ -1,10 +1,10 @@
 import { Suspense } from "react";
-import { RojaDashboard } from "@/components/dashboard/classic-dashboard";
+import { NewDashboard } from "@/components/dashboard/new-dashboard";
 
 export default function DashboardPage() {
   return (
     <Suspense fallback={null}>
-      <RojaDashboard />
+      <NewDashboard />
     </Suspense>
   );
 }

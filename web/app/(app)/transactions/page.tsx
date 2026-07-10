@@ -1,5 +1,5 @@
-import { RojaSpend } from "@/components/spend/classic-spend";
+import { NewSpend } from "@/components/spend/new-spend";
 
 export default function TransactionsPage() {
-  return <RojaSpend />;
+  return <NewSpend />;
 }

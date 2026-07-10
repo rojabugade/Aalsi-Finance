@@ -148,7 +148,7 @@ test.describe("classic configurable dashboard", () => {
     await page.goto("/dashboard/classic");
     await page.getByRole("link", { name: "New" }).first().click();
     await expect(page).toHaveURL(/\/dashboard$/);
-    await expect(page.getByTestId("roja-dashboard")).toBeVisible();
+    await expect(page.getByTestId("new-dashboard")).toBeVisible();
     await page.getByRole("link", { name: "Classic" }).first().click();
     await expect(page).toHaveURL(/\/dashboard\/classic/);
     await expect(page.getByTestId("dashboard-grid")).toBeVisible();

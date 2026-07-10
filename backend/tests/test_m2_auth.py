@@ -106,6 +106,7 @@ async def test_signup_login_mfa_and_invite_flow(client, session_factory):
     me = await client.get("/household", headers=_auth(access))
     assert me.status_code == 200
     assert me.json()["name"] == f"{HOUSEHOLD_PREFIX}alpha"
+    assert me.json()["sharing_enabled"] is True
 
     # 2. Enroll + enable MFA.
     enroll = await client.post("/auth/mfa/enroll", headers=_auth(access))
@@ -155,6 +156,49 @@ async def test_signup_login_mfa_and_invite_flow(client, session_factory):
         "/household/invite", headers=_auth(member_access), json={"email": _email()}
     )
     assert forbidden.status_code == 403
+
+    cannot_create = await client.post(
+        "/household", headers=_auth(member_access), json={"name": "Member household"}
+    )
+    assert cannot_create.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_household_sharing_is_opt_in(client):
+    email = _email()
+    signup = await client.post(
+        "/auth/signup",
+        json={
+            "email": email,
+            "password": "hunter2pass",
+            "display_name": "Owner",
+        },
+    )
+    assert signup.status_code == 201, signup.text
+    access = signup.json()["access_token"]
+
+    personal = await client.get("/household", headers=_auth(access))
+    assert personal.status_code == 200
+    assert personal.json()["name"] == "Owner"
+    assert personal.json()["sharing_enabled"] is False
+
+    invite_before_creation = await client.post(
+        "/household/invite", headers=_auth(access), json={"email": _email()}
+    )
+    assert invite_before_creation.status_code == 409
+
+    created = await client.post(
+        "/household", headers=_auth(access), json={"name": "The Owners"}
+    )
+    assert created.status_code == 200, created.text
+    assert created.json()["name"] == "The Owners"
+    assert created.json()["sharing_enabled"] is True
+
+    # Retrying the same creation request is safe after a lost response.
+    retry = await client.post(
+        "/household", headers=_auth(access), json={"name": "The Owners"}
+    )
+    assert retry.status_code == 200
 
 
 @pytest.mark.asyncio

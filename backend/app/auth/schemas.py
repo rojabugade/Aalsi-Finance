@@ -62,6 +62,11 @@ class HouseholdOut(BaseModel):
     id: uuid.UUID
     name: str
     base_currency: str
+    sharing_enabled: bool
+
+
+class HouseholdCreateIn(BaseModel):
+    name: str = Field(min_length=1, max_length=255)
 
 
 class HouseholdBaseCurrencyPatch(BaseModel):

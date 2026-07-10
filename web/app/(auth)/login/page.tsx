@@ -42,11 +42,10 @@ export default function LoginPage() {
           password,
           totp_code: String(form.get("totp") ?? "").trim() || null,
         })
-      : await authApi.signup({
+        : await authApi.signup({
           email,
           password,
           display_name: String(form.get("displayName") ?? "").trim() || null,
-          household_name: String(form.get("householdName") ?? "").trim() || null,
           base_currency: String(form.get("baseCurrency") ?? "USD").trim().toUpperCase(),
         });
     setBusy(false);
@@ -135,28 +134,18 @@ export default function LoginPage() {
                     placeholder={t("displayNamePlaceholder")}
                   />
                 </div>
-                <div className="grid grid-cols-[1fr_6rem] gap-3">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="householdName">{t("householdName")}</Label>
-                    <Input
-                      id="householdName"
-                      name="householdName"
-                      placeholder={t("householdPlaceholder")}
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="baseCurrency">{t("baseCurrency")}</Label>
-                    <Input
-                      id="baseCurrency"
-                      name="baseCurrency"
-                      defaultValue="USD"
-                      minLength={3}
-                      maxLength={3}
-                      pattern="[A-Za-z]{3}"
-                      required
-                      className="uppercase"
-                    />
-                  </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="baseCurrency">{t("baseCurrency")}</Label>
+                  <Input
+                    id="baseCurrency"
+                    name="baseCurrency"
+                    defaultValue="USD"
+                    minLength={3}
+                    maxLength={3}
+                    pattern="[A-Za-z]{3}"
+                    required
+                    className="uppercase"
+                  />
                 </div>
               </>
             )}

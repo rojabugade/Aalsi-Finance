@@ -5,9 +5,11 @@ import Foundation
 final class StubProtocol: URLProtocol {
     nonisolated(unsafe) static var status = 200
     nonisolated(unsafe) static var body = Data("{}".utf8)
+    nonisolated(unsafe) static var lastRequest: URLRequest?
     override class func canInit(with request: URLRequest) -> Bool { true }
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
     override func startLoading() {
+        Self.lastRequest = request
         let resp = HTTPURLResponse(url: request.url!, statusCode: Self.status,
                                    httpVersion: nil, headerFields: nil)!
         client?.urlProtocol(self, didReceive: resp, cacheStoragePolicy: .notAllowed)
@@ -51,4 +53,49 @@ final class StubProtocol: URLProtocol {
         let nw: NetWorth = try await client.get("analytics/net-worth", accessToken: "x")
         #expect(nw.netWorth.decimal == 6)
     }
+
+    @Test func loginSendsTheMfaCodeExpectedByTheBackend() async throws {
+        StubProtocol.status = 200
+        StubProtocol.body = Data("{\"access_token\":\"access\"}".utf8)
+        let service = FinanceService(client: APIClient(
+            baseURL: URL(string: "http://localhost:8000")!, session: makeSession()
+        ))
+
+        let token = try await service.login(
+            email: "dev@example.com", password: "hunter2pass", totpCode: "123456"
+        )
+
+        #expect(token == "access")
+        let body = try #require(StubProtocol.lastRequest?.httpBody)
+        let json = try #require(JSONSerialization.jsonObject(with: body) as? [String: String])
+        #expect(json["totp_code"] == "123456")
+    }
+
+    @Test func sessionRefreshForwardsTheCsrfCookie() async throws {
+        StubProtocol.status = 200
+        StubProtocol.body = Data("{\"access_token\":\"fresh\"}".utf8)
+        let storage = HTTPCookieStorage()
+        storage.setCookie(HTTPCookie(properties: [
+            .domain: "localhost",
+            .path: "/",
+            .name: "cbf_csrf",
+            .value: "csrf-value"
+        ])!)
+        let client = APIClient(
+            baseURL: URL(string: "http://localhost:8000")!,
+            session: makeSession(),
+            cookieStorage: storage
+        )
+
+        let response: RefreshResponse = try await client.cookieAuthenticatedPost("auth/refresh")
+
+        #expect(response.accessToken == "fresh")
+        #expect(StubProtocol.lastRequest?.value(forHTTPHeaderField: "X-CSRF-Token") == "csrf-value")
+    }
+}
+
+private struct RefreshResponse: Decodable {
+    let accessToken: String
+
+    enum CodingKeys: String, CodingKey { case accessToken = "access_token" }
 }

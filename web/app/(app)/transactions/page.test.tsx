@@ -25,7 +25,7 @@ function renderPage() {
 
 it("renders the migrated Spend page with a Classic escape hatch", async () => {
   renderPage();
-  expect(await screen.findByTestId("roja-spend")).toBeInTheDocument();
+  expect(await screen.findByTestId("new-spend")).toBeInTheDocument();
   expect(screen.getByRole("tab", { name: "Transactions" })).toBeInTheDocument();
-  expect(screen.getByTestId("roja-quick-add")).toBeInTheDocument();
+  expect(screen.getByTestId("new-quick-add")).toBeInTheDocument();
 });
