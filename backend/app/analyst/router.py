@@ -42,7 +42,10 @@ async def thread_history(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    return await service.run_thread_history(session, user, key)
+    try:
+        return await service.run_thread_history(session, user, key)
+    except service.ReservedThreadKey as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
 @router.post("/ask", response_model=AnalystAskOut)
@@ -52,7 +55,10 @@ async def ask(
     session: AsyncSession = Depends(get_session),
     llm: LLMClient = Depends(get_llm_client),
 ):
-    return await service.run_ask(session, user, data, llm)
+    try:
+        return await service.run_ask(session, user, data, llm)
+    except service.ReservedThreadKey as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
 @router.post("/alerts/{alert_id}/acknowledge", response_model=PersistentAlert)

@@ -9,6 +9,7 @@ from pathlib import Path
 from sqlalchemy import case, func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.analyst.conversation import append_turn, get_or_create_thread, recent_turns
 from app.auth.deps import scoped_query
 from app.config import Settings, get_settings
 from app.fx import service as fx_service
@@ -18,6 +19,8 @@ from app.guidance.schemas import (
     GuidancePlanItemCreate,
     GuidancePlanItemUpdate,
     GuidancePlanStatus,
+    GuidanceThreadMessage,
+    GuidanceThreadOut,
     GuidanceWizardIn,
 )
 from app.llm.client import LLMClient
@@ -148,33 +151,106 @@ async def update_plan_item(
 
 
 async def ask_guidance(session: AsyncSession, user: User, data: GuidanceAskIn, llm: LLMClient | None = None) -> dict:
+    thread = None
+    history = []
+    if data.thread_id is not None:
+        thread = await get_or_create_thread(
+            session,
+            user,
+            _guidance_thread_key(user, data.thread_id),
+        )
+        history = await recent_turns(session, thread.id, limit=6)
+
     docs = await retrieve_docs(session, data.question, country=data.country, topic=data.topic, llm=llm, user=user)
     citations = [_citation(doc) for doc in docs]
     if not docs:
-        return {"answer": "I could not find relevant guidance in the curated corpus. Add or refresh source documents before relying on an answer.", "citations": [], "disclaimer": DISCLAIMER}
-
-    context = "\n\n".join(
-        f"[{i+1}] {doc.title} ({doc.source_type}, effective {doc.effective_date})\n{doc.body}"
-        for i, doc in enumerate(docs)
-    )
-    fallback = _source_grounded_answer(data.question, docs)
-    if llm is None:
-        return {"answer": fallback, "citations": citations, "disclaimer": DISCLAIMER}
-    try:
-        result = await llm.chat(
-            [
-                {"role": "system", "content": "Answer only from the provided corpus. Distinguish government/official sources from community consensus. Cite bracket numbers. If the corpus is insufficient, say so."},
-                {"role": "user", "content": f"Question: {data.question}\n\nCorpus:\n{context}"},
-            ],
-            purpose="guidance.ask",
-            user_id=user.id,
-            session=session,
-            use_cache=True,
+        answer = "I could not find relevant guidance in the curated corpus. Add or refresh source documents before relying on an answer."
+    else:
+        corpus = "\n\n".join(
+            f"[{i+1}] {doc.title} ({doc.source_type}, effective {doc.effective_date})\n{doc.body}"
+            for i, doc in enumerate(docs)
         )
-        answer = result.get("content") or fallback
-    except Exception:
-        answer = fallback
-    return {"answer": answer, "citations": citations, "disclaimer": DISCLAIMER}
+        conversation_context = "\n".join(
+            f"{message.role}: {message.text}" for message in history
+        ) or "No prior conversation."
+        fallback = _source_grounded_answer(data.question, docs)
+        if llm is None:
+            answer = fallback
+        else:
+            try:
+                result = await llm.chat(
+                    [
+                        {
+                            "role": "system",
+                            "content": (
+                                "Use conversation history only to resolve references and follow-up intent. "
+                                "Only the Current authoritative corpus may support factual claims. "
+                                "Distinguish official sources from community consensus, cite bracket "
+                                "numbers, and say when the corpus is insufficient."
+                            ),
+                        },
+                        {
+                            "role": "user",
+                            "content": (
+                                f"Guidance domain: {data.domain}\n"
+                                f"Question: {data.question}\n\n"
+                                f"Conversation context:\n{conversation_context}\n\n"
+                                f"Current authoritative corpus:\n{corpus}"
+                            ),
+                        },
+                    ],
+                    purpose="guidance.ask",
+                    user_id=user.id,
+                    session=session,
+                    use_cache=True,
+                )
+                answer = result.get("content") or fallback
+            except Exception:
+                answer = fallback
+
+    response = {
+        "answer": answer,
+        "citations": citations,
+        "disclaimer": DISCLAIMER,
+        "thread_id": data.thread_id,
+    }
+    if thread is not None:
+        await append_turn(
+            session,
+            thread.id,
+            question=data.question,
+            answer=answer,
+            analyst_payload={
+                "citations": [_citation_payload(citation) for citation in citations],
+                "disclaimer": DISCLAIMER,
+            },
+        )
+    return response
+
+
+def _guidance_thread_key(user: User, client_key: str) -> str:
+    return f"guidance:{user.id}:{client_key.strip()[:96]}"
+
+
+async def guidance_thread_history(
+    session: AsyncSession,
+    user: User,
+    client_key: str,
+) -> GuidanceThreadOut:
+    thread = await get_or_create_thread(session, user, _guidance_thread_key(user, client_key))
+    turns = await recent_turns(session, thread.id, limit=100)
+    messages = []
+    for turn in turns:
+        payload = turn.payload if turn.role == "analyst" and isinstance(turn.payload, dict) else {}
+        messages.append(
+            GuidanceThreadMessage(
+                role=turn.role,
+                text=turn.text,
+                citations=payload.get("citations") or [],
+                disclaimer=payload.get("disclaimer"),
+            )
+        )
+    return GuidanceThreadOut(messages=messages)
 
 
 async def retrieve_docs(session: AsyncSession, query: str, *, country: str | None = None, topic: str | None = None, llm: LLMClient | None = None, user: User | None = None, limit: int = 5) -> list[GuidanceDoc]:
@@ -209,27 +285,29 @@ async def wizard(session: AsyncSession, user: User, data: GuidanceWizardIn) -> d
     checklist = []
     for doc in docs:
         checklist.append({
-            "title": doc.title,
+            "title": doc.title or "Untitled guidance",
             "topic": doc.topic,
             "source_type": doc.source_type,
             "why_it_may_apply": _why_applies(doc, data),
             "source_url": doc.source_url,
-            "effective_date": str(doc.effective_date) if doc.effective_date else None,
+            "effective_date": doc.effective_date,
+            "domain": _checklist_domain(doc),
         })
     reminders = []
-    for idx, item in enumerate(checklist[:5], start=1):
-        payload = {"checklist_item": item["title"], "topic": item["topic"], "source_url": item["source_url"]}
-        await enqueue_notification(
-            session,
-            household_id=user.household_id,
-            user_id=user.id,
-            type="cross_border_checklist",
-            payload=payload,
-            scheduled_for=datetime.now(timezone.utc),
-            idempotency_key=f"cross_border_checklist:{user.id}:{idx}:{item['title']}",
-        )
-        reminders.append(payload)
-    await session.commit()
+    if data.create_reminders:
+        for idx, item in enumerate(checklist[:5], start=1):
+            payload = {"checklist_item": item["title"], "topic": item["topic"], "source_url": item["source_url"]}
+            await enqueue_notification(
+                session,
+                household_id=user.household_id,
+                user_id=user.id,
+                type="cross_border_checklist",
+                payload=payload,
+                scheduled_for=datetime.now(timezone.utc),
+                idempotency_key=f"cross_border_checklist:{user.id}:{idx}:{item['title']}",
+            )
+            reminders.append(payload)
+        await session.commit()
     return {"checklist": checklist, "reminders": reminders, "citations": [_citation(d) for d in docs], "disclaimer": DISCLAIMER}
 
 
@@ -373,14 +451,52 @@ def _citation(doc: GuidanceDoc) -> dict:
     return {"title": doc.title, "source_url": doc.source_url, "source_type": doc.source_type, "effective_date": doc.effective_date}
 
 
+def _citation_payload(citation: dict) -> dict:
+    payload = dict(citation)
+    if isinstance(payload.get("effective_date"), date):
+        payload["effective_date"] = payload["effective_date"].isoformat()
+    return payload
+
+
+def _checklist_domain(doc: GuidanceDoc) -> str:
+    topic = (doc.topic or "").lower().replace("_", " ")
+    cross_border_terms = (
+        "cross-border",
+        "cross border",
+        "remittance",
+        "tax-reporting",
+        "tax reporting",
+        "foreign tax",
+        "foreign account",
+        "double taxation",
+        "dtaa",
+        "fbar",
+        "fatca",
+    )
+    if any(term in topic for term in cross_border_terms):
+        return "cross_border"
+    if "investment" in topic:
+        return "investment"
+    return "general"
+
+
 def _source_grounded_answer(question: str, docs: list[GuidanceDoc]) -> str:
-    govt = [d for d in docs if d.source_type == "govt"]
-    community = [d for d in docs if d.source_type == "community"]
+    indexed_docs = list(enumerate(docs, start=1))
+    govt = [(index, doc) for index, doc in indexed_docs if doc.source_type == "govt"]
+    community = [
+        (index, doc) for index, doc in indexed_docs if doc.source_type == "community"
+    ]
     parts = [f"Based on the curated corpus for: {question}"]
     if govt:
-        parts.append("Government/official sources: " + "; ".join(f"[{i+1}] {d.title}" for i, d in enumerate(govt)))
+        parts.append(
+            "Government/official sources: "
+            + "; ".join(f"[{index}] {doc.title}" for index, doc in govt)
+        )
     if community:
-        parts.append("Community consensus sources: " + "; ".join(f"{d.title}" for d in community))
+        parts.append(
+            "Community consensus sources: "
+            + "; ".join(f"[{index}] {doc.title}" for index, doc in community)
+        )
     parts.append("Use the citations and effective dates to verify current rules before acting.")
     return "\n".join(parts)
 

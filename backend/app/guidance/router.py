@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import uuid
+from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Path, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.deps import get_current_user, require_role
@@ -18,6 +19,7 @@ from app.guidance.schemas import (
     GuidancePlanItemOut,
     GuidancePlanItemUpdate,
     GuidancePlanStatus,
+    GuidanceThreadOut,
     GuidanceWizardIn,
     GuidanceWizardOut,
     LimitsOut,
@@ -69,9 +71,26 @@ async def ask_guidance(data: GuidanceAskIn, user: User = Depends(get_current_use
     return await service.ask_guidance(session, user, data, llm)
 
 
+@router.get("/guidance/thread/{key}/messages", response_model=GuidanceThreadOut)
+async def guidance_thread_messages(
+    key: Annotated[
+        str,
+        Path(min_length=1, max_length=96, pattern=r"^[A-Za-z0-9._~-]+$"),
+    ],
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    return await service.guidance_thread_history(session, user, key)
+
+
 @router.post("/cross-border/ask", response_model=GuidanceAskOut)
 async def cross_border_ask(data: GuidanceAskIn, user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session), llm: LLMClient = Depends(get_llm_client)):
-    return await service.ask_guidance(session, user, data, llm)
+    return await service.ask_guidance(
+        session,
+        user,
+        data.model_copy(update={"domain": "cross_border"}),
+        llm,
+    )
 
 
 @router.post("/guidance/wizard", response_model=GuidanceWizardOut)

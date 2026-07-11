@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import asyncio
 import os
 import uuid
 
 import pytest
 import pytest_asyncio
+from fastapi import HTTPException
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
@@ -64,6 +66,9 @@ async def test_thread_and_message_round_trip(session):
 
 
 from app.analyst.conversation import append_turn, get_or_create_thread, recent_turns  # noqa: E402
+from app.analyst import service as analyst_service  # noqa: E402
+from app.analyst.router import ask as analyst_ask_route  # noqa: E402
+from app.analyst.router import thread_history as analyst_thread_history_route  # noqa: E402
 from app.analyst.schemas import AnalystAskIn  # noqa: E402
 from app.analyst.service import run_ask, run_thread_history  # noqa: E402
 
@@ -77,15 +82,81 @@ async def test_get_or_create_thread_is_idempotent(session):
 
 
 @pytest.mark.asyncio
+async def test_get_or_create_thread_is_safe_for_concurrent_first_requests(engine, session):
+    user = await _user(session)
+    session_factory = async_sessionmaker(engine, expire_on_commit=False)
+
+    async with engine.begin() as connection:
+        await connection.execute(
+            text(
+                """
+                CREATE OR REPLACE FUNCTION pytest_m22_delay_thread_insert()
+                RETURNS trigger LANGUAGE plpgsql AS $$
+                BEGIN
+                    IF NEW.key = 'guidance:concurrent' THEN
+                        PERFORM pg_sleep(0.2);
+                    END IF;
+                    RETURN NEW;
+                END;
+                $$
+                """
+            )
+        )
+        await connection.execute(
+            text(
+                """
+                CREATE TRIGGER pytest_m22_delay_thread_insert
+                BEFORE INSERT ON analyst_thread
+                FOR EACH ROW EXECUTE FUNCTION pytest_m22_delay_thread_insert()
+                """
+            )
+        )
+
+    async def create_thread():
+        async with session_factory() as concurrent_session:
+            return await get_or_create_thread(concurrent_session, user, "guidance:concurrent")
+
+    try:
+        results = await asyncio.gather(
+            create_thread(),
+            create_thread(),
+            return_exceptions=True,
+        )
+        assert not [result for result in results if isinstance(result, BaseException)]
+        first, second = results
+        assert first.id == second.id
+    finally:
+        async with engine.begin() as connection:
+            await connection.execute(
+                text("DROP TRIGGER IF EXISTS pytest_m22_delay_thread_insert ON analyst_thread")
+            )
+            await connection.execute(
+                text("DROP FUNCTION IF EXISTS pytest_m22_delay_thread_insert()")
+            )
+
+
+@pytest.mark.asyncio
 async def test_append_and_recent_turns_order_and_limit(session):
     user = await _user(session)
     thread = await get_or_create_thread(session, user, "dashboard")
     await append_turn(session, thread.id, question="q1", answer="a1")
-    await append_turn(session, thread.id, question="q2", answer="a2")
+    await append_turn(
+        session,
+        thread.id,
+        question="q2",
+        answer="a2",
+        analyst_payload={"citations": []},
+    )
     await append_turn(session, thread.id, question="q3", answer="a3")
     turns = await recent_turns(session, thread.id, limit=4)
     assert [(m.role, m.text) for m in turns] == [
         ("user", "q2"), ("analyst", "a2"), ("user", "q3"), ("analyst", "a3"),
+    ]
+    assert [message.payload for message in turns] == [
+        None,
+        {"citations": []},
+        None,
+        None,
     ]
 
 
@@ -139,3 +210,46 @@ async def test_run_thread_history_empty_for_unknown_key(session):
     user = await _user(session)
     out = await run_thread_history(session, user, "never-used")
     assert out.messages == []
+
+
+@pytest.mark.asyncio
+async def test_analyst_service_rejects_reserved_guidance_thread_namespace(session):
+    user_a = await _user(session)
+    user_b = User(
+        household_id=user_a.household_id,
+        email=f"{uuid.uuid4().hex}@example.com",
+        password_hash="x",
+        role="member",
+    )
+    session.add(user_b)
+    await session.commit()
+    key = f"guidance:{user_a.id}:overview"
+    thread = await get_or_create_thread(session, user_a, key)
+    await append_turn(session, thread.id, question="private question", answer="private answer")
+
+    with pytest.raises(analyst_service.ReservedThreadKey):
+        await run_thread_history(session, user_b, key)
+    with pytest.raises(analyst_service.ReservedThreadKey):
+        await run_ask(
+            session,
+            user_b,
+            AnalystAskIn(mode="explain", question="poison context", thread_id=key),
+            _AskLLM(),
+        )
+    with pytest.raises(HTTPException) as history_error:
+        await analyst_thread_history_route(key, user_b, session)
+    assert history_error.value.status_code == 404
+    with pytest.raises(HTTPException) as ask_error:
+        await analyst_ask_route(
+            AnalystAskIn(mode="explain", question="poison context", thread_id=key),
+            user_b,
+            session,
+            _AskLLM(),
+        )
+    assert ask_error.value.status_code == 404
+
+    turns = await recent_turns(session, thread.id, limit=10)
+    assert [(turn.role, turn.text) for turn in turns] == [
+        ("user", "private question"),
+        ("analyst", "private answer"),
+    ]

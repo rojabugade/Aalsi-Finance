@@ -42,6 +42,15 @@ from app.models.core import User
 from app.models.debt import Loan, LoanPayment
 
 
+class ReservedThreadKey(Exception):
+    pass
+
+
+def _ensure_analyst_thread_key(key: str | None) -> None:
+    if key is not None and key.lower().startswith("guidance:"):
+        raise ReservedThreadKey("Thread not found")
+
+
 async def run_reindex(session, user, llm) -> dict:
     from app.analyst.memory.reconcile import reconcile_household
     counts = await reconcile_household(session, user.household_id, llm)
@@ -199,6 +208,7 @@ async def _persist_turn_if_needed(
     if not thread_id:
         return None
     try:
+        _ensure_analyst_thread_key(thread_id)
         thread_row = await get_or_create_thread(session, user, thread_id)
         await append_turn(session, thread_row.id, question=question, answer=answer)
         return thread_id
@@ -320,6 +330,7 @@ async def run_scan_alerts(session, user, llm) -> dict:
 async def run_thread_history(
     session: AsyncSession, user: User, key: str, limit: int = 50
 ) -> AnalystThreadOut:
+    _ensure_analyst_thread_key(key)
     thread = await get_or_create_thread(session, user, key)
     turns = await recent_turns(session, thread.id, limit=limit)
     return AnalystThreadOut(
@@ -328,6 +339,7 @@ async def run_thread_history(
 
 
 async def run_ask(session: AsyncSession, user: User, data: AnalystAskIn, llm) -> AnalystAskOut:
+    _ensure_analyst_thread_key(data.thread_id)
     if data.question.strip().lower().rstrip("!.,?") in _GREETINGS:
         return AnalystAskOut(
             answer="Hi — ask me about your spending, cash flow, budgets, or financial plan."

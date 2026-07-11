@@ -7,11 +7,22 @@ from decimal import Decimal
 
 import pytest
 import pytest_asyncio
-from sqlalchemy import text
+from pydantic import ValidationError
+from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
+from app.guidance.router import cross_border_ask
 from app.guidance.schemas import CrossBorderTransferIn, GuidanceAskIn, GuidanceWizardIn
-from app.guidance.service import ask_guidance, create_transfer, limits, wizard
+from app.guidance.service import (
+    _checklist_domain,
+    _source_grounded_answer,
+    ask_guidance,
+    create_transfer,
+    guidance_thread_history,
+    limits,
+    wizard,
+)
+from app.models.conversation import AnalystThread
 from app.models.core import Household, User
 from app.models.guidance import GuidanceDoc, Notification
 
@@ -69,3 +80,216 @@ async def test_guidance_answer_wizard_and_limits(session):
     out = await limits(session, user)
     assert out["limits"][0]["amount"] == "250000"
     assert out["warnings"]
+
+
+class _GuidanceLLM:
+    def __init__(self):
+        self.chat_calls = []
+
+    async def embed(self, _texts, **_kwargs):
+        raise RuntimeError("use deterministic corpus retrieval")
+
+    async def chat(self, messages, **_kwargs):
+        self.chat_calls.append(messages)
+        return {"content": "The current source describes the remittance limit [1]."}
+
+
+@pytest.mark.asyncio
+async def test_guidance_thread_persists_citations_and_uses_recent_context(session):
+    user = await _user(session)
+    llm = _GuidanceLLM()
+    first = await ask_guidance(
+        session,
+        user,
+        GuidanceAskIn(
+            question="What is the India remittance limit?",
+            country="IN",
+            thread_id="overview",
+        ),
+        llm,
+    )
+    second = await ask_guidance(
+        session,
+        user,
+        GuidanceAskIn(
+            question="What should I verify about that remittance limit?",
+            country="IN",
+            thread_id="overview",
+        ),
+        llm,
+    )
+
+    assert first["thread_id"] == "overview"
+    assert second["thread_id"] == "overview"
+    thread = await session.scalar(
+        select(AnalystThread).where(
+            AnalystThread.household_id == user.household_id,
+            AnalystThread.key == f"guidance:{user.id}:overview",
+        )
+    )
+    assert thread is not None
+    prompt = llm.chat_calls[-1][-1]["content"]
+    assert "Conversation context" in prompt
+    assert "What is the India remittance limit?" in prompt
+    assert "The current source describes the remittance limit [1]." in prompt
+    assert "Current authoritative corpus" in prompt
+
+    history = await guidance_thread_history(session, user, "overview")
+    assert [(message.role, message.text) for message in history.messages] == [
+        ("user", "What is the India remittance limit?"),
+        ("analyst", "The current source describes the remittance limit [1]."),
+        ("user", "What should I verify about that remittance limit?"),
+        ("analyst", "The current source describes the remittance limit [1]."),
+    ]
+    assert history.messages[0].citations == []
+    assert history.messages[1].citations[0].source_type == "govt"
+    assert history.messages[1].disclaimer is not None
+
+
+@pytest.mark.asyncio
+async def test_guidance_threads_are_user_scoped_within_household(session):
+    user_a = await _user(session)
+    user_b = User(
+        household_id=user_a.household_id,
+        email=f"{uuid.uuid4().hex}@example.com",
+        password_hash="x",
+        role="member",
+    )
+    session.add(user_b)
+    await session.commit()
+
+    for user in (user_a, user_b):
+        await ask_guidance(
+            session,
+            user,
+            GuidanceAskIn(
+                question="What is the India remittance limit?",
+                country="IN",
+                thread_id="overview",
+            ),
+            llm=None,
+        )
+
+    keys = set(
+        (
+            await session.execute(
+                select(AnalystThread.key).where(AnalystThread.household_id == user_a.household_id)
+            )
+        ).scalars()
+    )
+    assert keys == {
+        f"guidance:{user_a.id}:overview",
+        f"guidance:{user_b.id}:overview",
+    }
+
+
+@pytest.mark.asyncio
+async def test_guidance_no_doc_answer_persists_without_llm(session):
+    user = await _user(session)
+    llm = _GuidanceLLM()
+    result = await ask_guidance(
+        session,
+        user,
+        GuidanceAskIn(question="zzzz-no-matching-corpus", thread_id="overview"),
+        llm,
+    )
+
+    assert result["citations"] == []
+    assert result["thread_id"] == "overview"
+    assert llm.chat_calls == []
+    history = await guidance_thread_history(session, user, "overview")
+    assert len(history.messages) == 2
+    assert history.messages[-1].citations == []
+    assert history.messages[-1].disclaimer == result["disclaimer"]
+
+
+@pytest.mark.asyncio
+async def test_cross_border_alias_forces_domain_and_wizard_can_skip_reminders(session):
+    user = await _user(session)
+    llm = _GuidanceLLM()
+    answer = await cross_border_ask(
+        GuidanceAskIn(
+            question="What is the India remittance limit?",
+            country="IN",
+            domain="general",
+            thread_id="cross-border",
+        ),
+        user,
+        session,
+        llm,
+    )
+    assert answer["thread_id"] == "cross-border"
+    assert "Guidance domain: cross_border" in llm.chat_calls[-1][-1]["content"]
+
+    before = await session.scalar(
+        select(func.count()).select_from(Notification).where(Notification.user_id == user.id)
+    )
+    result = await wizard(
+        session,
+        user,
+        GuidanceWizardIn(countries=["IN"], create_reminders=False),
+    )
+    after = await session.scalar(
+        select(func.count()).select_from(Notification).where(Notification.user_id == user.id)
+    )
+    assert after == before
+    assert result["reminders"] == []
+    assert result["checklist"][0]["domain"] == "cross_border"
+
+
+@pytest.mark.asyncio
+async def test_guidance_accepts_documented_maximum_thread_key(session):
+    user = await _user(session)
+    client_key = "k" * 96
+
+    result = await ask_guidance(
+        session,
+        user,
+        GuidanceAskIn(question="zzzz-no-matching-corpus", thread_id=client_key),
+        llm=None,
+    )
+
+    assert result["thread_id"] == client_key
+    assert len((await guidance_thread_history(session, user, client_key)).messages) == 2
+
+
+def test_guidance_ask_validates_question_and_thread_lengths():
+    with pytest.raises(ValidationError):
+        GuidanceAskIn(question="   ")
+    with pytest.raises(ValidationError):
+        GuidanceAskIn(question="q" * 4001)
+    with pytest.raises(ValidationError):
+        GuidanceAskIn(question="valid", thread_id="k" * 97)
+    with pytest.raises(ValidationError):
+        GuidanceAskIn(question="valid", thread_id="not/path-safe")
+
+
+def test_guidance_fallback_citations_keep_original_document_indices():
+    community = GuidanceDoc(
+        topic="investment education",
+        title="Community first",
+        body="Community guidance.",
+        source_type="community",
+    )
+    government = GuidanceDoc(
+        topic="remittance limits",
+        title="Government second",
+        body="Official guidance.",
+        source_type="govt",
+    )
+
+    answer = _source_grounded_answer("What applies?", [community, government])
+    assert "Government/official sources: [2] Government second" in answer
+
+
+@pytest.mark.parametrize(
+    "topic",
+    [
+        "DTAA foreign tax credit double taxation",
+        "FBAR FATCA foreign account reporting limits",
+        "tax reporting obligations",
+        "remittance limits",
+    ],
+)
+def test_cross_border_corpus_topics_are_classified_for_cross_border_plan(topic):
+    assert _checklist_domain(GuidanceDoc(topic=topic)) == "cross_border"

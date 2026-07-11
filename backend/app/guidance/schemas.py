@@ -27,15 +27,51 @@ class Citation(BaseModel):
 
 
 class GuidanceAskIn(BaseModel):
-    question: str
+    question: str = Field(min_length=1, max_length=4000)
     country: str | None = None
     topic: str | None = None
+    domain: GuidanceDomain = "general"
+    thread_id: str | None = Field(
+        default=None,
+        max_length=96,
+        pattern=r"^[A-Za-z0-9._~-]+$",
+    )
+
+    @field_validator("question")
+    @classmethod
+    def validate_question(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("question must not be blank")
+        return value
+
+    @field_validator("thread_id", mode="before")
+    @classmethod
+    def validate_thread_id(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        value = value.strip()
+        if not value:
+            raise ValueError("thread_id must not be blank")
+        return value
 
 
 class GuidanceAskOut(BaseModel):
     answer: str
     citations: list[Citation]
     disclaimer: str
+    thread_id: str | None = None
+
+
+class GuidanceThreadMessage(BaseModel):
+    role: Literal["user", "analyst"]
+    text: str
+    citations: list[Citation] = Field(default_factory=list)
+    disclaimer: str | None = None
+
+
+class GuidanceThreadOut(BaseModel):
+    messages: list[GuidanceThreadMessage] = Field(default_factory=list)
 
 
 class GuidanceWizardIn(BaseModel):
@@ -44,10 +80,21 @@ class GuidanceWizardIn(BaseModel):
     annual_transfer_amount: Decimal | None = None
     transfer_currency: str | None = None
     account_types: list[str] = Field(default_factory=list)
+    create_reminders: bool = True
+
+
+class GuidanceChecklistItem(BaseModel):
+    title: str
+    topic: str | None = None
+    source_type: str | None = None
+    why_it_may_apply: str
+    source_url: str | None = None
+    effective_date: date | None = None
+    domain: GuidanceDomain
 
 
 class GuidanceWizardOut(BaseModel):
-    checklist: list[dict]
+    checklist: list[GuidanceChecklistItem]
     reminders: list[dict]
     citations: list[Citation]
     disclaimer: str

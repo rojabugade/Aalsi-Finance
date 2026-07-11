@@ -21,7 +21,7 @@ class AnalystThread(Base):
     household_id: Mapped[uuid.UUID] = fk_uuid(
         ForeignKey("household.id", ondelete="CASCADE"), index=True, nullable=False
     )
-    key: Mapped[str] = mapped_column(String(128), nullable=False)
+    key: Mapped[str] = mapped_column(String(160), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
