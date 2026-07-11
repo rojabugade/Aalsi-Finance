@@ -1198,6 +1198,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/guidance/plan-items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Plan Items */
+        get: operations["list_plan_items_guidance_plan_items_get"];
+        put?: never;
+        /** Create Plan Item */
+        post: operations["create_plan_item_guidance_plan_items_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/guidance/plan-items/{item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Plan Item */
+        patch: operations["update_plan_item_guidance_plan_items__item_id__patch"];
+        trace?: never;
+    };
     "/guidance/ask": {
         parameters: {
             query?: never;
@@ -1209,6 +1244,23 @@ export interface paths {
         put?: never;
         /** Ask Guidance */
         post: operations["ask_guidance_guidance_ask_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/guidance/thread/{key}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Guidance Thread Messages */
+        get: operations["guidance_thread_messages_guidance_thread__key__messages_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2850,6 +2902,14 @@ export interface components {
             country?: string | null;
             /** Topic */
             topic?: string | null;
+            /**
+             * Domain
+             * @default general
+             * @enum {string}
+             */
+            domain: "general" | "investment" | "cross_border";
+            /** Thread Id */
+            thread_id?: string | null;
         };
         /** GuidanceAskOut */
         GuidanceAskOut: {
@@ -2859,6 +2919,127 @@ export interface components {
             citations: components["schemas"]["Citation"][];
             /** Disclaimer */
             disclaimer: string;
+            /** Thread Id */
+            thread_id?: string | null;
+        };
+        /** GuidanceChecklistItem */
+        GuidanceChecklistItem: {
+            /** Title */
+            title: string;
+            /** Topic */
+            topic?: string | null;
+            /** Source Type */
+            source_type?: string | null;
+            /** Why It May Apply */
+            why_it_may_apply: string;
+            /** Source Url */
+            source_url?: string | null;
+            /** Effective Date */
+            effective_date?: string | null;
+            /**
+             * Domain
+             * @enum {string}
+             */
+            domain: "general" | "investment" | "cross_border";
+        };
+        /** GuidancePlanItemCreate */
+        GuidancePlanItemCreate: {
+            /** Title */
+            title: string;
+            /** Rationale */
+            rationale?: string | null;
+            /**
+             * Domain
+             * @enum {string}
+             */
+            domain: "general" | "investment" | "cross_border";
+            /** Due Date */
+            due_date?: string | null;
+            /** Source Refs */
+            source_refs?: Record<string, never>[] | null;
+            /** Origin Thread Key */
+            origin_thread_key?: string | null;
+        };
+        /** GuidancePlanItemOut */
+        GuidancePlanItemOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Household Id
+             * Format: uuid
+             */
+            household_id: string;
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
+            /**
+             * Domain
+             * @enum {string}
+             */
+            domain: "general" | "investment" | "cross_border";
+            /** Title */
+            title: string;
+            /** Rationale */
+            rationale?: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "open" | "completed" | "dismissed";
+            /** Due Date */
+            due_date?: string | null;
+            /** Source Refs */
+            source_refs?: Record<string, never>[] | null;
+            /** Origin Thread Key */
+            origin_thread_key?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** GuidancePlanItemUpdate */
+        GuidancePlanItemUpdate: {
+            /** Title */
+            title?: string;
+            /** Rationale */
+            rationale?: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status?: "open" | "completed" | "dismissed";
+            /** Due Date */
+            due_date?: string | null;
+        };
+        /** GuidanceThreadMessage */
+        GuidanceThreadMessage: {
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "user" | "analyst";
+            /** Text */
+            text: string;
+            /** Citations */
+            citations?: components["schemas"]["Citation"][];
+            /** Disclaimer */
+            disclaimer?: string | null;
+        };
+        /** GuidanceThreadOut */
+        GuidanceThreadOut: {
+            /** Messages */
+            messages?: components["schemas"]["GuidanceThreadMessage"][];
         };
         /** GuidanceWizardIn */
         GuidanceWizardIn: {
@@ -2872,11 +3053,16 @@ export interface components {
             transfer_currency?: string | null;
             /** Account Types */
             account_types?: string[];
+            /**
+             * Create Reminders
+             * @default true
+             */
+            create_reminders: boolean;
         };
         /** GuidanceWizardOut */
         GuidanceWizardOut: {
             /** Checklist */
-            checklist: Record<string, never>[];
+            checklist: components["schemas"]["GuidanceChecklistItem"][];
             /** Reminders */
             reminders: Record<string, never>[];
             /** Citations */
@@ -7249,6 +7435,105 @@ export interface operations {
             };
         };
     };
+    list_plan_items_guidance_plan_items_get: {
+        parameters: {
+            query?: {
+                status?: ("open" | "completed" | "dismissed") | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuidancePlanItemOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_plan_item_guidance_plan_items_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GuidancePlanItemCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuidancePlanItemOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_plan_item_guidance_plan_items__item_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GuidancePlanItemUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuidancePlanItemOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     ask_guidance_guidance_ask_post: {
         parameters: {
             query?: never;
@@ -7269,6 +7554,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GuidanceAskOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    guidance_thread_messages_guidance_thread__key__messages_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuidanceThreadOut"];
                 };
             };
             /** @description Validation Error */
