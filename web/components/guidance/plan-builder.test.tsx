@@ -114,7 +114,9 @@ describe("PlanBuilder", () => {
 
     expect(await screen.findByText("Review annual reporting")).toBeInTheDocument();
     expect(screen.getByText("Cross-border")).toBeInTheDocument();
-    expect(screen.getByText(/Government guidance.*2026-01-01/)).toBeInTheDocument();
+    expect(screen.getByText(/Government guidance/)).toBeInTheDocument();
+    expect(screen.getByText(/Effective 2026-01-01/)).toBeInTheDocument();
+    expect(screen.getAllByTestId("checklist-effective-date")[1]).toHaveTextContent("Date unavailable");
 
     fireEvent.click(screen.getAllByRole("button", { name: "Add to My Plan" })[0]);
 
@@ -124,6 +126,7 @@ describe("PlanBuilder", () => {
         rationale: "Your countries and accounts may require a filing.",
         domain: "cross_border",
       }));
+      expect(state.toast.success).toHaveBeenCalledWith("Plan item processed for My Plan.");
     });
   });
 
@@ -145,7 +148,7 @@ describe("PlanBuilder", () => {
         title: "Learn investment account rules",
         domain: "investment",
       }));
-      expect(state.toast.success).toHaveBeenCalledWith("Added 1 item. 1 already saved.");
+      expect(state.toast.success).toHaveBeenCalledWith("Processed 1 item for My Plan. 1 item was already in your plan.");
     });
   });
 });

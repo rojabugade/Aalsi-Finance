@@ -105,7 +105,7 @@ export function PlanBuilder() {
     try {
       await create.mutateAsync(checklistPayload(item));
       setSavingTitles((current) => new Set(current).add(key));
-      toast.success("Added to My Plan");
+      toast.success("Plan item processed for My Plan.");
     } catch {
       toast.error("Couldn't add this item to My Plan");
     }
@@ -113,15 +113,17 @@ export function PlanBuilder() {
 
   async function addAll() {
     setConfirmingAll(false);
-    let added = 0;
-    const alreadySaved = checklist.length - remaining.length;
+    let processed = 0;
+    const alreadyInPlan = checklist.length - remaining.length;
     try {
       for (const item of remaining) {
         await create.mutateAsync(checklistPayload(item));
-        added += 1;
+        processed += 1;
         setSavingTitles((current) => new Set(current).add(`${item.domain}:${normalize(item.title)}`));
       }
-      toast.success(`Added ${added} ${added === 1 ? "item" : "items"}. ${alreadySaved} already saved.`);
+      toast.success(
+        `Processed ${processed} ${processed === 1 ? "item" : "items"} for My Plan. ${alreadyInPlan} ${alreadyInPlan === 1 ? "item was" : "items were"} already in your plan.`,
+      );
     } catch {
       toast.error("Couldn't add every checklist item. Please try the remaining items again.");
     }
@@ -201,7 +203,9 @@ export function PlanBuilder() {
                     <span className="font-medium text-fg">{domainLabel(item.domain)}</span>
                     {item.topic && ` · ${item.topic}`}
                     {item.source_type && ` · ${item.source_type}`}
-                    {item.effective_date && ` · Effective ${item.effective_date}`}
+                    <span data-testid="checklist-effective-date">
+                      {item.effective_date ? ` · Effective ${item.effective_date}` : " · Date unavailable"}
+                    </span>
                   </p>
                 </article>
               );

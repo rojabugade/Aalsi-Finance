@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -20,6 +21,27 @@ vi.mock("@/lib/api/guidance", () => ({
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 import { GuidanceOverview } from "./guidance-overview";
+import { PlanItemDialog } from "./plan-item-dialog";
+
+function PlanItemDialogHarness() {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button type="button" onClick={() => setOpen(true)}>Open saved item</button>
+      <PlanItemDialog
+        open={open}
+        onOpenChange={setOpen}
+        draft={{
+          question: "Review annual reporting",
+          answer: "Check the current reporting guidance.",
+          citations: [],
+          domain: "general",
+          threadId: "overview",
+        }}
+      />
+    </>
+  );
+}
 
 afterEach(() => {
   state.ask.mutateAsync.mockReset();
@@ -61,5 +83,17 @@ describe("GuidanceOverview", () => {
     render(<GuidanceOverview />);
 
     expect(screen.getByRole("link", { name: "Open plan" })).toHaveAttribute("href", "?section=plan");
+  });
+
+  it("returns focus to the actual plan-item opener after the dialog closes", async () => {
+    state.create.mutateAsync.mockResolvedValue({});
+    render(<PlanItemDialogHarness />);
+    const opener = screen.getByRole("button", { name: "Open saved item" });
+
+    opener.focus();
+    fireEvent.click(opener);
+    fireEvent.click(await screen.findByRole("button", { name: "Add to My Plan" }));
+
+    await waitFor(() => expect(opener).toHaveFocus());
   });
 });

@@ -49,23 +49,26 @@ export function PlanItemDialog({
   const [domain, setDomain] = useState<GuidanceDomain>("general");
   const [dueDate, setDueDate] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const wasOpen = useRef(false);
   const restoreFocus = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
-    if (open && draft && !wasOpen.current) {
-      restoreFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    if (open && draft) {
       setTitle(draft.question);
       setRationale(draft.answer);
       setDomain(draft.domain);
       setDueDate("");
       setError(null);
     }
-    if (!open && wasOpen.current) {
-      window.setTimeout(() => restoreFocus.current?.focus(), 0);
-    }
-    wasOpen.current = open;
   }, [draft, open]);
+
+  function captureOpener() {
+    restoreFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  }
+
+  function restoreOpener(event: Event) {
+    event.preventDefault();
+    restoreFocus.current?.focus();
+  }
 
   async function save(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -89,7 +92,11 @@ export function PlanItemDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-md">
+      <DialogContent
+        className="max-h-[90dvh] overflow-y-auto sm:max-w-md"
+        onOpenAutoFocus={captureOpener}
+        onCloseAutoFocus={restoreOpener}
+      >
         <DialogHeader>
           <DialogTitle>Save to My Plan</DialogTitle>
           <DialogDescription>
