@@ -41,22 +41,25 @@ export function Citations({ citations }: { citations: Citation[] }) {
       <p className="text-xs font-semibold text-muted">Sources</p>
       <ul className="space-y-1 text-sm">
         {citations.map((c, i) => (
-          <li key={i}>
+          <li key={i} className="rounded-lg border border-border p-2">
             {c.source_url ? (
               <a
                 href={c.source_url}
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 className="text-accent hover:underline"
               >
-                {c.title ?? c.source_url}
+                [{i + 1}] {c.title ?? c.source_url}
               </a>
             ) : (
-              <span>{c.title ?? "Untitled source"}</span>
+              <span className="font-medium">[{i + 1}] {c.title ?? "Untitled source"}</span>
             )}
-            {c.effective_date && (
-              <span className="text-muted"> · {c.effective_date}</span>
-            )}
+            <div className="mt-1 flex flex-wrap gap-x-2 gap-y-1 text-xs text-muted">
+              <span className="rounded-chip bg-chip px-1.5 py-0.5 text-fg">
+                {c.source_type ?? "Source type unavailable"}
+              </span>
+              <span>{c.effective_date ? `Effective ${c.effective_date}` : "Date unavailable"}</span>
+            </div>
           </li>
         ))}
       </ul>
