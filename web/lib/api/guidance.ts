@@ -17,7 +17,6 @@ export type GuidancePlanItemCreate = components["schemas"]["GuidancePlanItemCrea
 export type GuidancePlanItemUpdate = components["schemas"]["GuidancePlanItemUpdate"];
 export type GuidanceDomain = NonNullable<AskIn["domain"]>;
 export type GuidancePlanStatus = GuidancePlanItem["status"];
-type LegacyAskIn = Omit<AskIn, "domain"> & { domain?: AskIn["domain"] };
 type LegacyWizardIn = Omit<WizardIn, "create_reminders"> & {
   create_reminders?: boolean;
 };
@@ -26,21 +25,6 @@ async function unwrap<T>(p: Promise<{ data?: T; error?: unknown }>): Promise<T> 
   const { data, error } = await p;
   if (error || data === undefined) throw error ?? new Error("Request failed");
   return data;
-}
-
-/** Ask guidance. `crossBorder` routes to the cross-border-specialised endpoint. */
-export function useAsk() {
-  return useMutation({
-    mutationFn: ({ crossBorder, body }: { crossBorder: boolean; body: LegacyAskIn }) =>
-      unwrap(
-        api.POST(crossBorder ? "/cross-border/ask" : "/guidance/ask", {
-          body: {
-            ...body,
-            domain: body.domain ?? (crossBorder ? "cross_border" : "general"),
-          },
-        }),
-      ),
-  });
 }
 
 export function useGuidanceAsk() {

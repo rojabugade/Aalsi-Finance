@@ -53,10 +53,9 @@ export const BOTTOM_TABS: BottomTab[] = [
 ];
 
 // Drawer order is locked (§3): Guidance, Cross-border, Connections, Review, Settings.
-// NOTE: Cross-border href is /guidance pending the R2 IA decision (see plan header).
 export const DRAWER_ITEMS: DrawerItem[] = [
-  { key: "guidance", label: "Guidance", sub: "Ask & plan with AI", href: "/guidance", icon: Sparkles, tint: "accent" },
-  { key: "cross-border", label: "Cross-border", sub: "Transfers & limits", href: "/guidance", icon: Globe, tint: "c3" },
+  { key: "guidance", label: "Guidance", sub: "Sourced answers & saved plans", href: "/guidance", icon: Sparkles, tint: "accent" },
+  { key: "cross-border", label: "Cross-border", sub: "Transfers & limits", href: "/guidance?section=cross-border", icon: Globe, tint: "c3" },
   { key: "connections", label: "Connections", sub: "Plaid · Gmail · SMS", href: "/connections", icon: Cable, tint: "c2" },
   { key: "review", label: "Review queue", sub: "Items need you", href: "/review", icon: ListChecks, tint: "muted" },
   { key: "settings", label: "Settings", sub: "Account · security · export", href: "/settings", icon: Settings, tint: "muted" },
@@ -85,8 +84,9 @@ const TOP_TABS: Record<string, Tab[]> = {
   "/cards": INSIGHTS_TABS,
   "/income": INSIGHTS_TABS,
   "/guidance": [
-    { label: "Ask", href: "/guidance" },
-    { label: "Plan", href: "/guidance?tab=plan" },
+    { label: "Overview", href: "/guidance" },
+    { label: "Cross-border", href: "/guidance?section=cross-border" },
+    { label: "My Plan", href: "/guidance?section=plan" },
   ],
 };
 

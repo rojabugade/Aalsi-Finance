@@ -4,10 +4,17 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import type { Tab } from "@/lib/shell/nav";
 import { cn } from "@/lib/utils";
+import { guidanceSection } from "@/components/guidance/section";
 
-function hrefMatches(href: string, pathname: string, search: string): boolean {
+export function hrefMatches(href: string, pathname: string, search: string): boolean {
   const [path, query] = href.split("?");
   if (path !== pathname) return false;
+  if (path === "/guidance") {
+    return (
+      guidanceSection(new URLSearchParams(query ?? "")) ===
+      guidanceSection(new URLSearchParams(search))
+    );
+  }
   // A query-less tab (e.g. "Categories") is the base view — active only when no
   // sibling's distinguishing param is set. Matching any search made it win always.
   if (!query) return search === "";
