@@ -5,6 +5,7 @@ const state = vi.hoisted(() => ({
   mutateAsync: vi.fn(),
   isPending: false,
   history: { data: undefined as unknown, isLoading: false },
+  histories: null as Record<string, { data: unknown; isLoading: boolean }> | null,
 }));
 
 vi.mock("@/lib/api/guidance", () => ({
@@ -12,7 +13,7 @@ vi.mock("@/lib/api/guidance", () => ({
     mutateAsync: state.mutateAsync,
     isPending: state.isPending,
   }),
-  useGuidanceThread: () => state.history,
+  useGuidanceThread: (threadId: string) => state.histories?.[threadId] ?? state.history,
 }));
 
 import { GuidanceConversation } from "./guidance-conversation";
@@ -51,6 +52,7 @@ afterEach(() => {
   state.mutateAsync.mockReset();
   state.isPending = false;
   state.history = { data: undefined, isLoading: false };
+  state.histories = null;
 });
 
 describe("GuidanceConversation", () => {
@@ -75,6 +77,67 @@ describe("GuidanceConversation", () => {
     expect(await screen.findByText("Do I need to report this account?")).toBeInTheDocument();
     expect(screen.getByText("It may be reportable.")).toBeInTheDocument();
     expect(screen.getByText("[1] IRS filing guidance")).toBeInTheDocument();
+  });
+
+  it("keeps a completed local turn when delayed history arrives", async () => {
+    state.mutateAsync.mockResolvedValue(answer);
+    const { rerender } = renderConversation();
+
+    fireEvent.change(screen.getByLabelText("Question"), { target: { value: "Local question" } });
+    fireEvent.submit(screen.getByTestId("guidance-composer"));
+    expect(await screen.findByText(answer.answer)).toBeInTheDocument();
+
+    state.history = {
+      data: {
+        messages: [
+          { role: "user", text: "Earlier server question" },
+          { role: "analyst", text: "Earlier server answer" },
+        ],
+      },
+      isLoading: false,
+    };
+    rerender(
+      <GuidanceConversation
+        domain="general"
+        threadId="overview"
+        prompts={["What documents do I need?"]}
+        defaultCountry="United States"
+        defaultTopic="tax"
+        onSave={vi.fn()}
+      />,
+    );
+
+    expect(await screen.findByText("Earlier server answer")).toBeInTheDocument();
+    expect(screen.getByText("Local question")).toBeInTheDocument();
+    expect(screen.getByText(answer.answer)).toBeInTheDocument();
+  });
+
+  it("resets messages and hydrates the history for a changed thread", async () => {
+    state.histories = {
+      overview: {
+        data: { messages: [{ role: "user", text: "Overview question" }] },
+        isLoading: false,
+      },
+      "cross-border": {
+        data: { messages: [{ role: "user", text: "Cross-border question" }] },
+        isLoading: false,
+      },
+    };
+    const { rerender } = renderConversation();
+
+    expect(await screen.findByText("Overview question")).toBeInTheDocument();
+
+    rerender(
+      <GuidanceConversation
+        domain="cross_border"
+        threadId="cross-border"
+        prompts={["How do I send money abroad?"]}
+        onSave={vi.fn()}
+      />,
+    );
+
+    expect(await screen.findByText("Cross-border question")).toBeInTheDocument();
+    expect(screen.queryByText("Overview question")).not.toBeInTheDocument();
   });
 
   it("submits a starter prompt", async () => {

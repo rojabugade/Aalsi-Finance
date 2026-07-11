@@ -27,6 +27,11 @@ type ConversationMessage =
   | { role: "user"; text: string }
   | { role: "analyst"; question: string; result: AskOut };
 
+type ThreadMessages = {
+  threadId: "overview" | "cross-border";
+  items: ConversationMessage[];
+};
+
 function hydrateMessages(thread: GuidanceThread): ConversationMessage[] {
   let lastQuestion = "Guidance answer";
 
@@ -65,19 +70,27 @@ export function GuidanceConversation({
 }) {
   const ask = useGuidanceAsk();
   const history = useGuidanceThread(threadId);
-  const hydrated = useRef(false);
-  const [messages, setMessages] = useState<ConversationMessage[]>([]);
+  const hydratedThreadId = useRef<ThreadMessages["threadId"] | null>(null);
+  const [conversation, setConversation] = useState<ThreadMessages>({ threadId, items: [] });
   const [question, setQuestion] = useState("");
   const [country, setCountry] = useState(defaultCountry);
   const [topic, setTopic] = useState(defaultTopic);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [failedQuestion, setFailedQuestion] = useState<string | null>(null);
+  const messages = conversation.threadId === threadId ? conversation.items : [];
 
   useEffect(() => {
-    if (hydrated.current || !history.data) return;
-    hydrated.current = true;
-    setMessages(hydrateMessages(history.data));
-  }, [history.data]);
+    if (!history.data || hydratedThreadId.current === threadId) return;
+    hydratedThreadId.current = threadId;
+    const serverMessages = hydrateMessages(history.data);
+    setConversation((current) => {
+      const localMessages = current.threadId === threadId ? current.items : [];
+      return {
+        threadId,
+        items: localMessages.length > 0 ? [...serverMessages, ...localMessages] : serverMessages,
+      };
+    });
+  }, [history.data, threadId]);
 
   const submit = async (value: string) => {
     const trimmedQuestion = value.trim();
@@ -93,11 +106,14 @@ export function GuidanceConversation({
         country: country.trim() || null,
         topic: topic.trim() || null,
       });
-      setMessages((current) => [
-        ...current,
-        { role: "user", text: trimmedQuestion },
-        { role: "analyst", question: trimmedQuestion, result },
-      ]);
+      setConversation((current) => ({
+        threadId,
+        items: [
+          ...(current.threadId === threadId ? current.items : []),
+          { role: "user", text: trimmedQuestion },
+          { role: "analyst", question: trimmedQuestion, result },
+        ],
+      }));
       setQuestion("");
     } catch {
       setFailedQuestion(trimmedQuestion);
