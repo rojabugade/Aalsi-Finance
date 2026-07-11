@@ -152,6 +152,50 @@ describe("GuidanceConversation", () => {
     });
   });
 
+  it("keeps a current answer when delayed history has different citations", async () => {
+    state.mutateAsync.mockResolvedValue(answer);
+    const { rerender } = renderConversation();
+
+    fireEvent.change(screen.getByLabelText("Question"), { target: { value: "Local question" } });
+    fireEvent.submit(screen.getByTestId("guidance-composer"));
+    expect(await screen.findByText(answer.answer)).toBeInTheDocument();
+
+    state.history = {
+      data: {
+        messages: [
+          { role: "user", text: "Local question" },
+          {
+            role: "analyst",
+            text: answer.answer,
+            citations: [
+              {
+                title: "Archived filing guidance",
+                source_type: "Government guidance",
+                effective_date: "2025-01-01",
+                source_url: "https://www.irs.gov/archived-guidance",
+              },
+            ],
+            disclaimer: answer.disclaimer,
+          },
+        ],
+      },
+      isLoading: false,
+    };
+    rerender(
+      <GuidanceConversation
+        domain="general"
+        threadId="overview"
+        prompts={["What documents do I need?"]}
+        defaultCountry="United States"
+        defaultTopic="tax"
+        onSave={vi.fn()}
+      />,
+    );
+
+    expect(await screen.findByText("[1] Archived filing guidance")).toBeInTheDocument();
+    expect(screen.getByText("[1] IRS filing guidance")).toBeInTheDocument();
+  });
+
   it("resets messages and hydrates the history for a changed thread", async () => {
     state.histories = {
       overview: {

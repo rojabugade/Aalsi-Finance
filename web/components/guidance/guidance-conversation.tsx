@@ -53,6 +53,21 @@ function hydrateMessages(thread: GuidanceThread): ConversationMessage[] {
   });
 }
 
+function sameCitations(left: Citation[], right: Citation[]) {
+  return (
+    left.length === right.length &&
+    left.every((citation, index) => {
+      const other = right[index];
+      return (
+        citation.title === other.title &&
+        citation.source_url === other.source_url &&
+        citation.source_type === other.source_type &&
+        citation.effective_date === other.effective_date
+      );
+    })
+  );
+}
+
 function sameMessage(left: ConversationMessage, right: ConversationMessage) {
   if (left.role === "user") {
     return right.role === "user" && left.text === right.text;
@@ -61,7 +76,9 @@ function sameMessage(left: ConversationMessage, right: ConversationMessage) {
   return (
     right.role === "analyst" &&
     left.question === right.question &&
-    left.result.answer === right.result.answer
+    left.result.answer === right.result.answer &&
+    left.result.disclaimer === right.result.disclaimer &&
+    sameCitations(left.result.citations, right.result.citations)
   );
 }
 
