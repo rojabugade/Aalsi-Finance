@@ -6,23 +6,34 @@ from datetime import date, datetime, timezone
 from decimal import Decimal
 from pathlib import Path
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import case, func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.deps import scoped_query
 from app.config import Settings, get_settings
 from app.fx import service as fx_service
-from app.guidance.schemas import CrossBorderTransferIn, GuidanceAskIn, GuidanceWizardIn
+from app.guidance.schemas import (
+    CrossBorderTransferIn,
+    GuidanceAskIn,
+    GuidancePlanItemCreate,
+    GuidancePlanItemUpdate,
+    GuidancePlanStatus,
+    GuidanceWizardIn,
+)
 from app.llm.client import LLMClient
 from app.models.core import User
 from app.models.fx import CrossBorderTransfer
-from app.models.guidance import GuidanceDoc
+from app.models.guidance import GuidanceDoc, GuidancePlanItem
 from app.notifications.service import enqueue_notification
 
 DISCLAIMER = (
     "General information and education only; not financial, tax, legal, or investment advice. "
     "Verify cited sources and consult a CPA/CA, attorney, or licensed financial professional."
 )
+
+
+class NotFound(Exception):
+    pass
 
 
 def _country(v: str | None) -> str | None:
@@ -35,6 +46,105 @@ def _currency(v: str | None) -> str:
 
 def _money(v) -> Decimal:
     return Decimal(str(v or "0")).quantize(Decimal("0.01"))
+
+
+def _normalized_plan_title(value: str) -> str:
+    return " ".join(value.split())
+
+
+def _plan_scope(user: User):
+    return (
+        GuidancePlanItem.household_id == user.household_id,
+        GuidancePlanItem.user_id == user.id,
+    )
+
+
+async def list_plan_items(
+    session: AsyncSession,
+    user: User,
+    *,
+    status: GuidancePlanStatus | None = None,
+) -> list[GuidancePlanItem]:
+    stmt = select(GuidancePlanItem).where(*_plan_scope(user))
+    if status is not None:
+        stmt = stmt.where(GuidancePlanItem.status == status)
+    stmt = stmt.order_by(
+        case((GuidancePlanItem.status == "open", 0), else_=1),
+        GuidancePlanItem.due_date.asc().nullslast(),
+        GuidancePlanItem.created_at.desc(),
+    )
+    return list((await session.execute(stmt)).scalars().all())
+
+
+async def create_plan_item(
+    session: AsyncSession,
+    user: User,
+    data: GuidancePlanItemCreate,
+) -> GuidancePlanItem:
+    title = _normalized_plan_title(data.title)
+    lock_key = f"guidance-plan:{user.household_id}:{user.id}:{data.domain}:{title.lower()}"
+    await session.execute(
+        text("SELECT pg_advisory_xact_lock(hashtextextended(:key, 0))"),
+        {"key": lock_key},
+    )
+    open_items = list(
+        (
+            await session.execute(
+                select(GuidancePlanItem).where(
+                    *_plan_scope(user),
+                    GuidancePlanItem.domain == data.domain,
+                    GuidancePlanItem.status == "open",
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+    normalized_title = title.lower()
+    for item in open_items:
+        if _normalized_plan_title(item.title).lower() == normalized_title:
+            await session.commit()
+            return item
+
+    item = GuidancePlanItem(
+        household_id=user.household_id,
+        user_id=user.id,
+        domain=data.domain,
+        title=title,
+        rationale=data.rationale,
+        due_date=data.due_date,
+        source_refs=data.source_refs,
+        origin_thread_key=data.origin_thread_key,
+    )
+    session.add(item)
+    await session.commit()
+    await session.refresh(item)
+    return item
+
+
+async def update_plan_item(
+    session: AsyncSession,
+    user: User,
+    item_id: uuid.UUID,
+    data: GuidancePlanItemUpdate,
+) -> GuidancePlanItem:
+    item = await session.scalar(
+        select(GuidancePlanItem).where(
+            *_plan_scope(user),
+            GuidancePlanItem.id == item_id,
+        )
+    )
+    if item is None:
+        raise NotFound("Plan item not found")
+
+    for field in data.model_fields_set:
+        value = getattr(data, field)
+        if field == "title" and value is not None:
+            value = _normalized_plan_title(value)
+        setattr(item, field, value)
+    await session.commit()
+    await session.refresh(item)
+    return item
 
 
 async def ask_guidance(session: AsyncSession, user: User, data: GuidanceAskIn, llm: LLMClient | None = None) -> dict:

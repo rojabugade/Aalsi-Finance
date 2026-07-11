@@ -1,10 +1,22 @@
 from __future__ import annotations
 
 import uuid
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
+from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+
+GuidanceDomain = Literal["general", "investment", "cross_border"]
+GuidancePlanStatus = Literal["open", "completed", "dismissed"]
+
+
+def _nonempty_title(value: str) -> str:
+    normalized = " ".join(value.split())
+    if not normalized:
+        raise ValueError("title must not be blank")
+    return normalized
 
 
 class Citation(BaseModel):
@@ -39,6 +51,43 @@ class GuidanceWizardOut(BaseModel):
     reminders: list[dict]
     citations: list[Citation]
     disclaimer: str
+
+
+class GuidancePlanItemCreate(BaseModel):
+    title: str = Field(min_length=1, max_length=240)
+    rationale: str | None = None
+    domain: GuidanceDomain
+    due_date: date | None = None
+    source_refs: list[dict] | None = None
+    origin_thread_key: str | None = Field(default=None, max_length=96)
+
+    _normalize_title = field_validator("title")(_nonempty_title)
+
+
+class GuidancePlanItemUpdate(BaseModel):
+    title: str = Field(default=None, min_length=1, max_length=240)
+    rationale: str | None = None
+    status: GuidancePlanStatus = Field(default=None)
+    due_date: date | None = None
+
+    _normalize_title = field_validator("title")(_nonempty_title)
+
+
+class GuidancePlanItemOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    household_id: uuid.UUID
+    user_id: uuid.UUID
+    domain: GuidanceDomain
+    title: str
+    rationale: str | None = None
+    status: GuidancePlanStatus
+    due_date: date | None = None
+    source_refs: list[dict] | None = None
+    origin_thread_key: str | None = None
+    created_at: datetime
+    updated_at: datetime
 
 
 class CrossBorderTransferIn(BaseModel):

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import uuid
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,6 +14,10 @@ from app.guidance.schemas import (
     CrossBorderTransferOut,
     GuidanceAskIn,
     GuidanceAskOut,
+    GuidancePlanItemCreate,
+    GuidancePlanItemOut,
+    GuidancePlanItemUpdate,
+    GuidancePlanStatus,
     GuidanceWizardIn,
     GuidanceWizardOut,
     LimitsOut,
@@ -21,6 +27,41 @@ from app.llm.client import LLMClient, get_llm_client
 from app.models.core import User
 
 router = APIRouter(tags=["guidance"])
+
+
+@router.get("/guidance/plan-items", response_model=list[GuidancePlanItemOut])
+async def list_plan_items(
+    status: GuidancePlanStatus | None = None,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    return await service.list_plan_items(session, user, status=status)
+
+
+@router.post(
+    "/guidance/plan-items",
+    response_model=GuidancePlanItemOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_plan_item(
+    data: GuidancePlanItemCreate,
+    user: User = Depends(require_role("owner", "member")),
+    session: AsyncSession = Depends(get_session),
+):
+    return await service.create_plan_item(session, user, data)
+
+
+@router.patch("/guidance/plan-items/{item_id}", response_model=GuidancePlanItemOut)
+async def update_plan_item(
+    item_id: uuid.UUID,
+    data: GuidancePlanItemUpdate,
+    user: User = Depends(require_role("owner", "member")),
+    session: AsyncSession = Depends(get_session),
+):
+    try:
+        return await service.update_plan_item(session, user, item_id, data)
+    except service.NotFound as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
 
 @router.post("/guidance/ask", response_model=GuidanceAskOut)
