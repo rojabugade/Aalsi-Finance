@@ -53,6 +53,29 @@ function hydrateMessages(thread: GuidanceThread): ConversationMessage[] {
   });
 }
 
+function sameMessage(left: ConversationMessage, right: ConversationMessage) {
+  if (left.role === "user") {
+    return right.role === "user" && left.text === right.text;
+  }
+
+  return (
+    right.role === "analyst" &&
+    left.question === right.question &&
+    left.result.answer === right.result.answer
+  );
+}
+
+function mergeMessages(serverMessages: ConversationMessage[], localMessages: ConversationMessage[]) {
+  for (let overlap = Math.min(serverMessages.length, localMessages.length); overlap > 0; overlap -= 1) {
+    const serverOverlap = serverMessages.slice(-overlap);
+    if (serverOverlap.every((message, index) => sameMessage(message, localMessages[index]))) {
+      return [...serverMessages, ...localMessages.slice(overlap)];
+    }
+  }
+
+  return [...serverMessages, ...localMessages];
+}
+
 export function GuidanceConversation({
   domain,
   threadId,
@@ -87,7 +110,7 @@ export function GuidanceConversation({
       const localMessages = current.threadId === threadId ? current.items : [];
       return {
         threadId,
-        items: localMessages.length > 0 ? [...serverMessages, ...localMessages] : serverMessages,
+        items: mergeMessages(serverMessages, localMessages),
       };
     });
   }, [history.data, threadId]);

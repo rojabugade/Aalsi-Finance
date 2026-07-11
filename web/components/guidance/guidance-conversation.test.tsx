@@ -112,6 +112,46 @@ describe("GuidanceConversation", () => {
     expect(screen.getByText(answer.answer)).toBeInTheDocument();
   });
 
+  it("deduplicates a local turn already present in delayed history", async () => {
+    state.mutateAsync.mockResolvedValue(answer);
+    const { rerender } = renderConversation();
+
+    fireEvent.change(screen.getByLabelText("Question"), { target: { value: "Local question" } });
+    fireEvent.submit(screen.getByTestId("guidance-composer"));
+    expect(await screen.findByText(answer.answer)).toBeInTheDocument();
+
+    state.history = {
+      data: {
+        messages: [
+          { role: "user", text: "Local question" },
+          {
+            role: "analyst",
+            text: answer.answer,
+            citations: answer.citations,
+            disclaimer: answer.disclaimer,
+          },
+        ],
+      },
+      isLoading: false,
+    };
+    rerender(
+      <GuidanceConversation
+        domain="general"
+        threadId="overview"
+        prompts={["What documents do I need?"]}
+        defaultCountry="United States"
+        defaultTopic="tax"
+        onSave={vi.fn()}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getAllByText("Local question")).toHaveLength(1);
+      expect(screen.getAllByText(answer.answer)).toHaveLength(1);
+      expect(screen.getAllByRole("button", { name: "Save to My Plan" })).toHaveLength(1);
+    });
+  });
+
   it("resets messages and hydrates the history for a changed thread", async () => {
     state.histories = {
       overview: {
