@@ -7,6 +7,7 @@ import {
   useCreateTransfer,
   useLimits,
   useTransfers,
+  type Citation,
   type Transfer,
 } from "@/lib/api/guidance";
 import { Citations, DictList, KeyValues } from "@/components/guidance/citations";
@@ -27,7 +28,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 const SELECT_CLASS =
   "flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
 
-export function CrossBorderModule() {
+export function CrossBorderModule({
+  onSaveWarning,
+}: {
+  onSaveWarning?: (warning: Record<string, unknown>, citations: Citation[]) => void;
+}) {
   const transfers = useTransfers();
   const limits = useLimits();
 
@@ -46,6 +51,8 @@ export function CrossBorderModule() {
         <div className="space-y-2">
           {transfers.isLoading ? (
             <Skeleton className="h-20" />
+          ) : transfers.isError ? (
+            <QueryRetry label="transfers" onRetry={() => void transfers.refetch()} />
           ) : (transfers.data ?? []).length === 0 ? (
             <p className="text-sm text-muted">No transfers logged yet.</p>
           ) : (
@@ -62,6 +69,8 @@ export function CrossBorderModule() {
         <div className="space-y-4">
           {limits.isLoading ? (
             <Skeleton className="h-24" />
+          ) : limits.isError ? (
+            <QueryRetry label="limits" onRetry={() => void limits.refetch()} />
           ) : limits.data ? (
             <>
               <LimitsBlock title="Totals" rows={limits.data.totals as Record<string, unknown>[]} />
@@ -69,7 +78,23 @@ export function CrossBorderModule() {
               {(limits.data.warnings as Record<string, unknown>[]).length > 0 && (
                 <div className="space-y-2">
                   <p className="text-sm font-semibold text-destructive">Warnings</p>
-                  <DictList items={limits.data.warnings as Record<string, unknown>[]} />
+                  <div className="space-y-2">
+                    {(limits.data.warnings as Record<string, unknown>[]).map((warning, index) => (
+                      <div key={index} className="space-y-2 rounded-lg border border-border p-3">
+                        <DictList items={[warning]} />
+                        {onSaveWarning && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => onSaveWarning(warning, limits.data.citations)}
+                          >
+                            Save warning to My Plan
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
               <Citations citations={limits.data.citations} />
@@ -79,6 +104,17 @@ export function CrossBorderModule() {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function QueryRetry({ label, onRetry }: { label: string; onRetry: () => void }) {
+  return (
+    <div role="alert" className="flex flex-wrap items-center gap-2 text-sm text-destructive">
+      <span>We couldn&apos;t load {label}.</span>
+      <Button type="button" size="sm" variant="outline" onClick={onRetry}>
+        Retry {label}
+      </Button>
     </div>
   );
 }
