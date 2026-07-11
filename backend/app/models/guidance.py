@@ -10,7 +10,7 @@ import uuid
 from datetime import date, datetime
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import Boolean, Date, DateTime, ForeignKey, String, Text
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -34,6 +34,49 @@ class GuidanceDoc(Base):
     )
     effective_date: Mapped[date | None] = mapped_column(Date)
     embedding: Mapped[list[float] | None] = mapped_column(Vector(_EMBED_DIM))
+
+
+class GuidancePlanItem(Base):
+    __tablename__ = "guidance_plan_item"
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    household_id: Mapped[uuid.UUID] = fk_uuid(
+        ForeignKey("household.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    user_id: Mapped[uuid.UUID] = fk_uuid(
+        ForeignKey("user.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    domain: Mapped[str] = mapped_column(
+        str_enum(
+            "guidance_plan_item_domain",
+            "general",
+            "investment",
+            "cross_border",
+        ),
+        nullable=False,
+    )
+    title: Mapped[str] = mapped_column(String(240), nullable=False)
+    rationale: Mapped[str | None] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(
+        str_enum(
+            "guidance_plan_item_status",
+            "open",
+            "completed",
+            "dismissed",
+        ),
+        nullable=False,
+        default="open",
+        server_default="open",
+    )
+    due_date: Mapped[date | None] = mapped_column(Date)
+    source_refs: Mapped[list[dict] | None] = mapped_column(JSONB)
+    origin_thread_key: Mapped[str | None] = mapped_column(String(96))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
 
 
 class Recommendation(Base):

@@ -25,7 +25,7 @@ from app.models.core import (
 from app.models.debt import CreditCardDetail, Loan, PaymentSchedule
 from app.models.documents import Document
 from app.models.fx import CrossBorderTransfer, FXRate
-from app.models.guidance import GuidanceDoc, Notification, Recommendation
+from app.models.guidance import GuidanceDoc, GuidancePlanItem, Notification, Recommendation
 from app.models.ingestion import IngestionConnection
 from app.models import memory  # noqa: F401
 from app.models.memory import MemoryChunk, MemoryFact
@@ -63,6 +63,7 @@ __all__ = [
     "EquityGrant",
     "FXRate",
     "GuidanceDoc",
+    "GuidancePlanItem",
     "Household",
     "HoldingValuation",
     "IncomeSource",
