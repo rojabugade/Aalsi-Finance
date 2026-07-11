@@ -2,6 +2,8 @@
 
 import { useSearchParams } from "next/navigation";
 
+import { GuidanceOverview } from "@/components/guidance/guidance-overview";
+import { PlanList } from "@/components/guidance/plan-list";
 import { guidanceSection, type GuidanceSection } from "@/components/guidance/section";
 
 const SECTION_COPY: Record<GuidanceSection, { title: string; description: string }> = {
@@ -24,6 +26,9 @@ export default function GuidancePage() {
 }
 
 function GuidanceWorkspace({ section }: { section: GuidanceSection }) {
+  if (section === "overview") return <GuidanceOverview />;
+  if (section === "plan") return <PlanList />;
+
   const copy = SECTION_COPY[section];
   return (
     <section
