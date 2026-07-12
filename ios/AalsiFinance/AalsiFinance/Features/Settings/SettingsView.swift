@@ -3,6 +3,7 @@ import AalsiFinanceKit
 
 struct SettingsView: View {
     @Environment(AppSession.self) private var session
+    @Environment(AppTheme.self) private var theme
 
     @State private var household: Household?
     @State private var householdError: String?
@@ -40,6 +41,38 @@ struct SettingsView: View {
                     Text("Server")
                 } footer: {
                     Text("Your self-hosted backend. Changing this signs you out.")
+                }
+
+                Section("Appearance") {
+                    @Bindable var theme = theme
+                    Picker("Theme", selection: $theme.mode) {
+                        ForEach(ThemeMode.allCases, id: \.self) { mode in
+                            Text(mode.label).tag(mode)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+
+                    HStack(spacing: 12) {
+                        ForEach(AccentChoice.allCases, id: \.self) { accent in
+                            Button {
+                                theme.accent = accent
+                            } label: {
+                                Circle()
+                                    .fill(AppTheme.color(for: accent))
+                                    .frame(width: 30, height: 30)
+                                    .overlay {
+                                        if theme.accent == accent {
+                                            Image(systemName: "checkmark")
+                                                .font(.caption.bold())
+                                                .foregroundStyle(.white)
+                                        }
+                                    }
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(accent.label)
+                        }
+                    }
+                    .padding(.vertical, 4)
                 }
 
                 Section {

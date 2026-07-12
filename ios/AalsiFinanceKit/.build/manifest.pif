@@ -5,11 +5,11 @@
       "name" : "AalsiFinanceKit",
       "path" : "/Users/kshtj/Stuff/Projects/Alsi/Aalsi-Finance/ios/AalsiFinanceKit",
       "projects" : [
-        "89ac5b109f1b3205ae698f25649827871e9665e6e6abe9d96c82c6df7b8446d1",
+        "6f6c5e7dfb4563d13a3bc2c8fd4b9eb765cee8412b8fe906e2f805dff30b1ef6",
         "d778ff46ea62101d4d574dcc560e70673b7559084a0535f06577b2a14938a0b5"
       ]
     },
-    "signature" : "6be2d5d7c654a8ac0adcdf33335023dfc794f56ec879fc89e48a8c2bce0877be",
+    "signature" : "69ed0f2045688d9c75edc7834d3e8d1c9284871d60eeb47381535795d0f650fe",
     "type" : "workspace"
   },
   {
@@ -239,6 +239,14 @@
               {
                 "fileType" : "sourcecode.swift",
                 "guid" : "PACKAGE:aalsifinancekit::MAINGROUP::REF_2::REF_4",
+                "name" : "ThemeTests.swift",
+                "path" : "ThemeTests.swift",
+                "sourceTree" : "<group>",
+                "type" : "file"
+              },
+              {
+                "fileType" : "sourcecode.swift",
+                "guid" : "PACKAGE:aalsifinancekit::MAINGROUP::REF_2::REF_5",
                 "name" : "UpcomingFeedTests.swift",
                 "path" : "UpcomingFeedTests.swift",
                 "sourceTree" : "<group>",
@@ -296,6 +304,14 @@
               {
                 "fileType" : "sourcecode.swift",
                 "guid" : "PACKAGE:aalsifinancekit::MAINGROUP::REF_3::REF_5",
+                "name" : "Theme.swift",
+                "path" : "Theme.swift",
+                "sourceTree" : "<group>",
+                "type" : "file"
+              },
+              {
+                "fileType" : "sourcecode.swift",
+                "guid" : "PACKAGE:aalsifinancekit::MAINGROUP::REF_3::REF_6",
                 "name" : "UpcomingFeed.swift",
                 "path" : "UpcomingFeed.swift",
                 "sourceTree" : "<group>",
@@ -353,6 +369,14 @@
               {
                 "fileType" : "sourcecode.swift",
                 "guid" : "PACKAGE:aalsifinancekit::MAINGROUP::REF_4::REF_5",
+                "name" : "Theme.swift",
+                "path" : "Theme.swift",
+                "sourceTree" : "<group>",
+                "type" : "file"
+              },
+              {
+                "fileType" : "sourcecode.swift",
+                "guid" : "PACKAGE:aalsifinancekit::MAINGROUP::REF_4::REF_6",
                 "name" : "UpcomingFeed.swift",
                 "path" : "UpcomingFeed.swift",
                 "sourceTree" : "<group>",
@@ -378,15 +402,15 @@
       "projectIsPackage" : "true",
       "projectName" : "AalsiFinanceKit",
       "targets" : [
-        "8c3ee6368ba81650d4c5d2a4d744df75bf4a6bebde82b1c525256718876c3538",
+        "d2d69ac4f9990699f19e98e85edf9953d1fbe25c2d70b0d178b0d1c3d3dea46a",
         "f87534ac4ef86769b1da34fc651785f2cc56bc3f6c20cf7b25e56c130e99c52d",
         "897874fbb0cfe954da30715fa3302e575353347afd7b94296cbf7ce49cd640ec",
-        "7e4882b7c6daefcc4cc208be834eca7a20920265ade090360370cd324a9cc74f",
-        "e1254a86f8d43fe8f764623413012ba13970c37427f0220e639df5e4ee4ae481",
+        "7c6ce5c17305b17f9f7a7eaf239a13fbaf3ae6d20658b16889b3f4f2ed1cacd8",
+        "45fba4ac193729b86f2eb9ac80322a1ccb992c6ae0a13ea21692512f5547ac11",
         "0dbaed3a7c17a35185276dd1f6c9cd44073c5e83c210326d708fdaa8a245ba05"
       ]
     },
-    "signature" : "89ac5b109f1b3205ae698f25649827871e9665e6e6abe9d96c82c6df7b8446d1",
+    "signature" : "6f6c5e7dfb4563d13a3bc2c8fd4b9eb765cee8412b8fe906e2f805dff30b1ef6",
     "type" : "project"
   },
   {
@@ -543,6 +567,15 @@
 
               ],
               "removeHeadersOnCopy" : "false"
+            },
+            {
+              "codeSignOnCopy" : "false",
+              "fileReference" : "PACKAGE:aalsifinancekit::MAINGROUP::REF_2::REF_5",
+              "guid" : "PACKAGE-PRODUCT:aalsifinancekit_AalsiFinanceKitTests.AalsiFinanceKitTests::BUILDPHASE_0::5",
+              "platformFilters" : [
+
+              ],
+              "removeHeadersOnCopy" : "false"
             }
           ],
           "guid" : "PACKAGE-PRODUCT:aalsifinancekit_AalsiFinanceKitTests.AalsiFinanceKitTests::BUILDPHASE_0",
@@ -586,7 +619,7 @@
       "productTypeIdentifier" : "com.apple.product-type.bundle.unit-test",
       "type" : "standard"
     },
-    "signature" : "8c3ee6368ba81650d4c5d2a4d744df75bf4a6bebde82b1c525256718876c3538",
+    "signature" : "d2d69ac4f9990699f19e98e85edf9953d1fbe25c2d70b0d178b0d1c3d3dea46a",
     "type" : "target"
   },
   {
@@ -965,6 +998,15 @@
 
               ],
               "removeHeadersOnCopy" : "false"
+            },
+            {
+              "codeSignOnCopy" : "false",
+              "fileReference" : "PACKAGE:aalsifinancekit::MAINGROUP::REF_3::REF_6",
+              "guid" : "PACKAGE-TARGET:AalsiFinanceKit::BUILDPHASE_0::6",
+              "platformFilters" : [
+
+              ],
+              "removeHeadersOnCopy" : "false"
             }
           ],
           "guid" : "PACKAGE-TARGET:AalsiFinanceKit::BUILDPHASE_0",
@@ -991,7 +1033,7 @@
       "productTypeIdentifier" : "org.swift.product-type.library.static",
       "type" : "standard"
     },
-    "signature" : "7e4882b7c6daefcc4cc208be834eca7a20920265ade090360370cd324a9cc74f",
+    "signature" : "7c6ce5c17305b17f9f7a7eaf239a13fbaf3ae6d20658b16889b3f4f2ed1cacd8",
     "type" : "target"
   },
   {
@@ -1216,6 +1258,15 @@
 
               ],
               "removeHeadersOnCopy" : "false"
+            },
+            {
+              "codeSignOnCopy" : "false",
+              "fileReference" : "PACKAGE:aalsifinancekit::MAINGROUP::REF_4::REF_6",
+              "guid" : "PACKAGE-TARGET:AalsiFinanceKit--7DE791713B7A1D2B-dynamic::BUILDPHASE_0::6",
+              "platformFilters" : [
+
+              ],
+              "removeHeadersOnCopy" : "false"
             }
           ],
           "guid" : "PACKAGE-TARGET:AalsiFinanceKit--7DE791713B7A1D2B-dynamic::BUILDPHASE_0",
@@ -1241,7 +1292,7 @@
       "productTypeIdentifier" : "com.apple.product-type.library.dynamic",
       "type" : "standard"
     },
-    "signature" : "e1254a86f8d43fe8f764623413012ba13970c37427f0220e639df5e4ee4ae481",
+    "signature" : "45fba4ac193729b86f2eb9ac80322a1ccb992c6ae0a13ea21692512f5547ac11",
     "type" : "target"
   },
   {
