@@ -1,4 +1,5 @@
 import SwiftUI
+import AalsiFinanceKit
 
 struct SettingsView: View {
     @Environment(AppSession.self) private var session

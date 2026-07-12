@@ -1,4 +1,5 @@
 import SwiftUI
+import AalsiFinanceKit
 
 struct ActivityView: View {
     @Environment(AppSession.self) private var session
@@ -35,7 +36,7 @@ struct ActivityView: View {
             }
             .searchable(text: $model.searchText, prompt: "Merchant, category, notes")
             .scrollEdgeEffectStyle(.soft, for: .top)
-            .navigationDestination(for: Transaction.self) { txn in
+            .navigationDestination(for: AalsiFinanceKit.Transaction.self) { txn in
                 TransactionDetailView(transaction: txn, model: model)
             }
         }

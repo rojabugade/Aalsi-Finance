@@ -1,9 +1,10 @@
 import SwiftUI
+import AalsiFinanceKit
 
 /// Compact transaction row shared by Home's recent-activity card and the
 /// Activity list.
 struct TransactionRow: View {
-    let transaction: Transaction
+    let transaction: AalsiFinanceKit.Transaction
     var categoryName: String?
 
     private var isCredit: Bool { transaction.amount.isNegative }

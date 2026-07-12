@@ -1,4 +1,5 @@
 import SwiftUI
+import AalsiFinanceKit
 
 struct LoginView: View {
     private enum Mode: String, CaseIterable, Identifiable {

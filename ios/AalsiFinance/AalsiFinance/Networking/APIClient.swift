@@ -1,4 +1,5 @@
 import Foundation
+import AalsiFinanceKit
 
 enum APIError: LocalizedError {
     case invalidURL
@@ -226,15 +227,15 @@ extension APIClient {
         try await get("/household")
     }
 
-    func transactions() async throws -> [Transaction] {
+    func transactions() async throws -> [AalsiFinanceKit.Transaction] {
         try await get("/transactions")
     }
 
-    func confirmTransaction(id: UUID) async throws -> Transaction {
+    func confirmTransaction(id: UUID) async throws -> AalsiFinanceKit.Transaction {
         try await post("/transactions/\(id.uuidString.lowercased())/confirm")
     }
 
-    func categories() async throws -> [Category] {
+    func categories() async throws -> [AalsiFinanceKit.Category] {
         try await get("/categories")
     }
 

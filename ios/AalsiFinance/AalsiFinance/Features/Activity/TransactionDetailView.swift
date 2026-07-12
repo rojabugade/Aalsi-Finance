@@ -1,13 +1,14 @@
 import SwiftUI
+import AalsiFinanceKit
 
 struct TransactionDetailView: View {
-    let transaction: Transaction
+    let transaction: AalsiFinanceKit.Transaction
     let model: ActivityViewModel
 
     @Environment(AppSession.self) private var session
 
     /// Prefer the live copy from the list so a confirm updates this screen.
-    private var current: Transaction {
+    private var current: AalsiFinanceKit.Transaction {
         model.state.value?.first(where: { $0.id == transaction.id }) ?? transaction
     }
 
@@ -90,7 +91,7 @@ struct TransactionDetailView: View {
         .scrollEdgeEffectStyle(.soft, for: .top)
     }
 
-    private func header(_ txn: Transaction) -> some View {
+    private func header(_ txn: AalsiFinanceKit.Transaction) -> some View {
         VStack(spacing: 10) {
             Text(txn.displayMerchant)
                 .font(.title3.weight(.semibold))

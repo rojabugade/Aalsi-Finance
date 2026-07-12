@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import AalsiFinanceKit
 
 @MainActor
 @Observable
@@ -13,11 +14,11 @@ final class ActivityViewModel {
 
     struct DaySection: Identifiable {
         let date: Date
-        let transactions: [Transaction]
+        let transactions: [AalsiFinanceKit.Transaction]
         var id: Date { date }
     }
 
-    private(set) var state: Loadable<[Transaction]> = .idle
+    private(set) var state: Loadable<[AalsiFinanceKit.Transaction]> = .idle
     private(set) var categoryNames: [UUID: String] = [:]
     private(set) var confirmingIds: Set<UUID> = []
     var searchText = ""
@@ -66,7 +67,7 @@ final class ActivityViewModel {
         }
     }
 
-    func confirm(_ transaction: Transaction, api: APIClient) async {
+    func confirm(_ transaction: AalsiFinanceKit.Transaction, api: APIClient) async {
         guard transaction.isDraft, !confirmingIds.contains(transaction.id) else { return }
         confirmingIds.insert(transaction.id)
         defer { confirmingIds.remove(transaction.id) }
@@ -82,7 +83,7 @@ final class ActivityViewModel {
         }
     }
 
-    func categoryName(for transaction: Transaction) -> String? {
+    func categoryName(for transaction: AalsiFinanceKit.Transaction) -> String? {
         transaction.categoryId.flatMap { categoryNames[$0] }
     }
 }

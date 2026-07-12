@@ -1,5 +1,6 @@
 import SwiftUI
 import Charts
+import AalsiFinanceKit
 
 struct InsightsView: View {
     @Environment(AppSession.self) private var session

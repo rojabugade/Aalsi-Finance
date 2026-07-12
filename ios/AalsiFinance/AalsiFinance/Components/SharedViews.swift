@@ -1,4 +1,5 @@
 import SwiftUI
+import AalsiFinanceKit
 
 // MARK: - Cards
 

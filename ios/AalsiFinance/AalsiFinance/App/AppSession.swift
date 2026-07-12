@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import AalsiFinanceKit
 
 /// Top-level auth/session state. Owns the shared `APIClient` and gates the UI
 /// between the login screen and the main tab experience.
