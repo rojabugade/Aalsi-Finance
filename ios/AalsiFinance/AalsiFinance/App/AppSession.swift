@@ -17,6 +17,14 @@ final class AppSession {
 
     /// Set once at launch: try to resume from the Keychain refresh token.
     func bootstrap() async {
+        // Keychain items survive app reinstalls (and, on simulators, aren't
+        // isolated between apps). Never adopt a token this install didn't store.
+        let installKey = "hasCompletedFirstLaunch"
+        if !UserDefaults.standard.bool(forKey: installKey) {
+            Keychain.deleteRefreshToken()
+            UserDefaults.standard.set(true, forKey: installKey)
+        }
+
         await api.setOnSessionExpired { [weak self] in
             Task { @MainActor in self?.phase = .signedOut }
         }
@@ -24,6 +32,16 @@ final class AppSession {
             try await api.restoreSession()
             phase = .active
         } catch {
+            #if DEBUG
+            // Test hook: lets simulator automation sign in without typing.
+            let env = ProcessInfo.processInfo.environment
+            if let email = env["AALSI_DEMO_EMAIL"], let password = env["AALSI_DEMO_PASSWORD"] {
+                if (try? await api.login(email: email, password: password, totpCode: nil)) != nil {
+                    phase = .active
+                    return
+                }
+            }
+            #endif
             phase = .signedOut
         }
     }

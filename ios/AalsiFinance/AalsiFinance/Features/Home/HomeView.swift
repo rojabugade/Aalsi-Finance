@@ -157,13 +157,6 @@ private struct NetWorthCard: View {
 
             if netWorth.points.count > 1 {
                 Chart(netWorth.points, id: \.period) { point in
-                    AreaMark(
-                        x: .value("Period", point.period),
-                        y: .value("Net worth", point.netWorth.doubleValue)
-                    )
-                    .foregroundStyle(.indigo.opacity(0.18).gradient)
-                    .interpolationMethod(.catmullRom)
-
                     LineMark(
                         x: .value("Period", point.period),
                         y: .value("Net worth", point.netWorth.doubleValue)
@@ -171,9 +164,17 @@ private struct NetWorthCard: View {
                     .foregroundStyle(.indigo)
                     .interpolationMethod(.catmullRom)
                     .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round))
+
+                    PointMark(
+                        x: .value("Period", point.period),
+                        y: .value("Net worth", point.netWorth.doubleValue)
+                    )
+                    .symbolSize(point.period == netWorth.points.last?.period ? 42 : 0)
+                    .foregroundStyle(.indigo)
                 }
                 .chartXAxis(.hidden)
                 .chartYAxis(.hidden)
+                .chartYScale(domain: .automatic(includesZero: false))
                 .frame(height: 70)
             }
         }

@@ -51,6 +51,8 @@ struct MoneyText: View {
             .font(font)
             .fontDesign(.rounded)
             .monospacedDigit()
+            .lineLimit(1)
+            .minimumScaleFactor(0.5)
     }
 }
 

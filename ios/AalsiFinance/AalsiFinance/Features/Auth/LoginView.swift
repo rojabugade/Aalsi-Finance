@@ -75,7 +75,7 @@ struct LoginView: View {
 
     private var header: some View {
         VStack(spacing: 10) {
-            Image(systemName: "creditcard.and.sparkles")
+            Image(systemName: "creditcard.fill")
                 .font(.system(size: 44, weight: .medium))
                 .foregroundStyle(.indigo.gradient)
                 .padding(22)

@@ -14,22 +14,32 @@ struct Money: Hashable, Sendable {
     var magnitude: Money { Money(abs(value)) }
 
     func formatted(code: String) -> String {
-        value.formatted(.currency(code: code).precision(.fractionLength(0...2)))
+        value.formatted(.currency(code: code))
     }
 
     /// Compact form for chart axes and dense rows: "$1.2K", "$3.4M".
     func compact(code: String) -> String {
         let amount = abs(doubleValue)
         let sign = isNegative ? "-" : ""
-        let symbol = Locale.current.localizedCurrencySymbol(forCurrencyCode: code) ?? code
+        let symbol = Self.symbol(for: code)
         switch amount {
         case 1_000_000...:
             return "\(sign)\(symbol)\((amount / 1_000_000).formatted(.number.precision(.fractionLength(0...1))))M"
         case 10_000...:
             return "\(sign)\(symbol)\((amount / 1_000).formatted(.number.precision(.fractionLength(0...1))))K"
+        case 100...:
+            return value.formatted(.currency(code: code).precision(.fractionLength(0)))
         default:
             return formatted(code: code)
         }
+    }
+
+    /// Currency symbol as the user's locale renders it ("$", "₹", "€"), pulled
+    /// from an actual formatted amount so it never falls back to "US$".
+    private static func symbol(for code: String) -> String {
+        let zero = Decimal.zero.formatted(.currency(code: code).precision(.fractionLength(0)))
+        let symbol = zero.filter { !$0.isNumber && !$0.isWhitespace }
+        return symbol.isEmpty ? code : symbol
     }
 }
 
@@ -51,12 +61,5 @@ extension Money: Codable {
     func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode("\(value)")
-    }
-}
-
-extension Locale {
-    func localizedCurrencySymbol(forCurrencyCode code: String) -> String? {
-        let locale = Locale(identifier: Locale.identifier(fromComponents: [NSLocale.Key.currencyCode.rawValue: code]))
-        return locale.currencySymbol == "¤" ? nil : locale.currencySymbol
     }
 }
