@@ -5,11 +5,11 @@
       "name" : "AalsiFinanceKit",
       "path" : "/Users/kshtj/Stuff/Projects/Alsi/Aalsi-Finance/ios/AalsiFinanceKit",
       "projects" : [
-        "872d971eb0ba4868dab13c28aa761816bd5683ffc1c52e1e2f2fe72f66ad0706",
+        "a8c123d62ecfbfbe2752f89254e60eb5b6a05bad1d440a676baf3eac7dcc53d8",
         "d778ff46ea62101d4d574dcc560e70673b7559084a0535f06577b2a14938a0b5"
       ]
     },
-    "signature" : "22d87a50fdb42c64948775562584acca010649c1be0ee6e2978997d9b6dbdd37",
+    "signature" : "f625b9eb884b5cc46ec1ca36b798a723f5f4b5774cf8df163c3ef85729b89f5a",
     "type" : "workspace"
   },
   {
@@ -215,6 +215,14 @@
               {
                 "fileType" : "sourcecode.swift",
                 "guid" : "PACKAGE:aalsifinancekit::MAINGROUP::REF_2::REF_1",
+                "name" : "MoneyModelsDecodingTests.swift",
+                "path" : "MoneyModelsDecodingTests.swift",
+                "sourceTree" : "<group>",
+                "type" : "file"
+              },
+              {
+                "fileType" : "sourcecode.swift",
+                "guid" : "PACKAGE:aalsifinancekit::MAINGROUP::REF_2::REF_2",
                 "name" : "MoneyTests.swift",
                 "path" : "MoneyTests.swift",
                 "sourceTree" : "<group>",
@@ -252,6 +260,14 @@
                 "path" : "Money.swift",
                 "sourceTree" : "<group>",
                 "type" : "file"
+              },
+              {
+                "fileType" : "sourcecode.swift",
+                "guid" : "PACKAGE:aalsifinancekit::MAINGROUP::REF_3::REF_3",
+                "name" : "MoneyModels.swift",
+                "path" : "MoneyModels.swift",
+                "sourceTree" : "<group>",
+                "type" : "file"
               }
             ],
             "guid" : "PACKAGE:aalsifinancekit::MAINGROUP::REF_3",
@@ -285,6 +301,14 @@
                 "path" : "Money.swift",
                 "sourceTree" : "<group>",
                 "type" : "file"
+              },
+              {
+                "fileType" : "sourcecode.swift",
+                "guid" : "PACKAGE:aalsifinancekit::MAINGROUP::REF_4::REF_3",
+                "name" : "MoneyModels.swift",
+                "path" : "MoneyModels.swift",
+                "sourceTree" : "<group>",
+                "type" : "file"
               }
             ],
             "guid" : "PACKAGE:aalsifinancekit::MAINGROUP::REF_4",
@@ -306,15 +330,15 @@
       "projectIsPackage" : "true",
       "projectName" : "AalsiFinanceKit",
       "targets" : [
-        "35cc5c1442b77a40e5a0dabe5d0834174851ae3e79dc54d8fa8cd49eeaf57e66",
+        "c49c28f1cde59cd126a567a792c08b5d5e2982b8c0081f02357a37cca1fe6a95",
         "f87534ac4ef86769b1da34fc651785f2cc56bc3f6c20cf7b25e56c130e99c52d",
         "897874fbb0cfe954da30715fa3302e575353347afd7b94296cbf7ce49cd640ec",
-        "b8d4aa7896e2658ca3506598ed78ae23e9f9aa8f58f5e21196a5fc29b2e1bb6f",
-        "c630f4af5116b3e7d3cdd39b13be2a04ef122cfd57c1c4371fdf6cecdc3821f2",
+        "15dae5ee35661bc60a2bdd7ffb24bc3f9e579b538e45f7c70bfe96368b432c3d",
+        "2af60871a7595d4a60e0becdd4a5851ad80d566f5d980fa4d50c9ca2ce80de82",
         "0dbaed3a7c17a35185276dd1f6c9cd44073c5e83c210326d708fdaa8a245ba05"
       ]
     },
-    "signature" : "872d971eb0ba4868dab13c28aa761816bd5683ffc1c52e1e2f2fe72f66ad0706",
+    "signature" : "a8c123d62ecfbfbe2752f89254e60eb5b6a05bad1d440a676baf3eac7dcc53d8",
     "type" : "project"
   },
   {
@@ -444,6 +468,15 @@
 
               ],
               "removeHeadersOnCopy" : "false"
+            },
+            {
+              "codeSignOnCopy" : "false",
+              "fileReference" : "PACKAGE:aalsifinancekit::MAINGROUP::REF_2::REF_2",
+              "guid" : "PACKAGE-PRODUCT:aalsifinancekit_AalsiFinanceKitTests.AalsiFinanceKitTests::BUILDPHASE_0::2",
+              "platformFilters" : [
+
+              ],
+              "removeHeadersOnCopy" : "false"
             }
           ],
           "guid" : "PACKAGE-PRODUCT:aalsifinancekit_AalsiFinanceKitTests.AalsiFinanceKitTests::BUILDPHASE_0",
@@ -487,7 +520,7 @@
       "productTypeIdentifier" : "com.apple.product-type.bundle.unit-test",
       "type" : "standard"
     },
-    "signature" : "35cc5c1442b77a40e5a0dabe5d0834174851ae3e79dc54d8fa8cd49eeaf57e66",
+    "signature" : "c49c28f1cde59cd126a567a792c08b5d5e2982b8c0081f02357a37cca1fe6a95",
     "type" : "target"
   },
   {
@@ -839,6 +872,15 @@
 
               ],
               "removeHeadersOnCopy" : "false"
+            },
+            {
+              "codeSignOnCopy" : "false",
+              "fileReference" : "PACKAGE:aalsifinancekit::MAINGROUP::REF_3::REF_3",
+              "guid" : "PACKAGE-TARGET:AalsiFinanceKit::BUILDPHASE_0::3",
+              "platformFilters" : [
+
+              ],
+              "removeHeadersOnCopy" : "false"
             }
           ],
           "guid" : "PACKAGE-TARGET:AalsiFinanceKit::BUILDPHASE_0",
@@ -865,7 +907,7 @@
       "productTypeIdentifier" : "org.swift.product-type.library.static",
       "type" : "standard"
     },
-    "signature" : "b8d4aa7896e2658ca3506598ed78ae23e9f9aa8f58f5e21196a5fc29b2e1bb6f",
+    "signature" : "15dae5ee35661bc60a2bdd7ffb24bc3f9e579b538e45f7c70bfe96368b432c3d",
     "type" : "target"
   },
   {
@@ -1063,6 +1105,15 @@
 
               ],
               "removeHeadersOnCopy" : "false"
+            },
+            {
+              "codeSignOnCopy" : "false",
+              "fileReference" : "PACKAGE:aalsifinancekit::MAINGROUP::REF_4::REF_3",
+              "guid" : "PACKAGE-TARGET:AalsiFinanceKit--7DE791713B7A1D2B-dynamic::BUILDPHASE_0::3",
+              "platformFilters" : [
+
+              ],
+              "removeHeadersOnCopy" : "false"
             }
           ],
           "guid" : "PACKAGE-TARGET:AalsiFinanceKit--7DE791713B7A1D2B-dynamic::BUILDPHASE_0",
@@ -1088,7 +1139,7 @@
       "productTypeIdentifier" : "com.apple.product-type.library.dynamic",
       "type" : "standard"
     },
-    "signature" : "c630f4af5116b3e7d3cdd39b13be2a04ef122cfd57c1c4371fdf6cecdc3821f2",
+    "signature" : "2af60871a7595d4a60e0becdd4a5851ad80d566f5d980fa4d50c9ca2ce80de82",
     "type" : "target"
   },
   {
