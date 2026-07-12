@@ -110,6 +110,269 @@ public enum SpendDerivation {
         }
     }
 
+    public static func overview(
+        transactions: [Transaction],
+        categories: [Category],
+        period: SpendPeriod
+    ) -> SpendOverview {
+        let current = spendEntries(
+            transactions,
+            categories: categories,
+            window: period.current
+        )
+        let previous = spendEntries(
+            transactions,
+            categories: categories,
+            window: period.previous
+        )
+        let total = current.reduce(Decimal.zero) { $0 + $1.contribution }
+        let previousTotal = previous.reduce(Decimal.zero) { $0 + $1.contribution }
+        let cumulativeDaily = cumulativeDaily(entries: current, window: period.current)
+        let elapsedDays = cumulativeDaily.count
+        let dailyPace = elapsedDays > 0
+            ? Money(total / Decimal(elapsedDays))
+            : Money()
+        let categoryRows = categoryRows(
+            transactions: transactions,
+            categories: categories,
+            period: period
+        )
+        let merchantRows = merchantRows(
+            transactions: transactions,
+            categories: categories,
+            period: period
+        )
+
+        return SpendOverview(
+            total: Money(total),
+            previousTotal: Money(previousTotal),
+            transactionCount: current.count,
+            dailyPace: dailyPace,
+            cumulativeDaily: cumulativeDaily,
+            categories: categoryRows,
+            merchants: merchantRows,
+            insight: insight(
+                categories: categoryRows,
+                merchants: merchantRows,
+                current: current,
+                hasPriorEvidence: !previous.isEmpty,
+                total: total,
+                previousTotal: previousTotal,
+                dailyPace: dailyPace
+            )
+        )
+    }
+
+    public static func categoryRows(
+        transactions: [Transaction],
+        categories: [Category],
+        period: SpendPeriod
+    ) -> [CategorySpendRow] {
+        let categoriesByID = Dictionary(uniqueKeysWithValues: categories.map { ($0.id, $0) })
+        let current = spendEntries(transactions, categories: categories, window: period.current)
+        let previous = spendEntries(transactions, categories: categories, window: period.previous)
+        let currentTotal = current.reduce(Decimal.zero) { $0 + $1.contribution }
+        var aggregates: [UUID: CategoryAggregate] = [:]
+
+        for entry in current {
+            guard let category = topCategory(
+                for: entry.transaction.categoryId,
+                categoriesByID: categoriesByID
+            ) else { continue }
+            var aggregate = aggregates[category.id] ?? CategoryAggregate(category: category)
+            aggregate.current += entry.contribution
+            aggregate.count += 1
+            aggregates[category.id] = aggregate
+        }
+
+        for entry in previous {
+            guard let category = topCategory(
+                for: entry.transaction.categoryId,
+                categoriesByID: categoriesByID
+            ) else { continue }
+            var aggregate = aggregates[category.id] ?? CategoryAggregate(category: category)
+            aggregate.previous += entry.contribution
+            aggregates[category.id] = aggregate
+        }
+
+        return aggregates.values.map { aggregate in
+            CategorySpendRow(
+                id: aggregate.category.id,
+                name: aggregate.category.name,
+                total: Money(aggregate.current),
+                previous: Money(aggregate.previous),
+                delta: Money(aggregate.current - aggregate.previous),
+                share: currentTotal > 0
+                    ? NSDecimalNumber(decimal: aggregate.current / currentTotal).doubleValue
+                    : 0,
+                count: aggregate.count
+            )
+        }.sorted(by: categoryRowPrecedes)
+    }
+
+    public static func merchantRows(
+        transactions: [Transaction],
+        categories: [Category],
+        period: SpendPeriod,
+        recurringMerchantKeys: Set<String> = []
+    ) -> [MerchantSpendRow] {
+        let categoriesByID = Dictionary(uniqueKeysWithValues: categories.map { ($0.id, $0) })
+        let current = spendEntries(transactions, categories: categories, window: period.current)
+        let previous = spendEntries(transactions, categories: categories, window: period.previous)
+        var aggregates: [String: MerchantAggregate] = [:]
+
+        for entry in current {
+            let key = merchantKey(entry.transaction.merchant)
+            guard !key.isEmpty else { continue }
+            var aggregate = aggregates[key] ?? MerchantAggregate()
+            aggregate.current += entry.contribution
+            aggregate.count += 1
+            aggregate.hasCanonicalAssociation = aggregate.hasCanonicalAssociation
+                || entry.transaction.recurringSeriesId != nil
+            addMerchantName(entry.transaction.merchant, to: &aggregate.names)
+            if let category = topCategory(
+                for: entry.transaction.categoryId,
+                categoriesByID: categoriesByID
+            ) {
+                aggregate.categoryTotals[category.id, default: 0] += entry.contribution
+            }
+            aggregates[key] = aggregate
+        }
+
+        for entry in previous {
+            let key = merchantKey(entry.transaction.merchant)
+            guard !key.isEmpty else { continue }
+            var aggregate = aggregates[key] ?? MerchantAggregate()
+            aggregate.previous += entry.contribution
+            aggregate.hasCanonicalAssociation = aggregate.hasCanonicalAssociation
+                || entry.transaction.recurringSeriesId != nil
+            addMerchantName(entry.transaction.merchant, to: &aggregate.names)
+            aggregates[key] = aggregate
+        }
+
+        let suppliedRecurringKeys = Set(
+            recurringMerchantKeys.map(merchantKey).filter { !$0.isEmpty }
+        )
+        let inferredRecurringKeys = Set(
+            inferredRecurringRows(transactions: transactions, categories: categories)
+                .compactMap(\.merchantKey)
+        )
+
+        return aggregates.map { key, aggregate in
+            let topCategory = aggregate.categoryTotals
+                .sorted { left, right in
+                    if left.value != right.value { return left.value > right.value }
+                    let leftName = normalized(categoriesByID[left.key]?.name ?? "")
+                    let rightName = normalized(categoriesByID[right.key]?.name ?? "")
+                    if leftName != rightName { return leftName < rightName }
+                    return left.key.uuidString < right.key.uuidString
+                }
+                .first
+                .flatMap { categoriesByID[$0.key]?.name }
+
+            return MerchantSpendRow(
+                id: key,
+                name: aggregate.names.sorted().first ?? key,
+                total: Money(aggregate.current),
+                previous: Money(aggregate.previous),
+                delta: Money(aggregate.current - aggregate.previous),
+                count: aggregate.count,
+                topCategory: topCategory,
+                isRecurring: aggregate.hasCanonicalAssociation
+                    || suppliedRecurringKeys.contains(key)
+                    || inferredRecurringKeys.contains(key)
+            )
+        }.sorted(by: merchantRowPrecedes)
+    }
+
+    public static func itemRows(
+        transactions: [Transaction],
+        categories: [Category],
+        period: SpendPeriod
+    ) -> [ItemSpendRow] {
+        let entries = spendEntries(transactions, categories: categories, window: period.current)
+        var aggregates: [String: ItemAggregate] = [:]
+
+        for entry in entries {
+            let sign = entry.contribution < 0 ? Decimal(-1) : Decimal(1)
+            for item in entry.transaction.lineItems {
+                let key = normalized(item.name)
+                guard !key.isEmpty else { continue }
+                var aggregate = aggregates[key] ?? ItemAggregate()
+                aggregate.names.insert(item.name.trimmingCharacters(in: .whitespacesAndNewlines))
+                aggregate.total += abs(item.amount.value) * sign
+                if let quantity = item.quantity {
+                    aggregate.quantity = (aggregate.quantity ?? 0) + abs(quantity.value) * sign
+                }
+                aggregates[key] = aggregate
+            }
+        }
+
+        return aggregates.map { key, aggregate in
+            ItemSpendRow(
+                name: aggregate.names.sorted().first ?? key,
+                total: Money(aggregate.total),
+                quantity: aggregate.quantity.map(Money.init)
+            )
+        }.sorted { left, right in
+            if left.total.value != right.total.value { return left.total.value > right.total.value }
+            return left.id < right.id
+        }
+    }
+
+    public static func recurringRows(
+        transactions: [Transaction],
+        categories: [Category],
+        canonical: [RecurringSeries]
+    ) -> [RecurringSpendRow] {
+        let canonicalRows = canonical.compactMap { series -> RecurringSpendRow? in
+            let status = normalized(series.status)
+            let type = normalized(series.type)
+            guard status == "active", type != "income", type != "transfer" else { return nil }
+            let key = series.merchantName.map(merchantKey).flatMap { $0.isEmpty ? nil : $0 }
+            return RecurringSpendRow(
+                id: "canonical:\(series.id.uuidString.lowercased())",
+                name: series.name,
+                amount: series.amount ?? Money(),
+                currency: series.currency,
+                cadence: series.cadence,
+                nextDueDate: series.nextDueDate,
+                merchantKey: key,
+                source: .canonical
+            )
+        }.sorted(by: recurringRowPrecedes)
+        let canonicalMerchantKeys = Set(canonicalRows.compactMap(\.merchantKey))
+        let inferredRows = inferredRecurringRows(transactions: transactions, categories: categories)
+            .filter { row in
+                guard let key = row.merchantKey else { return true }
+                return !canonicalMerchantKeys.contains(key)
+            }
+            .sorted(by: recurringRowPrecedes)
+
+        return canonicalRows + inferredRows
+    }
+
+    public static func recurringMonthlyTotal(
+        _ rows: [RecurringSpendRow],
+        currency: String
+    ) -> Money {
+        let currencyKey = normalized(currency)
+        return Money(rows.reduce(Decimal.zero) { total, row in
+            guard normalized(row.currency) == currencyKey, let monthly = row.monthlyAmount else {
+                return total
+            }
+            return total + monthly.value
+        })
+    }
+
+    public static func splitIsBalanced(source: Money, parts: [Money]) -> Bool {
+        parts.count >= 2 && parts.reduce(Decimal.zero) { $0 + $1.value } == source.value
+    }
+
+    public static func mergeIsEligible(_ transactionIDs: [UUID]) -> Bool {
+        transactionIDs.count >= 2 && Set(transactionIDs).count == transactionIDs.count
+    }
+
     private static func topCategory(
         for categoryID: UUID?,
         categoriesByID: [UUID: Category]
@@ -199,5 +462,280 @@ public enum SpendDerivation {
 
     private static func normalized(_ value: String) -> String {
         value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
+
+    private static func spendEntries(
+        _ transactions: [Transaction],
+        categories: [Category],
+        window: DateWindow
+    ) -> [SpendEntry] {
+        transactions.compactMap { transaction in
+            guard window.start...window.end ~= transaction.txnDate else { return nil }
+            switch classify(transaction, categories: categories) {
+            case .spend(let amount):
+                return SpendEntry(transaction: transaction, contribution: amount.value)
+            case .refund(let amount):
+                return SpendEntry(transaction: transaction, contribution: -amount.value)
+            case .income, .transfer, .ignored:
+                return nil
+            }
+        }
+    }
+
+    private static func cumulativeDaily(entries: [SpendEntry], window: DateWindow) -> [Money] {
+        let calendar = utcCalendar
+        let start = calendar.startOfDay(for: window.start)
+        let end = calendar.startOfDay(for: window.end)
+        guard end >= start,
+              let difference = calendar.dateComponents([.day], from: start, to: end).day else {
+            return []
+        }
+        var daily = Array(repeating: Decimal.zero, count: difference + 1)
+        for entry in entries {
+            let transactionDay = calendar.startOfDay(for: entry.transaction.txnDate)
+            guard let index = calendar.dateComponents([.day], from: start, to: transactionDay).day,
+                  daily.indices.contains(index) else { continue }
+            daily[index] += entry.contribution
+        }
+
+        var running = Decimal.zero
+        return daily.map { value in
+            running += value
+            return Money(running)
+        }
+    }
+
+    private static func insight(
+        categories: [CategorySpendRow],
+        merchants: [MerchantSpendRow],
+        current: [SpendEntry],
+        hasPriorEvidence: Bool,
+        total: Decimal,
+        previousTotal: Decimal,
+        dailyPace: Money
+    ) -> SpendInsight {
+        if hasPriorEvidence, let category = categories
+            .filter({ $0.delta.value > 0 })
+            .sorted(by: categoryInsightPrecedes)
+            .first {
+            return SpendInsight(
+                kind: .category(category.id),
+                title: "\(category.name) increased",
+                detail: "Comparable-period spend increased by \(category.delta.value).",
+                delta: category.delta
+            )
+        }
+
+        if hasPriorEvidence, let merchant = merchants
+            .filter({ $0.delta.value > 0 })
+            .sorted(by: merchantInsightPrecedes)
+            .first {
+            return SpendInsight(
+                kind: .merchant(merchant.id),
+                title: "\(merchant.name) increased",
+                detail: "Comparable-period spend increased by \(merchant.delta.value).",
+                delta: merchant.delta
+            )
+        }
+
+        if let purchase = current
+            .filter({ $0.contribution > 0 })
+            .sorted(by: purchasePrecedes)
+            .first {
+            let amount = Money(purchase.contribution)
+            return SpendInsight(
+                kind: .transaction(purchase.transaction.id),
+                title: "Largest purchase",
+                detail: "\(purchase.transaction.displayMerchant) contributed \(amount.value).",
+                delta: amount
+            )
+        }
+
+        return SpendInsight(
+            kind: .pace,
+            title: "Current pace",
+            detail: "Daily spend pace is \(dailyPace.value).",
+            delta: Money(total - previousTotal)
+        )
+    }
+
+    private static func inferredRecurringRows(
+        transactions: [Transaction],
+        categories: [Category]
+    ) -> [RecurringSpendRow] {
+        let spendTransactions = transactions.filter { transaction in
+            if case .spend = classify(transaction, categories: categories) {
+                return !merchantKey(transaction.merchant).isEmpty
+            }
+            return false
+        }
+        let byMerchant = Dictionary(grouping: spendTransactions) { merchantKey($0.merchant) }
+
+        return byMerchant.compactMap { key, merchantTransactions in
+            let byCurrency = Dictionary(grouping: merchantTransactions) { normalized($0.currency) }
+            guard let currencyGroup = byCurrency.sorted(by: currencyGroupPrecedes).first else { return nil }
+            let matching = currencyGroup.value
+            let monthCount = Set(matching.map(monthKey)).count
+            guard monthCount >= 3, let cadence = inferredCadence(for: matching) else { return nil }
+
+            let total = matching.reduce(Decimal.zero) { result, transaction in
+                switch classify(transaction, categories: categories) {
+                case .spend(let amount): return result + amount.value
+                case .income, .transfer, .refund, .ignored: return result
+                }
+            }
+            let amount = Money(total / Decimal(matching.count))
+            let names = matching.compactMap(\.merchant)
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+                .sorted()
+            let lastDate = matching.map(\.txnDate).max()
+
+            return RecurringSpendRow(
+                id: "inferred:\(key):\(currencyGroup.key)",
+                name: names.first ?? key,
+                amount: amount,
+                currency: matching.map(\.currency).sorted().first ?? currencyGroup.key.uppercased(),
+                cadence: cadence,
+                nextDueDate: lastDate.flatMap { nextDueDate(after: $0, cadence: cadence) },
+                merchantKey: key,
+                source: .inferred
+            )
+        }.sorted(by: recurringRowPrecedes)
+    }
+
+    private static func inferredCadence(for transactions: [Transaction]) -> String? {
+        let dates = Array(Set(transactions.map(\.txnDate))).sorted()
+        let gaps = zip(dates, dates.dropFirst())
+            .map { earlier, later in later.timeIntervalSince(earlier) / 86_400 }
+            .filter { $0 > 0 }
+            .sorted()
+        guard !gaps.isEmpty else { return nil }
+        let middle = gaps.count / 2
+        let median = gaps.count.isMultiple(of: 2)
+            ? (gaps[middle - 1] + gaps[middle]) / 2
+            : gaps[middle]
+        let candidates: [(String, Double)] = [
+            ("weekly", 7),
+            ("biweekly", 14),
+            ("monthly", 30),
+            ("quarterly", 91),
+            ("yearly", 365),
+        ]
+        return candidates.first { _, nominal in
+            abs(median - nominal) <= nominal * 0.35
+        }?.0
+    }
+
+    private static func nextDueDate(after date: Date, cadence: String) -> Date? {
+        let calendar = utcCalendar
+        switch cadence {
+        case "weekly":
+            return calendar.date(byAdding: .day, value: 7, to: date)
+        case "biweekly":
+            return calendar.date(byAdding: .day, value: 14, to: date)
+        case "monthly":
+            return calendar.date(byAdding: .month, value: 1, to: date)
+        case "quarterly":
+            return calendar.date(byAdding: .month, value: 3, to: date)
+        case "yearly", "annual":
+            return calendar.date(byAdding: .year, value: 1, to: date)
+        default:
+            return nil
+        }
+    }
+
+    private static func monthKey(_ transaction: Transaction) -> String {
+        let components = utcCalendar.dateComponents([.year, .month], from: transaction.txnDate)
+        return "\(components.year ?? 0)-\(components.month ?? 0)"
+    }
+
+    private static func addMerchantName(_ merchant: String?, to names: inout Set<String>) {
+        guard let name = merchant?.trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty else {
+            return
+        }
+        names.insert(name)
+    }
+
+    private static func categoryRowPrecedes(_ left: CategorySpendRow, _ right: CategorySpendRow) -> Bool {
+        if left.total.value != right.total.value { return left.total.value > right.total.value }
+        let leftName = normalized(left.name)
+        let rightName = normalized(right.name)
+        if leftName != rightName { return leftName < rightName }
+        return left.id.uuidString < right.id.uuidString
+    }
+
+    private static func merchantRowPrecedes(_ left: MerchantSpendRow, _ right: MerchantSpendRow) -> Bool {
+        if left.total.value != right.total.value { return left.total.value > right.total.value }
+        return left.id < right.id
+    }
+
+    private static func categoryInsightPrecedes(_ left: CategorySpendRow, _ right: CategorySpendRow) -> Bool {
+        if left.delta.value != right.delta.value { return left.delta.value > right.delta.value }
+        return categoryRowPrecedes(left, right)
+    }
+
+    private static func merchantInsightPrecedes(_ left: MerchantSpendRow, _ right: MerchantSpendRow) -> Bool {
+        if left.delta.value != right.delta.value { return left.delta.value > right.delta.value }
+        return merchantRowPrecedes(left, right)
+    }
+
+    private static func purchasePrecedes(_ left: SpendEntry, _ right: SpendEntry) -> Bool {
+        if left.contribution != right.contribution { return left.contribution > right.contribution }
+        if left.transaction.txnDate != right.transaction.txnDate {
+            return left.transaction.txnDate > right.transaction.txnDate
+        }
+        if left.transaction.createdAt != right.transaction.createdAt {
+            return left.transaction.createdAt > right.transaction.createdAt
+        }
+        return left.transaction.id.uuidString < right.transaction.id.uuidString
+    }
+
+    private static func recurringRowPrecedes(_ left: RecurringSpendRow, _ right: RecurringSpendRow) -> Bool {
+        let leftName = normalized(left.name)
+        let rightName = normalized(right.name)
+        if leftName != rightName { return leftName < rightName }
+        return left.id < right.id
+    }
+
+    private static func currencyGroupPrecedes(
+        _ left: (key: String, value: [Transaction]),
+        _ right: (key: String, value: [Transaction])
+    ) -> Bool {
+        if left.value.count != right.value.count { return left.value.count > right.value.count }
+        return left.key < right.key
+    }
+
+    private static var utcCalendar: Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        return calendar
+    }
+
+    private struct SpendEntry {
+        let transaction: Transaction
+        let contribution: Decimal
+    }
+
+    private struct CategoryAggregate {
+        let category: Category
+        var current = Decimal.zero
+        var previous = Decimal.zero
+        var count = 0
+    }
+
+    private struct MerchantAggregate {
+        var names = Set<String>()
+        var current = Decimal.zero
+        var previous = Decimal.zero
+        var count = 0
+        var categoryTotals: [UUID: Decimal] = [:]
+        var hasCanonicalAssociation = false
+    }
+
+    private struct ItemAggregate {
+        var names = Set<String>()
+        var total = Decimal.zero
+        var quantity: Decimal?
     }
 }
