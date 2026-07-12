@@ -130,6 +130,14 @@ public struct SpendingSnapshot: Hashable, Sendable {
     }
 }
 
+public struct SpendingRefreshToken: Hashable, Sendable {
+    public let generation: UInt64
+
+    fileprivate init(generation: UInt64) {
+        self.generation = generation
+    }
+}
+
 public struct SpendingState: Sendable {
     public var selectedPill: SpendingPill
     public var monthStart: Date
@@ -149,6 +157,9 @@ public struct SpendingState: Sendable {
     public private(set) var mutationError: String?
 
     private var pendingCanonicalRecurring: [RecurringSeries]?
+    private var nextRefreshGeneration: UInt64 = 0
+    private var activeCoreRefresh: SpendingRefreshToken?
+    private var activeRecurringRefresh: SpendingRefreshToken?
 
     public init(
         selectedPill: SpendingPill = .overview,
@@ -190,16 +201,29 @@ public struct SpendingState: Sendable {
         SpendDerivation.period(containing: monthStart, now: now, calendar: calendar)
     }
 
-    public mutating func beginRefresh() {
+    @discardableResult
+    public mutating func beginRefresh() -> SpendingRefreshToken {
+        let token = nextRefreshToken()
+        activeCoreRefresh = token
+        activeRecurringRefresh = token
         isCoreLoading = true
         isRecurringLoading = true
+        return token
     }
 
-    public mutating func beginRecurringRefresh() {
+    @discardableResult
+    public mutating func beginRecurringRefresh() -> SpendingRefreshToken {
+        let token = nextRefreshToken()
+        activeRecurringRefresh = token
         isRecurringLoading = true
+        return token
     }
 
-    public mutating func receiveCore(_ snapshot: SpendingSnapshot) {
+    public mutating func receiveCore(
+        _ snapshot: SpendingSnapshot,
+        token: SpendingRefreshToken
+    ) {
+        guard activeCoreRefresh == token else { return }
         let recurring = pendingCanonicalRecurring
             ?? coreSnapshot?.canonicalRecurring
             ?? snapshot.canonicalRecurring
@@ -209,16 +233,26 @@ public struct SpendingState: Sendable {
             canonicalRecurring: recurring
         )
         pendingCanonicalRecurring = nil
+        activeCoreRefresh = nil
         isCoreLoading = false
         coreError = nil
     }
 
-    public mutating func receiveCoreFailure(_ message: String) {
+    public mutating func receiveCoreFailure(
+        _ message: String,
+        token: SpendingRefreshToken
+    ) {
+        guard activeCoreRefresh == token else { return }
+        activeCoreRefresh = nil
         isCoreLoading = false
         coreError = message
     }
 
-    public mutating func receiveRecurring(_ recurring: [RecurringSeries]) {
+    public mutating func receiveRecurring(
+        _ recurring: [RecurringSeries],
+        token: SpendingRefreshToken
+    ) {
+        guard activeRecurringRefresh == token else { return }
         if let snapshot = coreSnapshot {
             coreSnapshot = SpendingSnapshot(
                 transactions: snapshot.transactions,
@@ -229,13 +263,36 @@ public struct SpendingState: Sendable {
         } else {
             pendingCanonicalRecurring = recurring
         }
+        activeRecurringRefresh = nil
         isRecurringLoading = false
         recurringError = nil
     }
 
-    public mutating func receiveRecurringFailure(_ message: String) {
+    public mutating func receiveRecurringFailure(
+        _ message: String,
+        token: SpendingRefreshToken
+    ) {
+        guard activeRecurringRefresh == token else { return }
+        activeRecurringRefresh = nil
         isRecurringLoading = false
         recurringError = message
+    }
+
+    public mutating func cancelRefresh(token: SpendingRefreshToken) {
+        cancelCoreRefresh(token: token)
+        cancelRecurringRefresh(token: token)
+    }
+
+    public mutating func cancelCoreRefresh(token: SpendingRefreshToken) {
+        guard activeCoreRefresh == token else { return }
+        activeCoreRefresh = nil
+        isCoreLoading = false
+    }
+
+    public mutating func cancelRecurringRefresh(token: SpendingRefreshToken) {
+        guard activeRecurringRefresh == token else { return }
+        activeRecurringRefresh = nil
+        isRecurringLoading = false
     }
 
     public mutating func beginMutation(
@@ -253,20 +310,63 @@ public struct SpendingState: Sendable {
     }
 
     public mutating func receiveCreatedTransaction(_ transaction: Transaction) {
-        guard let snapshot = coreSnapshot else { return }
+        let snapshot = coreSnapshot ?? SpendingSnapshot(
+            transactions: [],
+            categories: [],
+            canonicalRecurring: canonicalRecurring
+        )
         let existing = snapshot.transactions.filter { $0.id != transaction.id }
         coreSnapshot = SpendingSnapshot(
             transactions: [transaction] + existing,
             categories: snapshot.categories,
             canonicalRecurring: snapshot.canonicalRecurring
         )
+        pendingCanonicalRecurring = nil
     }
 
     public mutating func receiveMutationSuccess() {
         isMutating = false
         mutationError = nil
+    }
+
+    public mutating func receiveEditorMutationSuccess() {
+        receiveMutationSuccess()
         editorDraft = nil
+    }
+
+    public mutating func receiveSplitMutationSuccess() {
+        receiveMutationSuccess()
         splitDraft = nil
+    }
+
+    @discardableResult
+    public mutating func beginMerge(ids: [UUID]) -> Bool {
+        guard SpendDerivation.mergeIsEligible(ids) else {
+            isMutating = false
+            mutationError = "Select at least two transactions to merge."
+            return false
+        }
+        beginMutation()
+        return true
+    }
+
+    @discardableResult
+    public mutating func beginSplit(
+        source: Money,
+        parts: [SplitPartRequest]
+    ) -> Bool {
+        guard SpendDerivation.splitIsBalanced(
+            source: source,
+            parts: parts.map(\.amount)
+        ) else {
+            receiveMutationFailure(
+                "Split amounts must equal the source transaction.",
+                splitDraft: parts
+            )
+            return false
+        }
+        beginMutation(splitDraft: parts)
+        return true
     }
 
     public mutating func receiveMutationFailure(
@@ -282,5 +382,10 @@ public struct SpendingState: Sendable {
         }
         isMutating = false
         mutationError = message
+    }
+
+    private mutating func nextRefreshToken() -> SpendingRefreshToken {
+        nextRefreshGeneration += 1
+        return SpendingRefreshToken(generation: nextRefreshGeneration)
     }
 }

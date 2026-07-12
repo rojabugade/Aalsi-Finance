@@ -2,6 +2,13 @@ import AalsiFinanceKit
 import Foundation
 import Observation
 
+private enum SpendingLoadResult: Sendable {
+    case core([AalsiFinanceKit.Transaction], [AalsiFinanceKit.Category])
+    case coreFailure(String)
+    case recurring([RecurringSeries])
+    case recurringFailure(String)
+}
+
 @MainActor
 @Observable
 final class SpendingViewModel {
@@ -10,28 +17,55 @@ final class SpendingViewModel {
     func load(api: APIClient, force: Bool = false) async {
         guard force || state.coreSnapshot == nil else { return }
 
-        state.beginRefresh()
-        let recurringTask = Task { [weak self] in
-            guard let self else { return }
-            await self.receiveRecurring(api: api)
+        let token = state.beginRefresh()
+        await withTaskGroup(of: SpendingLoadResult.self) { group in
+            group.addTask {
+                do {
+                    async let transactions = api.transactions()
+                    async let categories = api.categories()
+                    let (loadedTransactions, loadedCategories) = try await (transactions, categories)
+                    return .core(loadedTransactions, loadedCategories)
+                } catch {
+                    return .coreFailure(error.localizedDescription)
+                }
+            }
+            group.addTask {
+                do {
+                    let recurring = try await api.recurringSeries()
+                    return .recurring(recurring)
+                } catch {
+                    return .recurringFailure(error.localizedDescription)
+                }
+            }
+
+            for await result in group {
+                guard !Task.isCancelled else {
+                    group.cancelAll()
+                    break
+                }
+                switch result {
+                case .core(let transactions, let categories):
+                    state.receiveCore(
+                        SpendingSnapshot(
+                            transactions: transactions,
+                            categories: categories,
+                            canonicalRecurring: state.canonicalRecurring
+                        ),
+                        token: token
+                    )
+                case .coreFailure(let message):
+                    state.receiveCoreFailure(message, token: token)
+                case .recurring(let recurring):
+                    state.receiveRecurring(recurring, token: token)
+                case .recurringFailure(let message):
+                    state.receiveRecurringFailure(message, token: token)
+                }
+            }
         }
 
-        do {
-            async let transactions = api.transactions()
-            async let categories = api.categories()
-            let (loadedTransactions, loadedCategories) = try await (transactions, categories)
-            state.receiveCore(
-                SpendingSnapshot(
-                    transactions: loadedTransactions,
-                    categories: loadedCategories,
-                    canonicalRecurring: state.canonicalRecurring
-                )
-            )
-        } catch {
-            state.receiveCoreFailure(error.localizedDescription)
+        if Task.isCancelled {
+            state.cancelRefresh(token: token)
         }
-
-        await recurringTask.value
     }
 
     func refresh(api: APIClient) async {
@@ -39,8 +73,21 @@ final class SpendingViewModel {
     }
 
     func refreshRecurring(api: APIClient) async {
-        state.beginRecurringRefresh()
-        await receiveRecurring(api: api)
+        let token = state.beginRecurringRefresh()
+        do {
+            let recurring = try await api.recurringSeries()
+            guard !Task.isCancelled else {
+                state.cancelRecurringRefresh(token: token)
+                return
+            }
+            state.receiveRecurring(recurring, token: token)
+        } catch {
+            if Task.isCancelled {
+                state.cancelRecurringRefresh(token: token)
+            } else {
+                state.receiveRecurringFailure(error.localizedDescription, token: token)
+            }
+        }
     }
 
     @discardableResult
@@ -73,7 +120,7 @@ final class SpendingViewModel {
                 )
             )
             state.receiveCreatedTransaction(transaction)
-            state.receiveMutationSuccess()
+            state.receiveEditorMutationSuccess()
             await refresh(api: api)
             return true
         } catch {
@@ -113,7 +160,7 @@ final class SpendingViewModel {
                     notes: optionalText(draft.notes)
                 )
             )
-            state.receiveMutationSuccess()
+            state.receiveEditorMutationSuccess()
             await refresh(api: api)
             return true
         } catch {
@@ -139,13 +186,16 @@ final class SpendingViewModel {
     @discardableResult
     func splitTransaction(
         id: UUID,
+        sourceAmount: Money,
         parts: [SplitPartRequest],
         api: APIClient
     ) async -> Bool {
-        state.beginMutation(splitDraft: parts)
+        guard state.beginSplit(source: sourceAmount, parts: parts) else {
+            return false
+        }
         do {
             _ = try await api.splitTransaction(id: id, body: SplitRequest(parts: parts))
-            state.receiveMutationSuccess()
+            state.receiveSplitMutationSuccess()
             await refresh(api: api)
             return true
         } catch {
@@ -174,7 +224,9 @@ final class SpendingViewModel {
         notes: String? = nil,
         api: APIClient
     ) async -> Bool {
-        state.beginMutation()
+        guard state.beginMerge(ids: ids) else {
+            return false
+        }
         do {
             _ = try await api.mergeTransactions(
                 MergeRequest(transactionIds: ids, notes: notes)
@@ -187,14 +239,6 @@ final class SpendingViewModel {
         } catch {
             state.receiveMutationFailure(error.localizedDescription)
             return false
-        }
-    }
-
-    private func receiveRecurring(api: APIClient) async {
-        do {
-            state.receiveRecurring(try await api.recurringSeries())
-        } catch {
-            state.receiveRecurringFailure(error.localizedDescription)
         }
     }
 
