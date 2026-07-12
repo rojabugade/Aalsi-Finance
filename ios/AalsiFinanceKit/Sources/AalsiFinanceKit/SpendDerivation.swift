@@ -36,17 +36,22 @@ public enum SpendDerivation {
         now: Date = .now,
         calendar: Calendar = .current
     ) -> SpendPeriod {
-        let selectedMonth = calendar.dateInterval(of: .month, for: date)!
-        let previousMonthDate = calendar.date(byAdding: .month, value: -1, to: selectedMonth.start)!
-        let previousMonth = calendar.dateInterval(of: .month, for: previousMonthDate)!
+        // API date-only values decode at UTC midnight, so month windows must
+        // use that same canonical domain regardless of the display timezone.
+        var canonicalCalendar = calendar
+        canonicalCalendar.timeZone = TimeZone(secondsFromGMT: 0)!
+
+        let selectedMonth = canonicalCalendar.dateInterval(of: .month, for: date)!
+        let previousMonthDate = canonicalCalendar.date(byAdding: .month, value: -1, to: selectedMonth.start)!
+        let previousMonth = canonicalCalendar.dateInterval(of: .month, for: previousMonthDate)!
         let previousInclusiveEnd = previousMonth.end.addingTimeInterval(-1)
-        let isCurrentMonth = calendar.isDate(selectedMonth.start, equalTo: now, toGranularity: .month)
+        let isCurrentMonth = canonicalCalendar.isDate(selectedMonth.start, equalTo: now, toGranularity: .month)
 
         let currentEnd: Date
         let previousEnd: Date
         if isCurrentMonth {
             currentEnd = now
-            let comparableEnd = calendar.date(byAdding: .month, value: -1, to: now)!
+            let comparableEnd = canonicalCalendar.date(byAdding: .month, value: -1, to: now)!
             previousEnd = min(comparableEnd, previousInclusiveEnd)
         } else {
             currentEnd = selectedMonth.end.addingTimeInterval(-1)

@@ -53,6 +53,39 @@ import Testing
         #expect(!period.isCurrentMonth)
     }
 
+    @Test func apiDateOnlyPeriodsStayCanonicalWithNonUTCCalendar() throws {
+        let firstDay = try SpendTestFixtures.transaction(
+            "-20",
+            date: "2026-07-01",
+            category: SpendTestFixtures.groceriesID
+        )
+        let now = ISO8601DateFormatter().date(from: "2026-07-12T12:00:00Z")!
+        var newYorkCalendar = Calendar(identifier: .gregorian)
+        newYorkCalendar.timeZone = TimeZone(identifier: "America/New_York")!
+
+        let selectedFromAPIDate = SpendDerivation.period(
+            containing: firstDay.txnDate,
+            now: now,
+            calendar: newYorkCalendar
+        )
+        #expect(selectedFromAPIDate.monthStart == APIDateParser.parse("2026-07-01"))
+        #expect(selectedFromAPIDate.isCurrentMonth)
+
+        let currentJuly = SpendDerivation.period(
+            containing: now,
+            now: now,
+            calendar: newYorkCalendar
+        )
+        #expect(
+            SpendDerivation.filter(
+                [firstDay],
+                categories: SpendTestFixtures.categories,
+                period: currentJuly,
+                filter: SpendFilter()
+            ) == [firstDay]
+        )
+    }
+
     @Test func categoryPathResolvesRootAndLeaf() {
         let f = SpendTestFixtures.self
 
