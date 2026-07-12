@@ -157,8 +157,7 @@ public enum SpendDerivation {
                 current: current,
                 hasPriorEvidence: !previous.isEmpty,
                 total: total,
-                previousTotal: previousTotal,
-                dailyPace: dailyPace
+                previousTotal: previousTotal
             )
         )
     }
@@ -295,12 +294,13 @@ public enum SpendDerivation {
 
         for entry in entries {
             let sign = entry.contribution < 0 ? Decimal(-1) : Decimal(1)
+            let amountScale = baseAmountScale(for: entry.transaction)
             for item in entry.transaction.lineItems {
                 let key = normalized(item.name)
                 guard !key.isEmpty else { continue }
                 var aggregate = aggregates[key] ?? ItemAggregate()
                 aggregate.names.insert(item.name.trimmingCharacters(in: .whitespacesAndNewlines))
-                aggregate.total += abs(item.amount.value) * sign
+                aggregate.total += abs(item.amount.value) * amountScale * sign
                 if let quantity = item.quantity {
                     aggregate.quantity = (aggregate.quantity ?? 0) + abs(quantity.value) * sign
                 }
@@ -325,23 +325,39 @@ public enum SpendDerivation {
         categories: [Category],
         canonical: [RecurringSeries]
     ) -> [RecurringSpendRow] {
-        let canonicalRows = canonical.compactMap { series -> RecurringSpendRow? in
+        var referencedMerchantKeys: [UUID: Set<String>] = [:]
+        for transaction in transactions {
+            guard let seriesID = transaction.recurringSeriesId else { continue }
+            let key = merchantKey(transaction.merchant)
+            guard !key.isEmpty else { continue }
+            referencedMerchantKeys[seriesID, default: []].insert(key)
+        }
+
+        let canonicalEntries = canonical.compactMap { series -> CanonicalRecurringEntry? in
             let status = normalized(series.status)
             let type = normalized(series.type)
             guard status == "active", type != "income", type != "transfer" else { return nil }
-            let key = series.merchantName.map(merchantKey).flatMap { $0.isEmpty ? nil : $0 }
-            return RecurringSpendRow(
-                id: "canonical:\(series.id.uuidString.lowercased())",
-                name: series.name,
-                amount: series.amount ?? Money(),
-                currency: series.currency,
-                cadence: series.cadence,
-                nextDueDate: series.nextDueDate,
-                merchantKey: key,
-                source: .canonical
+            let explicitKey = series.merchantName.map(merchantKey).flatMap { $0.isEmpty ? nil : $0 }
+            var suppressionKeys = referencedMerchantKeys[series.id] ?? []
+            if let explicitKey {
+                suppressionKeys.insert(explicitKey)
+            }
+            return CanonicalRecurringEntry(
+                row: RecurringSpendRow(
+                    id: "canonical:\(series.id.uuidString.lowercased())",
+                    name: series.name,
+                    amount: series.amount ?? Money(),
+                    currency: series.currency,
+                    cadence: series.cadence,
+                    nextDueDate: series.nextDueDate,
+                    merchantKey: explicitKey ?? suppressionKeys.sorted().first,
+                    source: .canonical
+                ),
+                suppressionKeys: suppressionKeys
             )
-        }.sorted(by: recurringRowPrecedes)
-        let canonicalMerchantKeys = Set(canonicalRows.compactMap(\.merchantKey))
+        }
+        let canonicalRows = canonicalEntries.map(\.row).sorted(by: recurringRowPrecedes)
+        let canonicalMerchantKeys = Set(canonicalEntries.flatMap(\.suppressionKeys))
         let inferredRows = inferredRecurringRows(transactions: transactions, categories: categories)
             .filter { row in
                 guard let key = row.merchantKey else { return true }
@@ -370,7 +386,7 @@ public enum SpendDerivation {
     }
 
     public static func mergeIsEligible(_ transactionIDs: [UUID]) -> Bool {
-        transactionIDs.count >= 2 && Set(transactionIDs).count == transactionIDs.count
+        Set(transactionIDs).count >= 2
     }
 
     private static func topCategory(
@@ -473,13 +489,24 @@ public enum SpendDerivation {
             guard window.start...window.end ~= transaction.txnDate else { return nil }
             switch classify(transaction, categories: categories) {
             case .spend(let amount):
-                return SpendEntry(transaction: transaction, contribution: amount.value)
+                let contribution = transaction.baseAmount?.magnitude.value ?? amount.value
+                return SpendEntry(transaction: transaction, contribution: contribution)
             case .refund(let amount):
-                return SpendEntry(transaction: transaction, contribution: -amount.value)
+                let contribution = transaction.baseAmount?.magnitude.value ?? amount.value
+                return SpendEntry(transaction: transaction, contribution: -contribution)
             case .income, .transfer, .ignored:
                 return nil
             }
         }
+    }
+
+    private static func baseAmountScale(for transaction: Transaction) -> Decimal {
+        let nativeMagnitude = transaction.amount.magnitude.value
+        guard let baseMagnitude = transaction.baseAmount?.magnitude.value,
+              nativeMagnitude > 0 else {
+            return 1
+        }
+        return baseMagnitude / nativeMagnitude
     }
 
     private static func cumulativeDaily(entries: [SpendEntry], window: DateWindow) -> [Money] {
@@ -511,8 +538,7 @@ public enum SpendDerivation {
         current: [SpendEntry],
         hasPriorEvidence: Bool,
         total: Decimal,
-        previousTotal: Decimal,
-        dailyPace: Money
+        previousTotal: Decimal
     ) -> SpendInsight {
         if hasPriorEvidence, let category = categories
             .filter({ $0.delta.value > 0 })
@@ -521,7 +547,7 @@ public enum SpendDerivation {
             return SpendInsight(
                 kind: .category(category.id),
                 title: "\(category.name) increased",
-                detail: "Comparable-period spend increased by \(category.delta.value).",
+                detail: "This category has the largest positive comparable-period change.",
                 delta: category.delta
             )
         }
@@ -533,12 +559,12 @@ public enum SpendDerivation {
             return SpendInsight(
                 kind: .merchant(merchant.id),
                 title: "\(merchant.name) increased",
-                detail: "Comparable-period spend increased by \(merchant.delta.value).",
+                detail: "This merchant has the largest positive comparable-period change.",
                 delta: merchant.delta
             )
         }
 
-        if let purchase = current
+        if !hasPriorEvidence, let purchase = current
             .filter({ $0.contribution > 0 })
             .sorted(by: purchasePrecedes)
             .first {
@@ -546,7 +572,7 @@ public enum SpendDerivation {
             return SpendInsight(
                 kind: .transaction(purchase.transaction.id),
                 title: "Largest purchase",
-                detail: "\(purchase.transaction.displayMerchant) contributed \(amount.value).",
+                detail: "\(purchase.transaction.displayMerchant) is the largest purchase in this period.",
                 delta: amount
             )
         }
@@ -554,7 +580,7 @@ public enum SpendDerivation {
         return SpendInsight(
             kind: .pace,
             title: "Current pace",
-            detail: "Daily spend pace is \(dailyPace.value).",
+            detail: "No positive category or merchant change stands out in this comparison.",
             delta: Money(total - previousTotal)
         )
     }
@@ -584,7 +610,17 @@ public enum SpendDerivation {
                 case .income, .transfer, .refund, .ignored: return result
                 }
             }
-            let amount = Money(total / Decimal(matching.count))
+            let refunds = transactions.reduce(Decimal.zero) { result, transaction in
+                guard merchantKey(transaction.merchant) == key,
+                      normalized(transaction.currency) == currencyGroup.key else {
+                    return result
+                }
+                if case .refund(let amount) = classify(transaction, categories: categories) {
+                    return result + amount.value
+                }
+                return result
+            }
+            let amount = Money((total - refunds) / Decimal(matching.count))
             let names = matching.compactMap(\.merchant)
                 .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
                 .filter { !$0.isEmpty }
@@ -737,5 +773,10 @@ public enum SpendDerivation {
         var names = Set<String>()
         var total = Decimal.zero
         var quantity: Decimal?
+    }
+
+    private struct CanonicalRecurringEntry {
+        let row: RecurringSpendRow
+        let suppressionKeys: Set<String>
     }
 }
