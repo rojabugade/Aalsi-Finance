@@ -28,6 +28,7 @@ struct SpendSummaryCard: View {
 
             Label(comparisonText, systemImage: comparisonSystemImage)
                 .font(.caption.weight(.semibold))
+                .monospacedDigit()
                 .foregroundStyle(comparisonColor)
 
             if !chartValues.isEmpty {
@@ -144,6 +145,7 @@ struct SpendInsightCard: View {
                         systemImage: insight.delta.value > 0 ? "arrow.up.right" : "arrow.down.right"
                     )
                     .font(.caption.weight(.semibold))
+                    .monospacedDigit()
                     .foregroundStyle(insight.delta.value > 0 ? Color.red : Color.green)
                 }
             }
@@ -172,6 +174,7 @@ struct SpendRankedPreview: View {
     private let content: Content
 
     @Environment(AppTheme.self) private var theme
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     init(
         title: String,
@@ -247,39 +250,69 @@ struct SpendRankedPreview: View {
             .padding(.vertical, 8)
     }
 
+    @ViewBuilder
     private func rankedRow(title: String, detail: String, amount: Money) -> some View {
-        HStack(alignment: .center, spacing: 12) {
-            Circle()
-                .fill(theme.accentColor.opacity(0.14))
-                .frame(width: 32, height: 32)
-                .overlay(
-                    Circle()
-                        .fill(theme.accentColor)
-                        .frame(width: 8, height: 8)
-                )
-                .accessibilityHidden(true)
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(alignment: .top, spacing: 12) {
+                    rankMarker
+                    rankIdentity(title: title, detail: detail, allowsWrapping: true)
+                }
 
-            VStack(alignment: .leading, spacing: 3) {
-                Text(title)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.primary)
-                    .lineLimit(1)
-                Text(detail)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                HStack(alignment: .center, spacing: 8) {
+                    MoneyText(amount: amount, code: currency, font: .subheadline.weight(.semibold))
+                    Spacer(minLength: 8)
+                    disclosureIndicator
+                }
             }
+            .padding(.vertical, 6)
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
+        } else {
+            HStack(alignment: .center, spacing: 12) {
+                rankMarker
+                rankIdentity(title: title, detail: detail, allowsWrapping: false)
 
-            Spacer(minLength: 8)
+                Spacer(minLength: 8)
 
-            MoneyText(amount: amount, code: currency, font: .subheadline.weight(.semibold))
-
-            Image(systemName: "chevron.right")
-                .font(.caption2.weight(.bold))
-                .foregroundStyle(.tertiary)
-                .accessibilityHidden(true)
+                MoneyText(amount: amount, code: currency, font: .subheadline.weight(.semibold))
+                disclosureIndicator
+            }
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
         }
-        .contentShape(Rectangle())
+    }
+
+    private var rankMarker: some View {
+        Circle()
+            .fill(theme.accentColor.opacity(0.14))
+            .frame(width: 32, height: 32)
+            .overlay(
+                Circle()
+                    .fill(theme.accentColor)
+                    .frame(width: 8, height: 8)
+            )
+            .accessibilityHidden(true)
+    }
+
+    private func rankIdentity(title: String, detail: String, allowsWrapping: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(title)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.primary)
+                .lineLimit(allowsWrapping ? 2 : 1)
+            Text(detail)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(allowsWrapping ? 3 : 1)
+        }
+    }
+
+    private var disclosureIndicator: some View {
+        Image(systemName: "chevron.right")
+            .font(.caption2.weight(.bold))
+            .foregroundStyle(.tertiary)
+            .accessibilityHidden(true)
     }
 
     private func merchantDetail(for row: MerchantSpendRow) -> String {

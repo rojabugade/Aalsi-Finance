@@ -66,7 +66,7 @@ struct MonthSelector: View {
         HStack(spacing: 16) {
             Button(action: onPrevious) {
                 Image(systemName: "chevron.left")
-                    .frame(width: 32, height: 32)
+                    .frame(width: 44, height: 44)
             }
             .accessibilityLabel("Previous month")
 
@@ -81,7 +81,7 @@ struct MonthSelector: View {
 
             Button(action: onNext) {
                 Image(systemName: "chevron.right")
-                    .frame(width: 32, height: 32)
+                    .frame(width: 44, height: 44)
             }
             .disabled(!canGoForward)
             .opacity(canGoForward ? 1 : 0.35)
