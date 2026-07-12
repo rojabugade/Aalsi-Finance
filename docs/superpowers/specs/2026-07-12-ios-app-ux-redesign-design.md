@@ -30,7 +30,7 @@ Removed from nav: Settings (→ avatar sheet), Insights (content distributed: ne
 
 ### Persistent chrome (every tab)
 
-- **Top-left avatar** → profile & settings sheet (account, server config, appearance, sign out — current SettingsView content).
+- **Top-left avatar** → profile & settings sheet: account, server config, sign out (current SettingsView content) plus **Appearance** section — theme picker (System / Dark / Light) and accent color personalization (curated palette of ~6 accents: indigo default, teal, coral, pink, amber, green). Accent drives tint app-wide via a semantic `AppTheme` environment object; choices persist in `UserDefaults` (`@AppStorage`).
 - **Top-right bell** with unread badge → notifications list (backend `notifications/monitor`, `alerts/{id}/acknowledge`).
 - **Page-specific "+"** in top bar where relevant (Spending: quick-add transaction; Money: add loan/card/holding/income source).
 - **Pill sub-nav** under each page title. First pill = the 99% view; the rest are niche. Implemented as one reusable component (horizontal scrollable pill row driving a paged content switch).
@@ -85,7 +85,7 @@ Pills: **Overview** | Debt | Cards | Income.
 
 ## Visual language
 
-- **Dark-first**: near-black canvas (`#0E0E12`-equivalent via system backgrounds), elevated card surface, indigo/purple accent family (existing `.indigo` tint), teal for positive, coral/pink for negative/urgent, amber for warnings. Light mode derives from the same semantic roles; system-driven.
+- **Dark-first**: near-black canvas (`#0E0E12`-equivalent via system backgrounds), elevated card surface, indigo/purple accent family (default), teal for positive, coral/pink for negative/urgent, amber for warnings. Light mode derives from the same semantic roles. Theme (System/Dark/Light) and accent color are user-selectable in Settings → Appearance; all components read tint from `AppTheme`, never hardcode `.indigo`. Semantic colors (positive/negative/warning) stay fixed regardless of accent.
 - Liquid Glass reserved for hero surfaces and the center AI tab button; flat elevated cards elsewhere. Avoid one-note card stacks: hero → tile grid → list card → horizontal rail per screen.
 - Type scale: large rounded numerics for money (existing `MoneyText`), caption-heavy density elsewhere. Monospaced digits everywhere money changes.
 - Charts: Swift Charts; sparklines are axis-less; forecast curve = solid history + dashed projection + endpoint dot.
