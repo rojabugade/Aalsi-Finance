@@ -5,11 +5,11 @@
       "name" : "AalsiFinanceKit",
       "path" : "/Users/kshtj/Stuff/Projects/Alsi/Aalsi-Finance/ios/AalsiFinanceKit",
       "projects" : [
-        "ff83fe0eb560babfb75cd7149bc6bce6bbe7ff03205114f17aab19f12917a5e5",
+        "89ac5b109f1b3205ae698f25649827871e9665e6e6abe9d96c82c6df7b8446d1",
         "d778ff46ea62101d4d574dcc560e70673b7559084a0535f06577b2a14938a0b5"
       ]
     },
-    "signature" : "589eea3626d4da724b839b993b62d6a8c662f9a4feed81402d6d116a2b8a8cd5",
+    "signature" : "6be2d5d7c654a8ac0adcdf33335023dfc794f56ec879fc89e48a8c2bce0877be",
     "type" : "workspace"
   },
   {
@@ -215,6 +215,14 @@
               {
                 "fileType" : "sourcecode.swift",
                 "guid" : "PACKAGE:aalsifinancekit::MAINGROUP::REF_2::REF_1",
+                "name" : "ForecastMathTests.swift",
+                "path" : "ForecastMathTests.swift",
+                "sourceTree" : "<group>",
+                "type" : "file"
+              },
+              {
+                "fileType" : "sourcecode.swift",
+                "guid" : "PACKAGE:aalsifinancekit::MAINGROUP::REF_2::REF_2",
                 "name" : "MoneyModelsDecodingTests.swift",
                 "path" : "MoneyModelsDecodingTests.swift",
                 "sourceTree" : "<group>",
@@ -222,7 +230,7 @@
               },
               {
                 "fileType" : "sourcecode.swift",
-                "guid" : "PACKAGE:aalsifinancekit::MAINGROUP::REF_2::REF_2",
+                "guid" : "PACKAGE:aalsifinancekit::MAINGROUP::REF_2::REF_3",
                 "name" : "MoneyTests.swift",
                 "path" : "MoneyTests.swift",
                 "sourceTree" : "<group>",
@@ -230,7 +238,7 @@
               },
               {
                 "fileType" : "sourcecode.swift",
-                "guid" : "PACKAGE:aalsifinancekit::MAINGROUP::REF_2::REF_3",
+                "guid" : "PACKAGE:aalsifinancekit::MAINGROUP::REF_2::REF_4",
                 "name" : "UpcomingFeedTests.swift",
                 "path" : "UpcomingFeedTests.swift",
                 "sourceTree" : "<group>",
@@ -248,6 +256,14 @@
               {
                 "fileType" : "sourcecode.swift",
                 "guid" : "PACKAGE:aalsifinancekit::MAINGROUP::REF_3::REF_0",
+                "name" : "ForecastMath.swift",
+                "path" : "ForecastMath.swift",
+                "sourceTree" : "<group>",
+                "type" : "file"
+              },
+              {
+                "fileType" : "sourcecode.swift",
+                "guid" : "PACKAGE:aalsifinancekit::MAINGROUP::REF_3::REF_1",
                 "name" : "JSONCoding.swift",
                 "path" : "JSONCoding.swift",
                 "sourceTree" : "<group>",
@@ -255,7 +271,7 @@
               },
               {
                 "fileType" : "sourcecode.swift",
-                "guid" : "PACKAGE:aalsifinancekit::MAINGROUP::REF_3::REF_1",
+                "guid" : "PACKAGE:aalsifinancekit::MAINGROUP::REF_3::REF_2",
                 "name" : "Models.swift",
                 "path" : "Models.swift",
                 "sourceTree" : "<group>",
@@ -263,7 +279,7 @@
               },
               {
                 "fileType" : "sourcecode.swift",
-                "guid" : "PACKAGE:aalsifinancekit::MAINGROUP::REF_3::REF_2",
+                "guid" : "PACKAGE:aalsifinancekit::MAINGROUP::REF_3::REF_3",
                 "name" : "Money.swift",
                 "path" : "Money.swift",
                 "sourceTree" : "<group>",
@@ -271,7 +287,7 @@
               },
               {
                 "fileType" : "sourcecode.swift",
-                "guid" : "PACKAGE:aalsifinancekit::MAINGROUP::REF_3::REF_3",
+                "guid" : "PACKAGE:aalsifinancekit::MAINGROUP::REF_3::REF_4",
                 "name" : "MoneyModels.swift",
                 "path" : "MoneyModels.swift",
                 "sourceTree" : "<group>",
@@ -279,7 +295,7 @@
               },
               {
                 "fileType" : "sourcecode.swift",
-                "guid" : "PACKAGE:aalsifinancekit::MAINGROUP::REF_3::REF_4",
+                "guid" : "PACKAGE:aalsifinancekit::MAINGROUP::REF_3::REF_5",
                 "name" : "UpcomingFeed.swift",
                 "path" : "UpcomingFeed.swift",
                 "sourceTree" : "<group>",
@@ -297,6 +313,14 @@
               {
                 "fileType" : "sourcecode.swift",
                 "guid" : "PACKAGE:aalsifinancekit::MAINGROUP::REF_4::REF_0",
+                "name" : "ForecastMath.swift",
+                "path" : "ForecastMath.swift",
+                "sourceTree" : "<group>",
+                "type" : "file"
+              },
+              {
+                "fileType" : "sourcecode.swift",
+                "guid" : "PACKAGE:aalsifinancekit::MAINGROUP::REF_4::REF_1",
                 "name" : "JSONCoding.swift",
                 "path" : "JSONCoding.swift",
                 "sourceTree" : "<group>",
@@ -304,7 +328,7 @@
               },
               {
                 "fileType" : "sourcecode.swift",
-                "guid" : "PACKAGE:aalsifinancekit::MAINGROUP::REF_4::REF_1",
+                "guid" : "PACKAGE:aalsifinancekit::MAINGROUP::REF_4::REF_2",
                 "name" : "Models.swift",
                 "path" : "Models.swift",
                 "sourceTree" : "<group>",
@@ -312,7 +336,7 @@
               },
               {
                 "fileType" : "sourcecode.swift",
-                "guid" : "PACKAGE:aalsifinancekit::MAINGROUP::REF_4::REF_2",
+                "guid" : "PACKAGE:aalsifinancekit::MAINGROUP::REF_4::REF_3",
                 "name" : "Money.swift",
                 "path" : "Money.swift",
                 "sourceTree" : "<group>",
@@ -320,7 +344,7 @@
               },
               {
                 "fileType" : "sourcecode.swift",
-                "guid" : "PACKAGE:aalsifinancekit::MAINGROUP::REF_4::REF_3",
+                "guid" : "PACKAGE:aalsifinancekit::MAINGROUP::REF_4::REF_4",
                 "name" : "MoneyModels.swift",
                 "path" : "MoneyModels.swift",
                 "sourceTree" : "<group>",
@@ -328,7 +352,7 @@
               },
               {
                 "fileType" : "sourcecode.swift",
-                "guid" : "PACKAGE:aalsifinancekit::MAINGROUP::REF_4::REF_4",
+                "guid" : "PACKAGE:aalsifinancekit::MAINGROUP::REF_4::REF_5",
                 "name" : "UpcomingFeed.swift",
                 "path" : "UpcomingFeed.swift",
                 "sourceTree" : "<group>",
@@ -354,15 +378,15 @@
       "projectIsPackage" : "true",
       "projectName" : "AalsiFinanceKit",
       "targets" : [
-        "acf9d0f3bbf14282a60faa9d42bc7cb97d6eba493ce5fd0fafa2bb372254edc3",
+        "8c3ee6368ba81650d4c5d2a4d744df75bf4a6bebde82b1c525256718876c3538",
         "f87534ac4ef86769b1da34fc651785f2cc56bc3f6c20cf7b25e56c130e99c52d",
         "897874fbb0cfe954da30715fa3302e575353347afd7b94296cbf7ce49cd640ec",
-        "c629244772970d986e50aef4730899f9b9bd8f867e15f36502dc889f2807439a",
-        "ba314f8f17abab827175248d4d455467ddeb8247ce51729e0b6dd5e9f2699655",
+        "7e4882b7c6daefcc4cc208be834eca7a20920265ade090360370cd324a9cc74f",
+        "e1254a86f8d43fe8f764623413012ba13970c37427f0220e639df5e4ee4ae481",
         "0dbaed3a7c17a35185276dd1f6c9cd44073c5e83c210326d708fdaa8a245ba05"
       ]
     },
-    "signature" : "ff83fe0eb560babfb75cd7149bc6bce6bbe7ff03205114f17aab19f12917a5e5",
+    "signature" : "89ac5b109f1b3205ae698f25649827871e9665e6e6abe9d96c82c6df7b8446d1",
     "type" : "project"
   },
   {
@@ -510,6 +534,15 @@
 
               ],
               "removeHeadersOnCopy" : "false"
+            },
+            {
+              "codeSignOnCopy" : "false",
+              "fileReference" : "PACKAGE:aalsifinancekit::MAINGROUP::REF_2::REF_4",
+              "guid" : "PACKAGE-PRODUCT:aalsifinancekit_AalsiFinanceKitTests.AalsiFinanceKitTests::BUILDPHASE_0::4",
+              "platformFilters" : [
+
+              ],
+              "removeHeadersOnCopy" : "false"
             }
           ],
           "guid" : "PACKAGE-PRODUCT:aalsifinancekit_AalsiFinanceKitTests.AalsiFinanceKitTests::BUILDPHASE_0",
@@ -553,7 +586,7 @@
       "productTypeIdentifier" : "com.apple.product-type.bundle.unit-test",
       "type" : "standard"
     },
-    "signature" : "acf9d0f3bbf14282a60faa9d42bc7cb97d6eba493ce5fd0fafa2bb372254edc3",
+    "signature" : "8c3ee6368ba81650d4c5d2a4d744df75bf4a6bebde82b1c525256718876c3538",
     "type" : "target"
   },
   {
@@ -923,6 +956,15 @@
 
               ],
               "removeHeadersOnCopy" : "false"
+            },
+            {
+              "codeSignOnCopy" : "false",
+              "fileReference" : "PACKAGE:aalsifinancekit::MAINGROUP::REF_3::REF_5",
+              "guid" : "PACKAGE-TARGET:AalsiFinanceKit::BUILDPHASE_0::5",
+              "platformFilters" : [
+
+              ],
+              "removeHeadersOnCopy" : "false"
             }
           ],
           "guid" : "PACKAGE-TARGET:AalsiFinanceKit::BUILDPHASE_0",
@@ -949,7 +991,7 @@
       "productTypeIdentifier" : "org.swift.product-type.library.static",
       "type" : "standard"
     },
-    "signature" : "c629244772970d986e50aef4730899f9b9bd8f867e15f36502dc889f2807439a",
+    "signature" : "7e4882b7c6daefcc4cc208be834eca7a20920265ade090360370cd324a9cc74f",
     "type" : "target"
   },
   {
@@ -1165,6 +1207,15 @@
 
               ],
               "removeHeadersOnCopy" : "false"
+            },
+            {
+              "codeSignOnCopy" : "false",
+              "fileReference" : "PACKAGE:aalsifinancekit::MAINGROUP::REF_4::REF_5",
+              "guid" : "PACKAGE-TARGET:AalsiFinanceKit--7DE791713B7A1D2B-dynamic::BUILDPHASE_0::5",
+              "platformFilters" : [
+
+              ],
+              "removeHeadersOnCopy" : "false"
             }
           ],
           "guid" : "PACKAGE-TARGET:AalsiFinanceKit--7DE791713B7A1D2B-dynamic::BUILDPHASE_0",
@@ -1190,7 +1241,7 @@
       "productTypeIdentifier" : "com.apple.product-type.library.dynamic",
       "type" : "standard"
     },
-    "signature" : "ba314f8f17abab827175248d4d455467ddeb8247ce51729e0b6dd5e9f2699655",
+    "signature" : "e1254a86f8d43fe8f764623413012ba13970c37427f0220e639df5e4ee4ae481",
     "type" : "target"
   },
   {
