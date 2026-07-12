@@ -83,6 +83,110 @@ import Testing
         #expect(items.map(\.total) == [Money(40), Money(20)])
     }
 
+    @Test func singleCurrencyLegacyRowsRetainNativeMoneyFallback() throws {
+        let itemsJSON = lineItemsJSON([
+            ("88888888-8888-8888-8888-888888888888", "Milk", "10", "1"),
+        ])
+        let legacy = try decodedTransaction(
+            amount: "-40",
+            baseAmount: nil,
+            currency: "USD",
+            date: "2026-07-10",
+            category: SpendTestFixtures.groceriesID,
+            merchant: "Legacy Market",
+            lineItemsJSON: itemsJSON
+        )
+
+        let overview = SpendDerivation.overview(
+            transactions: [legacy],
+            categories: SpendTestFixtures.categories,
+            period: SpendTestFixtures.july2026
+        )
+        let items = SpendDerivation.itemRows(
+            transactions: [legacy],
+            categories: SpendTestFixtures.categories,
+            period: SpendTestFixtures.july2026
+        )
+
+        #expect(overview.total == Money(40))
+        #expect(overview.transactionCount == 1)
+        #expect(items.map(\.total) == [Money(10)])
+    }
+
+    @Test func mixedBaseDomainOmitsUnbasedForeignMoney() throws {
+        let baseItems = lineItemsJSON([
+            ("99999999-1111-1111-1111-111111111111", "Milk", "20", "1"),
+        ])
+        let foreignItems = lineItemsJSON([
+            ("99999999-2222-2222-2222-222222222222", "Ticket", "4000", "1"),
+        ])
+        let base = try decodedTransaction(
+            amount: "-100",
+            baseAmount: "-100",
+            currency: "USD",
+            date: "2026-07-10",
+            category: SpendTestFixtures.groceriesID,
+            merchant: "Base Market",
+            lineItemsJSON: baseItems
+        )
+        let unbasedForeign = try decodedTransaction(
+            amount: "-8000",
+            baseAmount: nil,
+            currency: "INR",
+            date: "2026-07-11",
+            category: SpendTestFixtures.groceriesID,
+            merchant: "Foreign Market",
+            lineItemsJSON: foreignItems
+        )
+
+        let overview = SpendDerivation.overview(
+            transactions: [base, unbasedForeign],
+            categories: SpendTestFixtures.categories,
+            period: SpendTestFixtures.july2026
+        )
+        let items = SpendDerivation.itemRows(
+            transactions: [base, unbasedForeign],
+            categories: SpendTestFixtures.categories,
+            period: SpendTestFixtures.july2026
+        )
+
+        #expect(overview.total == Money(100))
+        #expect(overview.transactionCount == 2)
+        #expect(overview.merchants.map(\.id) == ["base market"])
+        #expect(items.map(\.id) == ["milk"])
+        #expect(items.map(\.total) == [Money(20)])
+    }
+
+    @Test func allUnbasedMixedCurrenciesDoNotCombineMoney() throws {
+        let usd = try decodedTransaction(
+            amount: "-25",
+            baseAmount: nil,
+            currency: "USD",
+            date: "2026-07-10",
+            category: SpendTestFixtures.groceriesID,
+            merchant: "USD Store"
+        )
+        let inr = try decodedTransaction(
+            amount: "-5000",
+            baseAmount: nil,
+            currency: "INR",
+            date: "2026-07-11",
+            category: SpendTestFixtures.groceriesID,
+            merchant: "INR Store"
+        )
+
+        let overview = SpendDerivation.overview(
+            transactions: [usd, inr],
+            categories: SpendTestFixtures.categories,
+            period: SpendTestFixtures.july2026
+        )
+
+        #expect(overview.total == Money())
+        #expect(overview.transactionCount == 2)
+        #expect(overview.categories.isEmpty)
+        #expect(overview.merchants.isEmpty)
+    }
+
     @Test func categoryRowsUseTopAncestorAndStableOrdering() throws {
         let transportID = UUID(uuidString: "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee")!
         let categories = SpendTestFixtures.categories + [
@@ -397,6 +501,37 @@ import Testing
         #expect(rows[0].merchantKey == "netflix")
         #expect(rows[0].amount == Money(13))
         #expect(rows[0].cadence == "monthly")
+    }
+
+    @Test func inferredRecurringOmitsNonpositiveAmountAfterRefunds() throws {
+        let charges = try ["2026-05-10", "2026-06-10", "2026-07-10"].map { date in
+            try decodedTransaction(
+                amount: "-15",
+                baseAmount: nil,
+                currency: "USD",
+                date: date,
+                category: SpendTestFixtures.foodID,
+                merchant: "Netflix"
+            )
+        }
+        let overRefund = try decodedTransaction(
+            amount: "60",
+            baseAmount: nil,
+            currency: "USD",
+            date: "2026-07-12",
+            category: SpendTestFixtures.foodID,
+            merchant: "Netflix",
+            flags: #"{"refund":true}"#
+        )
+
+        let rows = SpendDerivation.recurringRows(
+            transactions: charges + [overRefund],
+            categories: SpendTestFixtures.categories,
+            canonical: []
+        )
+
+        #expect(rows.isEmpty)
+        #expect(SpendDerivation.recurringMonthlyTotal(rows, currency: "USD") == Money())
     }
 
     @Test func canonicalRecurringExcludesIncomeTransferAndInactiveSeries() throws {

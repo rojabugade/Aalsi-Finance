@@ -115,15 +115,22 @@ public enum SpendDerivation {
         categories: [Category],
         period: SpendPeriod
     ) -> SpendOverview {
+        let moneyDomain = historicalMoneyDomain(
+            transactions,
+            categories: categories,
+            windows: [period.current, period.previous]
+        )
         let current = spendEntries(
             transactions,
             categories: categories,
-            window: period.current
+            window: period.current,
+            moneyDomain: moneyDomain
         )
         let previous = spendEntries(
             transactions,
             categories: categories,
-            window: period.previous
+            window: period.previous,
+            moneyDomain: moneyDomain
         )
         let total = current.reduce(Decimal.zero) { $0 + $1.contribution }
         let previousTotal = previous.reduce(Decimal.zero) { $0 + $1.contribution }
@@ -146,7 +153,11 @@ public enum SpendDerivation {
         return SpendOverview(
             total: Money(total),
             previousTotal: Money(previousTotal),
-            transactionCount: current.count,
+            transactionCount: spendTransactionCount(
+                transactions,
+                categories: categories,
+                window: period.current
+            ),
             dailyPace: dailyPace,
             cumulativeDaily: cumulativeDaily,
             categories: categoryRows,
@@ -168,8 +179,23 @@ public enum SpendDerivation {
         period: SpendPeriod
     ) -> [CategorySpendRow] {
         let categoriesByID = Dictionary(uniqueKeysWithValues: categories.map { ($0.id, $0) })
-        let current = spendEntries(transactions, categories: categories, window: period.current)
-        let previous = spendEntries(transactions, categories: categories, window: period.previous)
+        let moneyDomain = historicalMoneyDomain(
+            transactions,
+            categories: categories,
+            windows: [period.current, period.previous]
+        )
+        let current = spendEntries(
+            transactions,
+            categories: categories,
+            window: period.current,
+            moneyDomain: moneyDomain
+        )
+        let previous = spendEntries(
+            transactions,
+            categories: categories,
+            window: period.previous,
+            moneyDomain: moneyDomain
+        )
         let currentTotal = current.reduce(Decimal.zero) { $0 + $1.contribution }
         var aggregates: [UUID: CategoryAggregate] = [:]
 
@@ -216,8 +242,23 @@ public enum SpendDerivation {
         recurringMerchantKeys: Set<String> = []
     ) -> [MerchantSpendRow] {
         let categoriesByID = Dictionary(uniqueKeysWithValues: categories.map { ($0.id, $0) })
-        let current = spendEntries(transactions, categories: categories, window: period.current)
-        let previous = spendEntries(transactions, categories: categories, window: period.previous)
+        let moneyDomain = historicalMoneyDomain(
+            transactions,
+            categories: categories,
+            windows: [period.current, period.previous]
+        )
+        let current = spendEntries(
+            transactions,
+            categories: categories,
+            window: period.current,
+            moneyDomain: moneyDomain
+        )
+        let previous = spendEntries(
+            transactions,
+            categories: categories,
+            window: period.previous,
+            moneyDomain: moneyDomain
+        )
         var aggregates: [String: MerchantAggregate] = [:]
 
         for entry in current {
@@ -289,7 +330,17 @@ public enum SpendDerivation {
         categories: [Category],
         period: SpendPeriod
     ) -> [ItemSpendRow] {
-        let entries = spendEntries(transactions, categories: categories, window: period.current)
+        let moneyDomain = historicalMoneyDomain(
+            transactions,
+            categories: categories,
+            windows: [period.current]
+        )
+        let entries = spendEntries(
+            transactions,
+            categories: categories,
+            window: period.current,
+            moneyDomain: moneyDomain
+        )
         var aggregates: [String: ItemAggregate] = [:]
 
         for entry in entries {
@@ -483,19 +534,87 @@ public enum SpendDerivation {
     private static func spendEntries(
         _ transactions: [Transaction],
         categories: [Category],
-        window: DateWindow
+        window: DateWindow,
+        moneyDomain: HistoricalMoneyDomain
     ) -> [SpendEntry] {
         transactions.compactMap { transaction in
             guard window.start...window.end ~= transaction.txnDate else { return nil }
             switch classify(transaction, categories: categories) {
             case .spend(let amount):
-                let contribution = transaction.baseAmount?.magnitude.value ?? amount.value
+                guard let contribution = moneyDomain.magnitude(
+                    for: transaction,
+                    classifiedMagnitude: amount
+                ) else { return nil }
                 return SpendEntry(transaction: transaction, contribution: contribution)
             case .refund(let amount):
-                let contribution = transaction.baseAmount?.magnitude.value ?? amount.value
+                guard let contribution = moneyDomain.magnitude(
+                    for: transaction,
+                    classifiedMagnitude: amount
+                ) else { return nil }
                 return SpendEntry(transaction: transaction, contribution: -contribution)
             case .income, .transfer, .ignored:
                 return nil
+            }
+        }
+    }
+
+    private static func historicalMoneyDomain(
+        _ transactions: [Transaction],
+        categories: [Category],
+        windows: [DateWindow]
+    ) -> HistoricalMoneyDomain {
+        let relevant = transactions.filter { transaction in
+            guard windows.contains(where: { $0.start...$0.end ~= transaction.txnDate }) else {
+                return false
+            }
+            switch classify(transaction, categories: categories) {
+            case .spend, .refund:
+                return true
+            case .income, .transfer, .ignored:
+                return false
+            }
+        }
+        let based = relevant.filter { $0.baseAmount != nil }
+        let unbasedCurrencies = Set(
+            relevant
+                .filter { $0.baseAmount == nil }
+                .map { normalized($0.currency) }
+        )
+
+        // A native currency is a safe base-domain fallback only when the
+        // dataset is wholly legacy and single-currency, or a base-backed row
+        // proves a 1:1 native/base rate. Conflicting evidence disables fallback.
+        let inferredBaseCurrencies = Set(based.compactMap { transaction -> String? in
+            guard let baseMagnitude = transaction.baseAmount?.magnitude.value else { return nil }
+            let nativeMagnitude = transaction.amount.magnitude.value
+            let hasBaseRate = baseMagnitude == nativeMagnitude
+                || transaction.fxRate?.magnitude.value == 1
+            return hasBaseRate ? normalized(transaction.currency) : nil
+        })
+
+        let fallbackCurrency: String?
+        if based.isEmpty, unbasedCurrencies.count == 1 {
+            fallbackCurrency = unbasedCurrencies.first
+        } else if inferredBaseCurrencies.count == 1 {
+            fallbackCurrency = inferredBaseCurrencies.first
+        } else {
+            fallbackCurrency = nil
+        }
+        return HistoricalMoneyDomain(nativeFallbackCurrency: fallbackCurrency)
+    }
+
+    private static func spendTransactionCount(
+        _ transactions: [Transaction],
+        categories: [Category],
+        window: DateWindow
+    ) -> Int {
+        transactions.reduce(into: 0) { count, transaction in
+            guard window.start...window.end ~= transaction.txnDate else { return }
+            switch classify(transaction, categories: categories) {
+            case .spend, .refund:
+                count += 1
+            case .income, .transfer, .ignored:
+                break
             }
         }
     }
@@ -620,7 +739,9 @@ public enum SpendDerivation {
                 }
                 return result
             }
-            let amount = Money((total - refunds) / Decimal(matching.count))
+            let netTotal = total - refunds
+            guard netTotal > 0 else { return nil }
+            let amount = Money(netTotal / Decimal(matching.count))
             let names = matching.compactMap(\.merchant)
                 .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
                 .filter { !$0.isEmpty }
@@ -751,6 +872,24 @@ public enum SpendDerivation {
     private struct SpendEntry {
         let transaction: Transaction
         let contribution: Decimal
+    }
+
+    private struct HistoricalMoneyDomain {
+        let nativeFallbackCurrency: String?
+
+        func magnitude(
+            for transaction: Transaction,
+            classifiedMagnitude: Money
+        ) -> Decimal? {
+            if let baseAmount = transaction.baseAmount {
+                return baseAmount.magnitude.value
+            }
+            let currency = transaction.currency
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .lowercased()
+            guard currency == nativeFallbackCurrency else { return nil }
+            return classifiedMagnitude.value
+        }
     }
 
     private struct CategoryAggregate {
