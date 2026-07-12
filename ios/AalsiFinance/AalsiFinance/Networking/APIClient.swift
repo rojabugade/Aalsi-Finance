@@ -139,10 +139,23 @@ actor APIClient {
         return try await send(path: path, method: "POST", query: [], body: data)
     }
 
+    func patch<T: Decodable>(_ path: String, body: some Encodable) async throws -> T {
+        try await send(path: path, method: "PATCH", query: [], body: encoder.encode(body))
+    }
+
+    func delete(_ path: String) async throws {
+        _ = try await requestData(path: path, method: "DELETE", query: [], body: nil)
+    }
+
     private func send<T: Decodable>(path: String, method: String, query: [URLQueryItem], body: Data?) async throws -> T {
+        let data = try await requestData(path: path, method: method, query: query, body: body)
+        return try decode(from: data)
+    }
+
+    private func requestData(path: String, method: String, query: [URLQueryItem], body: Data?) async throws -> Data {
         do {
             let (data, _) = try await perform(path: path, method: method, query: query, body: body, authorized: true)
-            return try decode(from: data)
+            return data
         } catch APIError.http(let status, _) where status == 401 {
             // Access token expired: refresh once, then retry the original call.
             do {
@@ -152,7 +165,7 @@ actor APIClient {
                 throw APIError.sessionExpired
             }
             let (data, _) = try await perform(path: path, method: method, query: query, body: body, authorized: true)
-            return try decode(from: data)
+            return data
         }
     }
 
@@ -229,6 +242,26 @@ extension APIClient {
 
     func transactions() async throws -> [AalsiFinanceKit.Transaction] {
         try await get("/transactions")
+    }
+
+    func createTransaction(_ body: TransactionCreateRequest) async throws -> AalsiFinanceKit.Transaction {
+        try await post("/transactions", body: body)
+    }
+
+    func patchTransaction(id: UUID, body: TransactionPatchRequest) async throws -> AalsiFinanceKit.Transaction {
+        try await patch("/transactions/\(id.uuidString.lowercased())", body: body)
+    }
+
+    func splitTransaction(id: UUID, body: SplitRequest) async throws -> [AalsiFinanceKit.Transaction] {
+        try await post("/transactions/\(id.uuidString.lowercased())/split", body: body)
+    }
+
+    func mergeTransactions(_ body: MergeRequest) async throws -> AalsiFinanceKit.Transaction {
+        try await post("/transactions/merge", body: body)
+    }
+
+    func deleteTransaction(id: UUID) async throws {
+        try await delete("/transactions/\(id.uuidString.lowercased())")
     }
 
     func confirmTransaction(id: UUID) async throws -> AalsiFinanceKit.Transaction {
