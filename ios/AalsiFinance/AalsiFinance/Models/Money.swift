@@ -1,0 +1,62 @@
+import Foundation
+
+/// A monetary amount. pydantic v2 serializes `Decimal` as a JSON string, but be
+/// tolerant of plain numbers too.
+struct Money: Hashable, Sendable {
+    var value: Decimal
+
+    init(_ value: Decimal = .zero) {
+        self.value = value
+    }
+
+    var isNegative: Bool { value < 0 }
+    var doubleValue: Double { NSDecimalNumber(decimal: value).doubleValue }
+    var magnitude: Money { Money(abs(value)) }
+
+    func formatted(code: String) -> String {
+        value.formatted(.currency(code: code).precision(.fractionLength(0...2)))
+    }
+
+    /// Compact form for chart axes and dense rows: "$1.2K", "$3.4M".
+    func compact(code: String) -> String {
+        let amount = abs(doubleValue)
+        let sign = isNegative ? "-" : ""
+        let symbol = Locale.current.localizedCurrencySymbol(forCurrencyCode: code) ?? code
+        switch amount {
+        case 1_000_000...:
+            return "\(sign)\(symbol)\((amount / 1_000_000).formatted(.number.precision(.fractionLength(0...1))))M"
+        case 10_000...:
+            return "\(sign)\(symbol)\((amount / 1_000).formatted(.number.precision(.fractionLength(0...1))))K"
+        default:
+            return formatted(code: code)
+        }
+    }
+}
+
+extension Money: Codable {
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        if let string = try? container.decode(String.self), let decimal = Decimal(string: string, locale: Locale(identifier: "en_US_POSIX")) {
+            value = decimal
+        } else if let double = try? container.decode(Double.self) {
+            value = Decimal(double)
+        } else {
+            throw DecodingError.dataCorruptedError(
+                in: container,
+                debugDescription: "Expected a decimal string or number"
+            )
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode("\(value)")
+    }
+}
+
+extension Locale {
+    func localizedCurrencySymbol(forCurrencyCode code: String) -> String? {
+        let locale = Locale(identifier: Locale.identifier(fromComponents: [NSLocale.Key.currencyCode.rawValue: code]))
+        return locale.currencySymbol == "¤" ? nil : locale.currencySymbol
+    }
+}
