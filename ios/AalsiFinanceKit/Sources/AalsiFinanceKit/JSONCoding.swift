@@ -29,6 +29,14 @@ public extension JSONEncoder {
 }
 
 public enum APIDateParser {
+    public static func dateString(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(identifier: "UTC")
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: date)
+    }
+
     public static func parse(_ raw: String) -> Date? {
         let iso = ISO8601DateFormatter()
         iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]

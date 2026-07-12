@@ -46,4 +46,13 @@ import Testing
         #expect(summary.leftoverMonthly.value == Decimal(26100))
         #expect(summary.breakdown.count == 1)
     }
+
+    @Test func decodesSpendParityFields() throws {
+        let data = Data(#"{"id":"11111111-1111-1111-1111-111111111111","household_id":"22222222-2222-2222-2222-222222222222","account_id":null,"payment_method_id":"33333333-3333-3333-3333-333333333333","recurring_series_id":"44444444-4444-4444-4444-444444444444","owner_user_id":null,"merchant_id":null,"merchant":"Market","amount":"12.00","currency":"USD","base_amount":null,"fx_rate":null,"txn_date":"2026-07-12","category_id":null,"status":"confirmed","source_document_id":null,"source_channel":"manual","is_shared":false,"flags":{"refund":true},"notes":null,"confidence":null,"external_id":null,"created_at":"2026-07-12T10:00:00","line_items":[{"id":"55555555-5555-5555-5555-555555555555","transaction_id":"11111111-1111-1111-1111-111111111111","name":"Milk","amount":"4.00","quantity":"1","item_type_category_id":"66666666-6666-6666-6666-666666666666","confidence":0.9}]}"#.utf8)
+        let value = try JSONDecoder.api().decode(Transaction.self, from: data)
+        #expect(value.paymentMethodId != nil)
+        #expect(value.recurringSeriesId != nil)
+        #expect(value.flags?["refund"]?.boolValue == true)
+        #expect(value.lineItems.first?.itemTypeCategoryId != nil)
+    }
 }
