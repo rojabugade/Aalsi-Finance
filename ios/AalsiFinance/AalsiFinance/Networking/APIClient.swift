@@ -268,6 +268,37 @@ extension APIClient {
         ])
     }
 
+    func loans() async throws -> [Loan] {
+        try await get("/loans")
+    }
+
+    func creditCards() async throws -> [CreditCardSummary] {
+        try await get("/credit-cards")
+    }
+
+    func recurringSeries() async throws -> [RecurringSeries] {
+        try await get("/recurring-series", query: [URLQueryItem(name: "status", value: "active")])
+    }
+
+    func incomeSources() async throws -> [IncomeSource] {
+        try await get("/income-sources")
+    }
+
+    func holdings() async throws -> [Holding] {
+        try await get("/holdings")
+    }
+
+    func loanSchedule(loanId: UUID) async throws -> [PaymentScheduleEntry] {
+        try await get("/loans/\(loanId.uuidString.lowercased())/schedule")
+    }
+
+    func monitorAlerts(from: Date, to: Date) async throws -> MonitorOut {
+        try await get("/analyst/monitor", query: [
+            URLQueryItem(name: "from", value: Self.dateParam(from)),
+            URLQueryItem(name: "to", value: Self.dateParam(to)),
+        ])
+    }
+
     private static func dateParam(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
