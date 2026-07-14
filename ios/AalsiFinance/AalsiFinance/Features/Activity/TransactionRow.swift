@@ -83,8 +83,9 @@ struct TransactionRow: View {
             parts.append(displayedCategory)
         }
         parts.append(accessibleDate)
-        let direction = isSpend ? "Spent" : isIncome ? "Income" : "Amount"
-        parts.append("\(direction) \(transaction.amount.formatted(code: transaction.currency))")
+        // The signed amount is truthful without guessing whether a positive
+        // transaction is income, a refund, or a transfer from amount alone.
+        parts.append("Amount \(transaction.amount.formatted(code: transaction.currency))")
         if transaction.isDraft {
             parts.append("Draft")
         }

@@ -33,19 +33,21 @@ struct SpendingActivity: View {
 
             if snapshot.transactions.isEmpty {
                 dataEmptyState
+            } else if unfilteredPeriodRows.isEmpty {
+                periodEmptyState
             } else if rows.isEmpty {
                 noMatchesState
             } else {
                 SpendRankedPreview(
                     title: "Categories",
-                    categories: Array(snapshot.categoryRows(period: period).prefix(3)),
+                    categories: Array(rankedCategoryRows.prefix(3)),
                     currency: currency,
                     onSelect: { onRoute(.category($0)) }
                 )
 
                 SpendRankedPreview(
                     title: "Merchants",
-                    merchants: Array(snapshot.merchantRows(period: period).prefix(3)),
+                    merchants: Array(rankedMerchantRows.prefix(3)),
                     currency: currency,
                     onSelect: { onRoute(.merchant($0)) }
                 )
@@ -80,6 +82,39 @@ struct SpendingActivity: View {
 
     private var rows: [AalsiFinanceKit.Transaction] {
         snapshot.filteredTransactions(period: period, filter: filter)
+    }
+
+    private var unfilteredPeriodRows: [AalsiFinanceKit.Transaction] {
+        snapshot.filteredTransactions(period: period, filter: SpendFilter())
+    }
+
+    /// Apply the same filter over both comparison windows before asking the
+    /// canonical derivations to compute current/prior rankings and deltas.
+    private var filteredComparableTransactions: [AalsiFinanceKit.Transaction] {
+        let comparisonPeriod = SpendPeriod(
+            monthStart: period.previous.start,
+            current: DateWindow(start: period.previous.start, end: period.current.end),
+            previous: period.previous,
+            isCurrentMonth: false
+        )
+        return snapshot.filteredTransactions(period: comparisonPeriod, filter: filter)
+    }
+
+    private var rankedCategoryRows: [CategorySpendRow] {
+        SpendDerivation.categoryRows(
+            transactions: filteredComparableTransactions,
+            categories: snapshot.categories,
+            period: period
+        )
+    }
+
+    private var rankedMerchantRows: [MerchantSpendRow] {
+        SpendDerivation.merchantRows(
+            transactions: filteredComparableTransactions,
+            categories: snapshot.categories,
+            period: period,
+            recurringMerchantKeys: Set(snapshot.recurringRows.compactMap(\.merchantKey))
+        )
     }
 
     private var daySections: [SpendDaySection] {
@@ -134,6 +169,16 @@ struct SpendingActivity: View {
                 onFilterChange(SpendFilter())
             }
             .buttonStyle(.borderedProminent)
+        }
+        .frame(maxWidth: .infinity)
+        .card()
+    }
+
+    private var periodEmptyState: some View {
+        ContentUnavailableView {
+            Label("No activity this month", systemImage: "calendar")
+        } description: {
+            Text("There are transactions in other periods, but none in this selected month.")
         }
         .frame(maxWidth: .infinity)
         .card()
