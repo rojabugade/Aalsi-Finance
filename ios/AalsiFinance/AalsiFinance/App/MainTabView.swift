@@ -2,12 +2,11 @@ import SwiftUI
 
 struct MainTabView: View {
     enum AppTab: String {
-        case home, activity, insights, guidance, settings
+        case home, spending, ai, budgets, money
     }
 
     @State private var selection: AppTab = {
         #if DEBUG
-        // Test hook: lets simulator automation open a specific tab directly.
         if let raw = ProcessInfo.processInfo.environment["AALSI_INITIAL_TAB"],
            let tab = AppTab(rawValue: raw) {
             return tab
@@ -21,20 +20,19 @@ struct MainTabView: View {
             Tab("Home", systemImage: "house.fill", value: .home) {
                 HomeView()
             }
-            Tab("Activity", systemImage: "list.bullet.rectangle.fill", value: .activity) {
-                ActivityView()
+            Tab("Spending", systemImage: "wallet.bifold.fill", value: .spending) {
+                SpendingView()
             }
-            Tab("Insights", systemImage: "chart.pie.fill", value: .insights) {
-                InsightsView()
+            Tab("AI", systemImage: "sparkles", value: .ai) {
+                AIPlaceholderView()
             }
-            Tab("Guidance", systemImage: "sparkles", value: .guidance) {
-                GuidanceView()
+            Tab("Budgets", systemImage: "chart.pie.fill", value: .budgets) {
+                BudgetsView()
             }
-            Tab("Settings", systemImage: "gearshape.fill", value: .settings) {
-                SettingsView()
+            Tab("Money", systemImage: "banknote.fill", value: .money) {
+                MoneyView()
             }
         }
         .tabBarMinimizeBehavior(.onScrollDown)
-        .tint(.indigo)
     }
 }
