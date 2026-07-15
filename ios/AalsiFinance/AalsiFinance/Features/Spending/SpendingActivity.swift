@@ -12,6 +12,7 @@ struct SpendingActivity: View {
     let onToggleSelection: (UUID) -> Void
     let onRoute: (SpendingRoute) -> Void
     var onConfirm: ((AalsiFinanceKit.Transaction) -> Void)?
+    var onBeginSelection: (() -> Void)?
 
     @State private var showsFilters = false
 
@@ -30,6 +31,10 @@ struct SpendingActivity: View {
                 onOpen: { showsFilters = true },
                 onRemove: onFilterChange
             )
+
+            if !rows.isEmpty {
+                actionsRow
+            }
 
             if snapshot.transactions.isEmpty {
                 dataEmptyState
@@ -78,6 +83,46 @@ struct SpendingActivity: View {
                 onApply: onFilterChange
             )
         }
+    }
+
+    private var actionsRow: some View {
+        HStack(spacing: 12) {
+            if isSelecting {
+                Text("\(selectedTransactionIDs.count) selected")
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(.secondary)
+                Spacer()
+            } else {
+                if let onBeginSelection {
+                    Button {
+                        onBeginSelection()
+                    } label: {
+                        Label("Select", systemImage: "checkmark.circle")
+                            .font(.subheadline.weight(.medium))
+                    }
+                }
+
+                Spacer()
+
+                ShareLink(
+                    item: csvExport,
+                    preview: SharePreview(csvExport.fileName)
+                ) {
+                    Label("Export", systemImage: "square.and.arrow.up")
+                        .font(.subheadline.weight(.medium))
+                }
+                .accessibilityLabel("Export \(rows.count) filtered transactions as CSV")
+            }
+        }
+        .padding(.horizontal, 4)
+    }
+
+    private var csvExport: SpendCSVExport {
+        SpendCSVExport(
+            transactions: rows,
+            categories: snapshot.categories,
+            period: period
+        )
     }
 
     private var rows: [AalsiFinanceKit.Transaction] {

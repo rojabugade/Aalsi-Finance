@@ -218,6 +218,24 @@ final class SpendingViewModel {
         }
     }
 
+    func beginSelection() {
+        state.isSelecting = true
+        state.selectedTransactionIDs = []
+    }
+
+    func endSelection() {
+        state.isSelecting = false
+        state.selectedTransactionIDs = []
+    }
+
+    func toggleSelection(_ id: UUID) {
+        if state.selectedTransactionIDs.contains(id) {
+            state.selectedTransactionIDs.remove(id)
+        } else {
+            state.selectedTransactionIDs.insert(id)
+        }
+    }
+
     @discardableResult
     func mergeTransactions(
         ids: [UUID],
