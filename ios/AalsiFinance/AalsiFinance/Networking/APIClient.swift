@@ -332,6 +332,42 @@ extension APIClient {
         ])
     }
 
+    func acknowledgeAlert(id: String) async throws -> PersistentAlert {
+        try await post("/analyst/alerts/\(id)/acknowledge")
+    }
+
+    func analystAsk(_ body: AnalystAskRequest) async throws -> AnalystAskResponse {
+        try await post("/analyst/ask", body: body)
+    }
+
+    func analystThread(key: String) async throws -> AnalystThreadOut {
+        try await get("/analyst/thread/\(key)/messages")
+    }
+
+    func memoryStatus() async throws -> MemoryStatus {
+        try await get("/analyst/memory/status")
+    }
+
+    func planItems() async throws -> [GuidancePlanItem] {
+        try await get("/guidance/plan-items")
+    }
+
+    func updatePlanItemStatus(id: UUID, status: String) async throws -> GuidancePlanItem {
+        try await patch("/guidance/plan-items/\(id.uuidString.lowercased())", body: PlanItemStatusPatch(status: status))
+    }
+
+    func crossBorderLimits() async throws -> CrossBorderLimits {
+        try await get("/cross-border/limits")
+    }
+
+    func crossBorderTransfers() async throws -> [CrossBorderTransfer] {
+        try await get("/cross-border/transfers")
+    }
+
+    func crossBorderChecklist() async throws -> CrossBorderChecklist {
+        try await get("/cross-border/checklist")
+    }
+
     private static func dateParam(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")

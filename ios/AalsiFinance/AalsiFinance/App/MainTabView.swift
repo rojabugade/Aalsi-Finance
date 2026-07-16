@@ -24,7 +24,7 @@ struct MainTabView: View {
                 SpendingView()
             }
             Tab("AI", systemImage: "sparkles", value: .ai) {
-                AIPlaceholderView()
+                AdvisorView()
             }
             Tab("Budgets", systemImage: "chart.pie.fill", value: .budgets) {
                 BudgetsView()
