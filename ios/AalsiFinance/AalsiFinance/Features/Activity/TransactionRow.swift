@@ -10,11 +10,35 @@ struct TransactionRow: View {
     let transaction: AalsiFinanceKit.Transaction
     var categoryName: String? = nil
     var categoryPath: CategoryPath? = nil
+    /// Pass when the caller has the category tree; refunds and transfers then
+    /// render distinctly instead of masquerading as income.
+    var classification: SpendClassification? = nil
     var showsSelection = false
     var isSelected = false
 
-    private var isSpend: Bool { transaction.amount.isNegative }
-    private var isIncome: Bool { transaction.amount.value > .zero }
+    private var isIncome: Bool {
+        if let classification {
+            if case .income = classification { return true }
+            return false
+        }
+        return transaction.amount.value > .zero
+    }
+
+    private var isRefund: Bool {
+        if case .refund = classification { return true }
+        return false
+    }
+
+    private var isTransfer: Bool {
+        if case .transfer = classification { return true }
+        return false
+    }
+
+    private var amountColor: Color {
+        if isTransfer { return .secondary }
+        if isIncome || isRefund { return .green }
+        return .primary
+    }
 
     var body: some View {
         HStack(spacing: 12) {
@@ -26,11 +50,11 @@ struct TransactionRow: View {
                     .accessibilityHidden(true)
             }
 
-            Image(systemName: iconName)
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(theme.accentColor)
-                .frame(width: 40, height: 40)
-                .background(theme.accentColor.opacity(0.12), in: .circle)
+            Image(systemName: iconStyle.symbol)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(iconStyle.color)
+                .frame(width: 38, height: 38)
+                .background(iconStyle.color.opacity(0.14), in: .circle)
                 .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 2) {
@@ -55,11 +79,19 @@ struct TransactionRow: View {
                 MoneyText(
                     amount: transaction.amount,
                     code: transaction.currency,
-                    font: .subheadline.weight(.semibold)
+                    font: .subheadline.weight(.semibold),
+                    signed: true
                 )
-                .foregroundStyle(isIncome ? Color.green : Color.primary)
-                if transaction.isDraft {
-                    StatusBadge(status: transaction.status)
+                .foregroundStyle(amountColor)
+                HStack(spacing: 4) {
+                    if isRefund {
+                        FlowBadge(label: "Refund", tint: .green)
+                    } else if isTransfer {
+                        FlowBadge(label: "Transfer", tint: .secondary)
+                    }
+                    if transaction.isDraft {
+                        StatusBadge(status: transaction.status)
+                    }
                 }
             }
         }
@@ -86,6 +118,8 @@ struct TransactionRow: View {
         // The signed amount is truthful without guessing whether a positive
         // transaction is income, a refund, or a transfer from amount alone.
         parts.append("Amount \(transaction.amount.formatted(code: transaction.currency))")
+        if isRefund { parts.append("Refund") }
+        if isTransfer { parts.append("Transfer") }
         if transaction.isDraft {
             parts.append("Draft")
         }
@@ -107,13 +141,26 @@ struct TransactionRow: View {
         return transaction.txnDate.formatted(format)
     }
 
-    private var iconName: String {
-        switch transaction.sourceChannel {
+    /// Category identity drives the leading icon so a day of transactions is
+    /// scannable at a glance; flow type (income/transfer) overrides it, and
+    /// uncategorized rows fall back to their source channel.
+    private var iconStyle: CategoryStyle {
+        if isTransfer {
+            return CategoryStyle(symbol: "arrow.left.arrow.right", color: .gray)
+        }
+        if isIncome {
+            return CategoryStyle(symbol: "arrow.down.left.circle.fill", color: .green)
+        }
+        if let displayedCategory {
+            return CategoryStyle.style(for: displayedCategory)
+        }
+        let channelSymbol: String = switch transaction.sourceChannel {
         case "plaid": "building.columns.fill"
         case "gmail": "envelope.fill"
         case "sms": "message.fill"
         case "document", "ocr": "doc.text.viewfinder"
-        default: isSpend ? "cart.fill" : isIncome ? "arrow.down.left.circle.fill" : "creditcard.fill"
+        default: "cart.fill"
         }
+        return CategoryStyle(symbol: channelSymbol, color: .gray)
     }
 }

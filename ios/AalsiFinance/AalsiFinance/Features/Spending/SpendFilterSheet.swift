@@ -106,69 +106,6 @@ struct SpendFilterSheet: View {
     }
 }
 
-struct SpendFilterBar: View {
-    @Environment(AppTheme.self) private var theme
-
-    let filter: SpendFilter
-    let categories: [AalsiFinanceKit.Category]
-    let onOpen: () -> Void
-    let onRemove: (SpendFilter) -> Void
-
-    init(
-        filter: SpendFilter,
-        categories: [AalsiFinanceKit.Category] = [],
-        onOpen: @escaping () -> Void,
-        onRemove: @escaping (SpendFilter) -> Void
-    ) {
-        self.filter = filter
-        self.categories = categories
-        self.onOpen = onOpen
-        self.onRemove = onRemove
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Button(action: onOpen) {
-                HStack(spacing: 10) {
-                    Label("Filters", systemImage: filter.activeCount == 0
-                        ? "line.3.horizontal.decrease.circle"
-                        : "line.3.horizontal.decrease.circle.fill")
-                        .font(.subheadline.weight(.semibold))
-
-                    Spacer(minLength: 8)
-
-                    if filter.activeCount > 0 {
-                        Text("\(filter.activeCount) active")
-                            .font(.caption.weight(.medium))
-                            .foregroundStyle(.secondary)
-                    }
-
-                    Image(systemName: "chevron.right")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.tertiary)
-                }
-                .foregroundStyle(.primary)
-                .padding(.horizontal, 14)
-                .frame(maxWidth: .infinity, minHeight: 44)
-                .background(
-                    Color(.secondarySystemGroupedBackground),
-                    in: RoundedRectangle(cornerRadius: 16, style: .continuous)
-                )
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(filter.activeCount == 0 ? "Filters" : "Filters, \(filter.activeCount) active")
-            .accessibilityHint("Opens spending filters")
-
-            ActiveSpendFilters(
-                filter: filter,
-                categories: categories,
-                onRemove: onRemove
-            )
-        }
-        .tint(theme.accentColor)
-    }
-}
-
 struct ActiveSpendFilters: View {
     @Environment(AppTheme.self) private var theme
 
@@ -260,7 +197,7 @@ private struct ActiveFilterToken: Identifiable {
     }
 }
 
-private extension SpendFilter {
+extension SpendFilter {
     var activeCount: Int {
         var count = 0
         if !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { count += 1 }
@@ -271,7 +208,9 @@ private extension SpendFilter {
         if status != nil { count += 1 }
         return count
     }
+}
 
+private extension SpendFilter {
     func removing(_ kind: ActiveFilterToken.Kind) -> SpendFilter {
         var updated = self
         switch kind {
@@ -360,11 +299,10 @@ private enum SpendFilterPreviewData {
     .preferredColorScheme(.dark)
 }
 
-#Preview("Filters No Active") {
-    SpendFilterBar(
-        filter: SpendFilter(),
+#Preview("Active Filter Tokens") {
+    ActiveSpendFilters(
+        filter: SpendFilterPreviewData.active,
         categories: SpendFilterPreviewData.categories,
-        onOpen: {},
         onRemove: { _ in }
     )
     .padding(20)

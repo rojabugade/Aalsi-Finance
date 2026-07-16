@@ -9,6 +9,11 @@ struct SpendingRecurring: View {
     var canonicalError: String?
     let onRetry: () -> Void
     let onRoute: (SpendingRoute) -> Void
+    var onEdit: ((RecurringSpendRow) -> Void)?
+    var onDelete: ((RecurringSpendRow) -> Void)?
+    var onTrack: ((RecurringSpendRow) -> Void)?
+
+    @State private var pendingDelete: RecurringSpendRow?
 
     var body: some View {
         LazyVStack(spacing: 14) {
@@ -143,25 +148,95 @@ struct SpendingRecurring: View {
                 font: .subheadline.weight(.semibold)
             )
 
-            if row.merchantKey != nil {
-                Image(systemName: "chevron.right")
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-            }
+            rowActions(row)
         }
         .padding(.vertical, 10)
         .contentShape(Rectangle())
 
-        if let merchantKey = row.merchantKey {
-            Button {
-                onRoute(.merchant(merchantKey))
-            } label: {
+        Group {
+            if let merchantKey = row.merchantKey {
+                Button {
+                    onRoute(.merchant(merchantKey))
+                } label: {
+                    content
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("\(row.name), \(row.cadence), open merchant detail")
+            } else {
                 content
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel("\(row.name), \(row.cadence), open merchant detail")
-        } else {
-            content
+        }
+        .contextMenu { menuItems(row) }
+        .confirmationDialog(
+            "Stop tracking \(pendingDelete?.name ?? row.name)?",
+            isPresented: Binding(
+                get: { pendingDelete?.id == row.id },
+                set: { if !$0 { pendingDelete = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("Delete Series", role: .destructive) {
+                if let pendingDelete { onDelete?(pendingDelete) }
+                pendingDelete = nil
+            }
+        } message: {
+            Text("Past transactions stay; the series just stops being tracked and leaves your monthly commitment.")
+        }
+    }
+
+    /// Inline affordance so editability is discoverable without knowing about
+    /// long-press: a small menu for tracked rows, a Track button for detected.
+    @ViewBuilder
+    private func rowActions(_ row: RecurringSpendRow) -> some View {
+        if row.source == .canonical, onEdit != nil || onDelete != nil {
+            Menu {
+                menuItems(row)
+            } label: {
+                Image(systemName: "ellipsis.circle")
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+                    .frame(width: 36, height: 44)
+            }
+            .accessibilityLabel("Actions for \(row.name)")
+        } else if row.source == .inferred, let onTrack {
+            Button("Track") {
+                onTrack(row)
+            }
+            .font(.subheadline.weight(.medium))
+            .buttonStyle(.bordered)
+            .buttonBorderShape(.capsule)
+            .controlSize(.small)
+            .accessibilityLabel("Track \(row.name) as recurring")
+        } else if row.merchantKey != nil {
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+        }
+    }
+
+    @ViewBuilder
+    private func menuItems(_ row: RecurringSpendRow) -> some View {
+        if row.source == .canonical {
+            if let onEdit {
+                Button {
+                    onEdit(row)
+                } label: {
+                    Label("Edit", systemImage: "pencil")
+                }
+            }
+            if onDelete != nil {
+                Button(role: .destructive) {
+                    pendingDelete = row
+                } label: {
+                    Label("Delete", systemImage: "trash")
+                }
+            }
+        } else if let onTrack {
+            Button {
+                onTrack(row)
+            } label: {
+                Label("Track as recurring", systemImage: "plus.circle")
+            }
         }
     }
 

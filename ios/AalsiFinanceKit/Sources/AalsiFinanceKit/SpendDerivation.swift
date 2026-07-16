@@ -1,6 +1,11 @@
 import Foundation
 
 public enum SpendDerivation {
+    /// Canonical storage convention (enforced by the backend for every source,
+    /// including Plaid, whose raw feed is sign-inverted): spend is negative,
+    /// money-in is positive. Positive rows split three ways — income (payroll,
+    /// interest), transfers, and credits/refunds that offset spending. A credit
+    /// must never read as income, and must never be dropped from spend totals.
     public static func classify(
         _ transaction: Transaction,
         categories: [Category]
@@ -9,11 +14,24 @@ public enum SpendDerivation {
         let magnitude = transaction.amount.magnitude
         let flags = transaction.flags ?? [:]
 
+        guard amount != 0 else { return .ignored }
+
         if flags["transfer"]?.boolValue == true {
             return .transfer(magnitude)
         }
         if flags["refund"]?.boolValue == true, amount > 0 {
             return .refund(magnitude)
+        }
+
+        // Plaid's personal-finance-category rides along in flags and is the
+        // strongest signal for rows the household never categorized.
+        if let pfcPrimary = plaidPrimaryCategory(flags) {
+            if pfcPrimary == "TRANSFER_IN" || pfcPrimary == "TRANSFER_OUT" {
+                return .transfer(magnitude)
+            }
+            if pfcPrimary == "INCOME", amount > 0 {
+                return .income(magnitude)
+            }
         }
 
         let categoriesByID = Dictionary(uniqueKeysWithValues: categories.map { ($0.id, $0) })
@@ -22,13 +40,33 @@ public enum SpendDerivation {
         if isTransfer(topCategory) {
             return .transfer(magnitude)
         }
-        if amount > 0, isIncome(topCategory) {
-            return .income(magnitude)
+        if amount > 0 {
+            if isIncome(topCategory) || looksLikeIncome(merchant: transaction.merchant) {
+                return .income(magnitude)
+            }
+            // Any other positive row is money returned against spending —
+            // a card credit, reimbursement, or refund without the flag set.
+            return .refund(magnitude)
         }
-        if amount < 0, !isIncome(topCategory) {
+        if !isIncome(topCategory) {
             return .spend(magnitude)
         }
         return .ignored
+    }
+
+    private static func plaidPrimaryCategory(_ flags: [String: JSONValue]) -> String? {
+        guard case let .object(pfc)? = flags["plaid_pfc"],
+              case let .string(primary)? = pfc["primary"] else { return nil }
+        return primary.uppercased()
+    }
+
+    /// Merchant-text fallback for uncategorized deposits so a paycheck without
+    /// a category or Plaid taxonomy doesn't get netted against spending.
+    private static func looksLikeIncome(merchant: String?) -> Bool {
+        guard let merchant else { return false }
+        let text = merchant.lowercased()
+        return ["payroll", "salary", "direct deposit", "direct dep", "paycheck", "dividend", "interest payment"]
+            .contains { text.contains($0) }
     }
 
     public static func period(
@@ -402,7 +440,8 @@ public enum SpendDerivation {
                     cadence: series.cadence,
                     nextDueDate: series.nextDueDate,
                     merchantKey: explicitKey ?? suppressionKeys.sorted().first,
-                    source: .canonical
+                    source: .canonical,
+                    seriesId: series.id
                 ),
                 suppressionKeys: suppressionKeys
             )
@@ -457,7 +496,8 @@ public enum SpendDerivation {
 
     private static func isIncome(_ category: Category?) -> Bool {
         guard let category else { return false }
-        return normalized(category.kind) == "income" || normalized(category.name) == "income"
+        return normalized(category.kind) == "income"
+            || ["income", "salary", "payroll", "wages", "earnings"].contains(normalized(category.name))
     }
 
     private static func isTransfer(_ category: Category?) -> Bool {

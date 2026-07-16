@@ -5,20 +5,11 @@ struct SpendingOverview: View {
     let period: SpendPeriod
     let overview: SpendOverview
     var currency: String = "USD"
-    let onPrevious: () -> Void
-    let onNext: () -> Void
     let onRoute: (SpendingRoute) -> Void
 
     var body: some View {
         LazyVStack(spacing: 14) {
-            MonthSelector(
-                monthStart: period.monthStart,
-                canGoForward: !period.isCurrentMonth,
-                onPrevious: onPrevious,
-                onNext: onNext
-            )
-
-            SpendPulseCard(overview: overview, currency: currency)
+            SpendPulseCard(overview: overview, currency: currency, isCurrentMonth: period.isCurrentMonth)
 
             if let insight = overview.insight {
                 let destination = route(for: insight.kind)
@@ -68,6 +59,8 @@ struct MonthSelector: View {
                 Image(systemName: "chevron.left")
                     .frame(width: 44, height: 44)
             }
+            .buttonStyle(.glass)
+            .buttonBorderShape(.circle)
             .accessibilityLabel("Previous month")
 
             Spacer(minLength: 8)
@@ -75,6 +68,7 @@ struct MonthSelector: View {
             Text(monthTitle)
                 .font(.headline)
                 .fontDesign(.rounded)
+                .contentTransition(.numericText())
                 .accessibilityAddTraits(.isHeader)
 
             Spacer(minLength: 8)
@@ -83,6 +77,8 @@ struct MonthSelector: View {
                 Image(systemName: "chevron.right")
                     .frame(width: 44, height: 44)
             }
+            .buttonStyle(.glass)
+            .buttonBorderShape(.circle)
             .disabled(!canGoForward)
             .opacity(canGoForward ? 1 : 0.35)
             .accessibilityLabel("Next month")
@@ -186,8 +182,6 @@ private enum SpendingOverviewPreviewFixtures {
         SpendingOverview(
             period: SpendingOverviewPreviewFixtures.period,
             overview: SpendingOverviewPreviewFixtures.overview,
-            onPrevious: {},
-            onNext: {},
             onRoute: { _ in }
         )
         .padding(.vertical, 20)
@@ -202,8 +196,6 @@ private enum SpendingOverviewPreviewFixtures {
         SpendingOverview(
             period: SpendingOverviewPreviewFixtures.period,
             overview: SpendingOverviewPreviewFixtures.overview,
-            onPrevious: {},
-            onNext: {},
             onRoute: { _ in }
         )
         .padding(.vertical, 20)
@@ -218,8 +210,6 @@ private enum SpendingOverviewPreviewFixtures {
         SpendingOverview(
             period: SpendingOverviewPreviewFixtures.period,
             overview: SpendingOverviewPreviewFixtures.empty,
-            onPrevious: {},
-            onNext: {},
             onRoute: { _ in }
         )
         .padding(.vertical, 20)

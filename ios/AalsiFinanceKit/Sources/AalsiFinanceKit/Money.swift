@@ -17,6 +17,15 @@ public struct Money: Hashable, Sendable {
         value.formatted(.currency(code: code))
     }
 
+    /// Explicit-sign form for transaction rows ("+$5,200.00", "-$15.54") so
+    /// money-in and money-out never rely on color alone to read differently.
+    public func signedFormatted(code: String) -> String {
+        let base = magnitude.formatted(code: code)
+        if value < 0 { return "-\(base)" }
+        if value > 0 { return "+\(base)" }
+        return base
+    }
+
     /// Compact form for chart axes and dense rows: "$1.2K", "$3.4M".
     public func compact(code: String) -> String {
         let amount = abs(doubleValue)

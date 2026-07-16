@@ -202,7 +202,17 @@
   background: #fff;
   box-shadow: 0 10px 26px rgba(24, 45, 39, 0.06);
   animation: newDashboardRise var(--new-dashboard-duration-slow) var(--new-dashboard-ease-out) 60ms both;
-  mask-image: linear-gradient(90deg, transparent, #000 18px, #000 calc(100% - 18px), transparent);
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    rgba(0,0,0,0.2) 12px,
+    rgba(0,0,0,0.6) 28px,
+    #000 40px,
+    #000 calc(100% - 40px),
+    rgba(0,0,0,0.6) calc(100% - 28px),
+    rgba(0,0,0,0.2) calc(100% - 12px),
+    transparent
+  );
   padding: 12px;
   scroll-behavior: smooth;
   scrollbar-width: none;
@@ -537,10 +547,23 @@
   box-shadow: inset 0 0 0 12px var(--card);
 }
 
-/* Reminder carousel — white card -> card tone */
+/* Reminder carousel — match the app background so the mask fade
+   blends seamlessly. The mask reveals what's behind the carousel;
+   using the same bg as the page means zero visible seam. */
 [data-theme$="-dark"] .reminderCarousel {
-  background: var(--card);
+  background: var(--new-dashboard-bg);
   box-shadow: 0 10px 26px rgba(0, 0, 0, 0.3);
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    rgba(0,0,0,0.2) 12px,
+    rgba(0,0,0,0.6) 28px,
+    #000 40px,
+    #000 calc(100% - 40px),
+    rgba(0,0,0,0.6) calc(100% - 28px),
+    rgba(0,0,0,0.2) calc(100% - 12px),
+    transparent
+  );
 }
 
 /* Reminder ads — dark accent card. In light mode fg doubles as card bg;

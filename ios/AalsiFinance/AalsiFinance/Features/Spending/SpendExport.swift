@@ -37,11 +37,12 @@ struct SpendCSVExport: Transferable {
     }
 }
 
-/// Bottom safe-area bar shown while Activity selection mode is active.
+/// Floating action bar while Activity selection mode is active. Cancel lives
+/// in the top toolbar next to the selection count (where Select was), so this
+/// bar carries only the primary action.
 struct SpendMergeBar: View {
     let selectedCount: Int
     let isMutating: Bool
-    let onCancel: () -> Void
     let onMerge: () -> Void
 
     @State private var showsConfirmation = false
@@ -50,8 +51,11 @@ struct SpendMergeBar: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Button("Cancel", action: onCancel)
-                .disabled(isMutating)
+            Text(isEligible
+                ? "Combine into one transaction"
+                : "Select 2 or more to merge")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
 
             Spacer()
 
@@ -65,12 +69,13 @@ struct SpendMergeBar: View {
                         .fontWeight(.semibold)
                 }
             }
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(.glassProminent)
             .disabled(!isEligible || isMutating)
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 12)
-        .background(.bar)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .glassEffect(.regular, in: .capsule)
+        .padding(.horizontal, 16)
         .confirmationDialog(
             "Merge \(selectedCount) transactions?",
             isPresented: $showsConfirmation,

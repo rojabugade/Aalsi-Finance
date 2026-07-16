@@ -20,8 +20,37 @@ import Testing
 
         #expect(SpendDerivation.classify(try f.transaction("2500", date: "2026-07-10", category: salaryID), categories: categories) == .income(Money(2500)))
         #expect(SpendDerivation.classify(try f.transaction("250", date: "2026-07-10", category: f.groceriesID, flags: "{\"transfer\":true}"), categories: categories) == .transfer(Money(250)))
-        #expect(SpendDerivation.classify(try f.transaction("12", date: "2026-07-10", category: f.groceriesID), categories: categories) == .ignored)
+        // A positive amount on a spend category is a credit back against
+        // spending (card credit, reimbursement) even without a refund flag.
+        #expect(SpendDerivation.classify(try f.transaction("12", date: "2026-07-10", category: f.groceriesID), categories: categories) == .refund(Money(12)))
         #expect(SpendDerivation.classify(try f.transaction("0", date: "2026-07-10", category: f.groceriesID), categories: categories) == .ignored)
+    }
+
+    @Test func classificationUsesPlaidTaxonomyAndMerchantHints() throws {
+        let f = SpendTestFixtures.self
+
+        // Plaid's personal-finance-category rides in flags and beats the
+        // positive-means-refund fallback for uncategorized rows.
+        #expect(SpendDerivation.classify(
+            try f.transaction("5200", date: "2026-07-01", category: nil, flags: "{\"plaid_pfc\":{\"primary\":\"INCOME\"}}"),
+            categories: f.categories
+        ) == .income(Money(5200)))
+        #expect(SpendDerivation.classify(
+            try f.transaction("300", date: "2026-07-01", category: nil, flags: "{\"plaid_pfc\":{\"primary\":\"TRANSFER_IN\"}}"),
+            categories: f.categories
+        ) == .transfer(Money(300)))
+
+        // Merchant text rescues uncategorized deposits that are clearly pay.
+        #expect(SpendDerivation.classify(
+            try f.transaction("2400", date: "2026-07-01", category: nil, merchant: "ACME CORP PAYROLL"),
+            categories: f.categories
+        ) == .income(Money(2400)))
+
+        // Anything else positive is a credit against spending, not income.
+        #expect(SpendDerivation.classify(
+            try f.transaction("45", date: "2026-07-01", category: nil, merchant: "AMAZON MKTP REFUND"),
+            categories: f.categories
+        ) == .refund(Money(45)))
     }
 
     @Test func currentMonthUsesComparableElapsedPriorWindow() {

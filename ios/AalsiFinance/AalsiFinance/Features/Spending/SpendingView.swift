@@ -6,12 +6,16 @@ struct SpendingView: View {
         case create
         case edit(AalsiFinanceKit.Transaction)
         case split(AalsiFinanceKit.Transaction)
+        case trackRecurring(RecurringSpendRow?)
+        case editRecurring(RecurringSeries)
 
         var id: String {
             switch self {
             case .create: "create"
             case .edit(let transaction): "edit-\(transaction.id)"
             case .split(let transaction): "split-\(transaction.id)"
+            case .trackRecurring(let row): "track-recurring-\(row?.id ?? "new")"
+            case .editRecurring(let series): "edit-recurring-\(series.id)"
             }
         }
     }
@@ -19,6 +23,7 @@ struct SpendingView: View {
     @Environment(AppSession.self) private var session
     @State private var model: SpendingViewModel
     @State private var sheet: SpendingSheet?
+    @State private var recurringActionError: String?
 
     init() {
         let model = SpendingViewModel()
@@ -28,6 +33,9 @@ struct SpendingView: View {
            let value = Int(raw),
            let pill = SpendingPill(rawValue: value) {
             model.state.selectedPill = pill
+        }
+        if ProcessInfo.processInfo.environment["AALSI_SPEND_SELECTING"] == "1" {
+            model.state.isSelecting = true
         }
         #endif
         _model = State(initialValue: model)
@@ -62,7 +70,6 @@ struct SpendingView: View {
                     SpendMergeBar(
                         selectedCount: model.state.selectedTransactionIDs.count,
                         isMutating: model.state.isMutating,
-                        onCancel: { model.endSelection() },
                         onMerge: {
                             Task {
                                 await model.mergeTransactions(
@@ -78,6 +85,17 @@ struct SpendingView: View {
         .task { await model.load(api: session.api) }
         .sheet(item: $sheet) { sheet in
             sheetContent(sheet)
+        }
+        .alert(
+            "Couldn't update recurring",
+            isPresented: Binding(
+                get: { recurringActionError != nil },
+                set: { if !$0 { recurringActionError = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(recurringActionError ?? "")
         }
     }
 
@@ -102,14 +120,23 @@ struct SpendingView: View {
     private var content: some View {
         if let snapshot = model.state.coreSnapshot {
             let period = model.state.period()
+            // Month navigation lives above the pill content so Overview and
+            // Activity stay on the same period without duplicating controls.
+            if model.state.selectedPill != .recurring {
+                MonthSelector(
+                    monthStart: period.monthStart,
+                    canGoForward: !period.isCurrentMonth,
+                    onPrevious: { shiftMonth(-1) },
+                    onNext: { shiftMonth(1) }
+                )
+                .padding(.horizontal, 20)
+            }
             switch model.state.selectedPill {
             case .overview:
                 SpendingOverview(
                     period: period,
                     overview: snapshot.overview(period: period),
                     currency: currency,
-                    onPrevious: { shiftMonth(-1) },
-                    onNext: { shiftMonth(1) },
                     onRoute: push
                 )
             case .activity:
@@ -126,7 +153,8 @@ struct SpendingView: View {
                     onConfirm: { transaction in
                         Task { await model.confirmTransaction(id: transaction.id, api: session.api) }
                     },
-                    onBeginSelection: { model.beginSelection() }
+                    onBeginSelection: { model.beginSelection() },
+                    onEndSelection: { model.endSelection() }
                 )
             case .recurring:
                 SpendingRecurring(
@@ -138,7 +166,21 @@ struct SpendingView: View {
                     onRetry: {
                         Task { await model.refreshRecurring(api: session.api) }
                     },
-                    onRoute: push
+                    onRoute: push,
+                    onEdit: { row in
+                        if let series = canonicalSeries(for: row) {
+                            sheet = .editRecurring(series)
+                        }
+                    },
+                    onDelete: { row in
+                        guard let id = row.seriesId else { return }
+                        Task {
+                            recurringActionError = await model.deleteRecurringSeries(id: id, api: session.api)
+                        }
+                    },
+                    onTrack: { row in
+                        sheet = .trackRecurring(row)
+                    }
                 )
             }
         } else if let error = model.state.coreError {
@@ -245,7 +287,20 @@ struct SpendingView: View {
                     )
                 }
             )
+        case .trackRecurring(let prefill):
+            RecurringSeriesEditorView(mode: .create(prefill: prefill)) { body in
+                await model.createRecurringSeries(api: session.api, body: body)
+            }
+        case .editRecurring(let series):
+            RecurringSeriesEditorView(mode: .edit(series)) { body in
+                await model.patchRecurringSeries(id: series.id, api: session.api, body: body)
+            }
         }
+    }
+
+    private func canonicalSeries(for row: RecurringSpendRow) -> RecurringSeries? {
+        guard let id = row.seriesId else { return nil }
+        return model.state.canonicalRecurring.first { $0.id == id }
     }
 
     private func push(_ route: SpendingRoute) {

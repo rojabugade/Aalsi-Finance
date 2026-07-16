@@ -218,6 +218,39 @@ final class SpendingViewModel {
         }
     }
 
+    // MARK: - Recurring series lifecycle
+
+    /// Returns nil on success, else a user-facing message (shown by the caller).
+    func createRecurringSeries(api: APIClient, body: RecurringSeriesUpsertRequest) async -> String? {
+        do {
+            _ = try await api.createRecurringSeries(body)
+            await refreshRecurring(api: api)
+            return nil
+        } catch {
+            return error.localizedDescription
+        }
+    }
+
+    func patchRecurringSeries(id: UUID, api: APIClient, body: RecurringSeriesUpsertRequest) async -> String? {
+        do {
+            _ = try await api.patchRecurringSeries(id: id, body: body)
+            await refreshRecurring(api: api)
+            return nil
+        } catch {
+            return error.localizedDescription
+        }
+    }
+
+    func deleteRecurringSeries(id: UUID, api: APIClient) async -> String? {
+        do {
+            try await api.deleteRecurringSeries(id: id)
+            await refreshRecurring(api: api)
+            return nil
+        } catch {
+            return error.localizedDescription
+        }
+    }
+
     func beginSelection() {
         state.isSelecting = true
         state.selectedTransactionIDs = []

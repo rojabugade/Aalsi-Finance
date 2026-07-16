@@ -225,6 +225,9 @@ public struct RecurringSpendRow: Identifiable, Hashable, Sendable {
     public let nextDueDate: Date?
     public let merchantKey: String?
     public let source: RecurringSpendSource
+    /// Backing `/recurring-series` id for canonical rows; inferred rows have
+    /// none until the user chooses to track them.
+    public let seriesId: UUID?
 
     public init(
         id: String,
@@ -234,7 +237,8 @@ public struct RecurringSpendRow: Identifiable, Hashable, Sendable {
         cadence: String,
         nextDueDate: Date?,
         merchantKey: String?,
-        source: RecurringSpendSource
+        source: RecurringSpendSource,
+        seriesId: UUID? = nil
     ) {
         self.id = id
         self.name = name
@@ -244,6 +248,7 @@ public struct RecurringSpendRow: Identifiable, Hashable, Sendable {
         self.nextDueDate = nextDueDate
         self.merchantKey = merchantKey
         self.source = source
+        self.seriesId = seriesId
     }
 
     /// The exact monthly equivalent, or `nil` when the cadence is not

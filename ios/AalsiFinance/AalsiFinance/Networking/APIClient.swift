@@ -143,8 +143,17 @@ actor APIClient {
         try await send(path: path, method: "PATCH", query: [], body: encoder.encode(body))
     }
 
+    func put<T: Decodable>(_ path: String, body: some Encodable) async throws -> T {
+        try await send(path: path, method: "PUT", query: [], body: encoder.encode(body))
+    }
+
     func delete(_ path: String) async throws {
         _ = try await requestData(path: path, method: "DELETE", query: [], body: nil)
+    }
+
+    /// POST that expects an empty (204) response body.
+    func postVoid(_ path: String, body: some Encodable) async throws {
+        _ = try await requestData(path: path, method: "POST", query: [], body: encoder.encode(body))
     }
 
     private func send<T: Decodable>(path: String, method: String, query: [URLQueryItem], body: Data?) async throws -> T {
@@ -284,6 +293,18 @@ extension APIClient {
         try await get("/budgets")
     }
 
+    func createBudget(_ body: BudgetUpsertRequest) async throws -> Budget {
+        try await post("/budgets", body: body)
+    }
+
+    func patchBudget(id: UUID, body: BudgetUpsertRequest) async throws -> Budget {
+        try await patch("/budgets/\(id.uuidString.lowercased())", body: body)
+    }
+
+    func deleteBudget(id: UUID) async throws {
+        try await delete("/budgets/\(id.uuidString.lowercased())")
+    }
+
     func breakdown(dimension: String, from: Date, to: Date) async throws -> Breakdown {
         try await get("/analytics/breakdown", query: [
             URLQueryItem(name: "dimension", value: dimension),
@@ -311,6 +332,55 @@ extension APIClient {
 
     func recurringSeries() async throws -> [RecurringSeries] {
         try await get("/recurring-series", query: [URLQueryItem(name: "status", value: "active")])
+    }
+
+    func createRecurringSeries(_ body: RecurringSeriesUpsertRequest) async throws -> RecurringSeries {
+        try await post("/recurring-series", body: body)
+    }
+
+    func patchRecurringSeries(id: UUID, body: RecurringSeriesUpsertRequest) async throws -> RecurringSeries {
+        try await patch("/recurring-series/\(id.uuidString.lowercased())", body: body)
+    }
+
+    func deleteRecurringSeries(id: UUID) async throws {
+        try await delete("/recurring-series/\(id.uuidString.lowercased())")
+    }
+
+    func patchLoan(id: UUID, body: LoanPatchRequest) async throws -> Loan {
+        try await patch("/loans/\(id.uuidString.lowercased())", body: body)
+    }
+
+    func deleteLoan(id: UUID) async throws {
+        try await delete("/loans/\(id.uuidString.lowercased())")
+    }
+
+    func putCreditCardDetail(loanId: UUID, body: CreditCardDetailRequest) async throws -> CreditCardSummary {
+        try await put("/loans/\(loanId.uuidString.lowercased())/credit-card-detail", body: body)
+    }
+
+    func patchIncomeSource(id: UUID, body: IncomeSourcePatchRequest) async throws -> IncomeSource {
+        try await patch("/income-sources/\(id.uuidString.lowercased())", body: body)
+    }
+
+    func patchHolding(id: UUID, body: HoldingPatchRequest) async throws -> Holding {
+        try await patch("/holdings/\(id.uuidString.lowercased())", body: body)
+    }
+
+    func deleteHolding(id: UUID) async throws {
+        try await delete("/holdings/\(id.uuidString.lowercased())")
+    }
+
+    func householdMembers() async throws -> [HouseholdMember] {
+        try await get("/household/members")
+    }
+
+    func mfaEnroll() async throws -> MfaEnrollment {
+        try await post("/auth/mfa/enroll")
+    }
+
+    func mfaVerify(code: String) async throws {
+        struct Body: Encodable { let totpCode: String }
+        try await postVoid("/auth/mfa/verify", body: Body(totpCode: code))
     }
 
     func incomeSources() async throws -> [IncomeSource] {

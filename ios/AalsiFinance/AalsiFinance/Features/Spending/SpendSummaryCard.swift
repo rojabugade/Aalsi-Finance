@@ -61,10 +61,11 @@ struct SpendSummaryCard: View {
 struct SpendPulseCard: View {
     let overview: SpendOverview
     let currency: String
+    var isCurrentMonth = true
 
     var body: some View {
         SpendSummaryCard(
-            title: transactionSummary,
+            title: isCurrentMonth ? "Spent so far" : "Spent",
             amount: overview.total,
             currency: currency,
             comparisonText: comparison.text,
@@ -74,11 +75,6 @@ struct SpendPulseCard: View {
             supportingAmount: overview.dailyPace,
             chartValues: overview.cumulativeDaily
         )
-    }
-
-    private var transactionSummary: String {
-        let noun = overview.transactionCount == 1 ? "transaction" : "transactions"
-        return "Spent across \(overview.transactionCount) \(noun)"
     }
 
     private var comparison: (text: String, systemImage: String, color: Color) {
@@ -126,12 +122,7 @@ struct SpendInsightCard: View {
     private func content(showsDisclosure: Bool) -> some View {
         HStack(alignment: .center, spacing: 12) {
             VStack(alignment: .leading, spacing: 5) {
-                Text("Insight")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                    .textCase(.uppercase)
-
-                Text(insight.title)
+                Label(insight.title, systemImage: "sparkles")
                     .font(.headline)
 
                 Text(insight.detail)
@@ -213,7 +204,7 @@ struct SpendRankedPreview: View {
                         Button { onSelect(row.id) } label: {
                             rankedRow(
                                 title: row.name,
-                                detail: "\(row.count) \(row.count == 1 ? "transaction" : "transactions") · \(row.share.formatted(.percent.precision(.fractionLength(0))))",
+                                detail: "\(row.share.formatted(.percent.precision(.fractionLength(0)))) of spend",
                                 amount: row.total
                             )
                         }
@@ -254,10 +245,7 @@ struct SpendRankedPreview: View {
     private func rankedRow(title: String, detail: String, amount: Money) -> some View {
         if dynamicTypeSize.isAccessibilitySize {
             VStack(alignment: .leading, spacing: 8) {
-                HStack(alignment: .top, spacing: 12) {
-                    rankMarker
-                    rankIdentity(title: title, detail: detail, allowsWrapping: true)
-                }
+                rankIdentity(title: title, detail: detail, allowsWrapping: true)
 
                 HStack(alignment: .center, spacing: 8) {
                     MoneyText(amount: amount, code: currency, font: .subheadline.weight(.semibold))
@@ -270,7 +258,6 @@ struct SpendRankedPreview: View {
             .contentShape(Rectangle())
         } else {
             HStack(alignment: .center, spacing: 12) {
-                rankMarker
                 rankIdentity(title: title, detail: detail, allowsWrapping: false)
 
                 Spacer(minLength: 8)
@@ -281,18 +268,6 @@ struct SpendRankedPreview: View {
             .frame(minHeight: 44)
             .contentShape(Rectangle())
         }
-    }
-
-    private var rankMarker: some View {
-        Circle()
-            .fill(theme.accentColor.opacity(0.14))
-            .frame(width: 32, height: 32)
-            .overlay(
-                Circle()
-                    .fill(theme.accentColor)
-                    .frame(width: 8, height: 8)
-            )
-            .accessibilityHidden(true)
     }
 
     private func rankIdentity(title: String, detail: String, allowsWrapping: Bool) -> some View {

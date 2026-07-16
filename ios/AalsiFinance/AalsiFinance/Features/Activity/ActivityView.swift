@@ -28,7 +28,7 @@ struct ActivityView: View {
                     }
                 }
             }
-            .navigationTitle("Activity")
+            .navigationTitle("Spending")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     filterMenu

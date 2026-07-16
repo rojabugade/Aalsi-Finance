@@ -46,9 +46,12 @@ struct MoneyText: View {
     let amount: Money
     let code: String
     var font: Font = .body
+    /// Explicit "+"/"-" prefix; keeps money-in and money-out readable without
+    /// relying on color alone.
+    var signed = false
 
     var body: some View {
-        Text(amount.formatted(code: code))
+        Text(signed ? amount.signedFormatted(code: code) : amount.formatted(code: code))
             .font(font)
             .fontDesign(.rounded)
             .monospacedDigit()
@@ -73,6 +76,21 @@ struct StatusBadge: View {
 
     var body: some View {
         Text(status.capitalized)
+            .font(.caption2.weight(.semibold))
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(tint.opacity(0.15), in: .capsule)
+            .foregroundStyle(tint)
+    }
+}
+
+/// Small typed chip for money-flow direction ("Refund", "Transfer").
+struct FlowBadge: View {
+    let label: String
+    let tint: Color
+
+    var body: some View {
+        Text(label)
             .font(.caption2.weight(.semibold))
             .padding(.horizontal, 8)
             .padding(.vertical, 3)
