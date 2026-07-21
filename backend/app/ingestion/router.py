@@ -17,12 +17,8 @@ from app.config import get_settings
 from app.db import get_session
 from app.rate_limit import limiter
 from app.ingestion import service
-from app.ingestion.gateways import GmailGateway, IntegrationUnavailable, PlaidGateway, get_gmail_gateway, get_plaid_gateway, get_splitwise_gateway
+from app.ingestion.gateways import IntegrationUnavailable, PlaidGateway, get_plaid_gateway, get_splitwise_gateway
 from app.ingestion.schemas import (
-    EmailInboundIn,
-    EmailOAuthCallbackOut,
-    EmailOAuthStartOut,
-    EmailSyncOut,
     PlaidExchangeIn,
     PlaidExchangeOut,
     PlaidItemOut,
@@ -121,40 +117,29 @@ async def plaid_delete(item_id: uuid.UUID, user: User = Depends(require_role("ow
         _not_found(exc)
 
 
-@router.post("/email/oauth/start", response_model=EmailOAuthStartOut)
-async def email_oauth_start(user: User = Depends(require_role("owner", "member")), gateway: GmailGateway = Depends(get_gmail_gateway)):
-    try:
-        return await service.email_oauth_start(user, gateway)
-    except IntegrationUnavailable as exc:
-        _bad_gateway(exc)
+@router.post("/email/oauth/start", status_code=status.HTTP_410_GONE)
+async def email_oauth_start():
+    raise HTTPException(
+        status.HTTP_410_GONE,
+        "Mailbox-wide Gmail OAuth is disabled. Use document upload while email forwarding is prepared.",
+    )
 
 
-@router.get("/email/oauth/callback", response_model=EmailOAuthCallbackOut)
-async def email_oauth_callback(code: str = Query(...), state: str = Query(...), session: AsyncSession = Depends(get_session), gateway: GmailGateway = Depends(get_gmail_gateway)):
-    user = await _oauth_user(session, state)
-    try:
-        await service.email_oauth_callback(session, user, code, state, gateway)
-        return _connections_redirect("gmail")
-    except IntegrationUnavailable as exc:
-        _bad_gateway(exc)
-    except service.NotFound as exc:
-        _not_found(exc)
+@router.get("/email/oauth/callback", status_code=status.HTTP_410_GONE)
+async def email_oauth_callback():
+    raise HTTPException(status.HTTP_410_GONE, "Mailbox-wide Gmail OAuth is disabled")
 
 
-@router.post("/email/sync", response_model=EmailSyncOut)
-async def email_sync(user: User = Depends(require_role("owner", "member")), session: AsyncSession = Depends(get_session), gateway: GmailGateway = Depends(get_gmail_gateway)):
-    try:
-        return await service.email_sync(session, user, gateway)
-    except IntegrationUnavailable as exc:
-        _bad_gateway(exc)
-    except service.NotFound as exc:
-        _not_found(exc)
+@router.post("/email/sync", status_code=status.HTTP_410_GONE)
+async def email_sync():
+    raise HTTPException(status.HTTP_410_GONE, "Mailbox-wide Gmail OAuth is disabled")
 
 
-@router.post("/webhooks/email-inbound", response_model=dict, status_code=status.HTTP_201_CREATED)
-async def email_inbound(data: EmailInboundIn, user: User = Depends(require_role("owner", "member")), session: AsyncSession = Depends(get_session)):
-    doc = await service.create_email_document(session, user, data)
-    return {"document_id": doc.id, "status": doc.status}
+@router.post("/webhooks/email-inbound", status_code=status.HTTP_410_GONE)
+async def email_inbound():
+    # The old endpoint was authenticated as an app user, not an inbound provider;
+    # it must not be presented as a forwarding webhook.
+    raise HTTPException(status.HTTP_410_GONE, "Email forwarding is not configured")
 
 
 @router.delete("/email/connection", status_code=status.HTTP_204_NO_CONTENT)

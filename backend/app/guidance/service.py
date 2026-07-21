@@ -6,7 +6,7 @@ from datetime import date, datetime, timezone
 from decimal import Decimal
 from pathlib import Path
 
-from sqlalchemy import case, func, or_, select, text
+from sqlalchemy import case, delete, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.analyst.conversation import append_turn, get_or_create_thread, recent_turns
@@ -161,7 +161,15 @@ async def ask_guidance(session: AsyncSession, user: User, data: GuidanceAskIn, l
         )
         history = await recent_turns(session, thread.id, limit=6)
 
-    docs = await retrieve_docs(session, data.question, country=data.country, topic=data.topic, llm=llm, user=user)
+    docs = await retrieve_docs(
+        session,
+        data.question,
+        country=data.country,
+        topic=data.topic,
+        domain=data.domain,
+        llm=llm,
+        user=user,
+    )
     citations = [_citation(doc) for doc in docs]
     if not docs:
         answer = "I could not find relevant guidance in the curated corpus. Add or refresh source documents before relying on an answer."
@@ -253,8 +261,8 @@ async def guidance_thread_history(
     return GuidanceThreadOut(messages=messages)
 
 
-async def retrieve_docs(session: AsyncSession, query: str, *, country: str | None = None, topic: str | None = None, llm: LLMClient | None = None, user: User | None = None, limit: int = 5) -> list[GuidanceDoc]:
-    stmt = select(GuidanceDoc)
+async def retrieve_docs(session: AsyncSession, query: str, *, country: str | None = None, topic: str | None = None, domain: str = "general", llm: LLMClient | None = None, user: User | None = None, limit: int = 5) -> list[GuidanceDoc]:
+    stmt = select(GuidanceDoc).where(GuidanceDoc.domain == domain)
     if country:
         cc = _country(country)
         stmt = stmt.where(or_(GuidanceDoc.country == cc, GuidanceDoc.country.is_(None)))
@@ -278,9 +286,12 @@ async def retrieve_docs(session: AsyncSession, query: str, *, country: str | Non
     return list((await session.execute(stmt)).scalars().all())
 
 
-async def wizard(session: AsyncSession, user: User, data: GuidanceWizardIn) -> dict:
+async def wizard(session: AsyncSession, user: User, data: GuidanceWizardIn, *, domain: str | None = None) -> dict:
     countries = [_country(c) for c in data.countries if _country(c)]
-    stmt = select(GuidanceDoc).where(GuidanceDoc.country.in_(countries) if countries else GuidanceDoc.country.is_not(None)).order_by(GuidanceDoc.source_type.asc(), GuidanceDoc.topic.asc()).limit(12)
+    stmt = select(GuidanceDoc).where(GuidanceDoc.country.in_(countries) if countries else GuidanceDoc.country.is_not(None))
+    if domain is not None:
+        stmt = stmt.where(GuidanceDoc.domain == domain)
+    stmt = stmt.order_by(GuidanceDoc.source_type.asc(), GuidanceDoc.topic.asc()).limit(12)
     docs = list((await session.execute(stmt)).scalars().all())
     checklist = []
     for doc in docs:
@@ -311,8 +322,11 @@ async def wizard(session: AsyncSession, user: User, data: GuidanceWizardIn) -> d
     return {"checklist": checklist, "reminders": reminders, "citations": [_citation(d) for d in docs], "disclaimer": DISCLAIMER}
 
 
-async def checklist(session: AsyncSession) -> dict:
-    docs = list((await session.execute(select(GuidanceDoc).order_by(GuidanceDoc.country.asc().nullslast(), GuidanceDoc.topic.asc()).limit(50))).scalars().all())
+async def checklist(session: AsyncSession, *, domain: str | None = None) -> dict:
+    stmt = select(GuidanceDoc)
+    if domain is not None:
+        stmt = stmt.where(GuidanceDoc.domain == domain)
+    docs = list((await session.execute(stmt.order_by(GuidanceDoc.country.asc().nullslast(), GuidanceDoc.topic.asc()).limit(50))).scalars().all())
     items = [{"title": doc.title, "country": doc.country, "topic": doc.topic, "source_type": doc.source_type, "source_url": doc.source_url, "effective_date": str(doc.effective_date) if doc.effective_date else None} for doc in docs]
     return {"checklist": items, "citations": [_citation(d) for d in docs], "disclaimer": DISCLAIMER}
 
@@ -364,23 +378,14 @@ async def _attach_base_transfer_amount(session: AsyncSession, row: CrossBorderTr
 
 
 async def limits(session: AsyncSession, user: User) -> dict:
-    totals_rows = (await session.execute(
-        select(CrossBorderTransfer.from_currency, CrossBorderTransfer.to_currency, func.sum(CrossBorderTransfer.amount))
-        .where(CrossBorderTransfer.household_id == user.household_id)
-        .group_by(CrossBorderTransfer.from_currency, CrossBorderTransfer.to_currency)
-    )).all()
-    totals = [{"from_currency": r[0], "to_currency": r[1], "amount": str(_money(r[2]))} for r in totals_rows]
-    docs = list((await session.execute(select(GuidanceDoc).where(GuidanceDoc.topic.ilike("%limit%")).order_by(GuidanceDoc.effective_date.desc().nullslast()).limit(10))).scalars().all())
-    parsed_limits = [_parse_limit(doc) for doc in docs]
-    parsed_limits = [item for item in parsed_limits if item]
-    warnings = []
-    for total in totals:
-        for item in parsed_limits:
-            if item["currency"] == total["from_currency"]:
-                ratio = _money(total["amount"]) / _money(item["amount"]) if _money(item["amount"]) else Decimal("0")
-                if ratio >= Decimal("0.80"):
-                    warnings.append({"message": "Transfer total is near a corpus-defined limit; verify the cited source before acting.", "ratio": str(ratio.quantize(Decimal("0.01"))), "limit_title": item["title"]})
-    return {"totals": totals, "limits": parsed_limits, "warnings": warnings, "citations": [_citation(d) for d in docs]}
+    """Compatibility response while regulatory policies are not typed.
+
+    A transfer total is not a reporting threshold.  Until rules model period,
+    direction, residency, purpose, and rule type, returning totals or warnings
+    would imply a compliance calculation that the system cannot make.
+    """
+    del session, user
+    return {"totals": [], "limits": [], "warnings": [], "citations": []}
 
 
 async def reindex_corpus(session: AsyncSession, llm: LLMClient | None = None, settings: Settings | None = None) -> dict:
@@ -389,6 +394,9 @@ async def reindex_corpus(session: AsyncSession, llm: LLMClient | None = None, se
     if not corpus_dir.is_absolute():
         corpus_dir = Path(__file__).resolve().parents[3] / settings.corpus_dir
     files = sorted(corpus_dir.glob("**/*.md"))
+    # The corpus is global, so a replacement must be atomic and must not leave
+    # duplicate/obsolete chunks behind from an earlier source revision.
+    await session.execute(delete(GuidanceDoc))
     indexed = 0
     for path in files:
         if path.name.lower() == "readme.md":
@@ -407,6 +415,7 @@ async def reindex_corpus(session: AsyncSession, llm: LLMClient | None = None, se
             doc = GuidanceDoc(
                 country=_country(meta.get("country")),
                 topic=meta.get("topic"),
+                domain=_checklist_domain_from_topic(meta.get("topic")),
                 title=meta.get("title") or path.stem,
                 body=chunk,
                 source_url=meta.get("source_url"),
@@ -459,7 +468,11 @@ def _citation_payload(citation: dict) -> dict:
 
 
 def _checklist_domain(doc: GuidanceDoc) -> str:
-    topic = (doc.topic or "").lower().replace("_", " ")
+    return _checklist_domain_from_topic(doc.topic)
+
+
+def _checklist_domain_from_topic(topic_value: str | None) -> str:
+    topic = (topic_value or "").lower().replace("_", " ")
     cross_border_terms = (
         "cross-border",
         "cross border",

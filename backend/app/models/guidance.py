@@ -26,6 +26,9 @@ class GuidanceDoc(Base):
     id: Mapped[uuid.UUID] = uuid_pk()
     country: Mapped[str | None] = mapped_column(String(2))
     topic: Mapped[str | None] = mapped_column(String(128))
+    # An explicit retrieval boundary.  Topic is descriptive metadata, not an
+    # authorization/relevance boundary, so do not infer domain at query time.
+    domain: Mapped[str] = mapped_column(String(32), nullable=False, default="general", server_default="general")
     title: Mapped[str | None] = mapped_column(String(512))
     body: Mapped[str | None] = mapped_column(Text)
     source_url: Mapped[str | None] = mapped_column(String(1024))

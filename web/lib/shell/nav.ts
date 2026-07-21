@@ -52,11 +52,11 @@ export const BOTTOM_TABS: BottomTab[] = [
   { key: "activity", label: "Activity", href: "/notifications", icon: Bell, match: ["/notifications"] },
 ];
 
-// Drawer order is locked (§3): Guidance, Cross-border, Connections, Review, Settings.
+// Drawer order is locked (§3): Guidance, International Money, Connections, Review, Settings.
 export const DRAWER_ITEMS: DrawerItem[] = [
   { key: "guidance", label: "Guidance", sub: "Sourced answers & saved plans", href: "/guidance", icon: Sparkles, tint: "accent" },
-  { key: "cross-border", label: "Cross-border", sub: "Transfers & limits", href: "/guidance?section=cross-border", icon: Globe, tint: "c3" },
-  { key: "connections", label: "Connections", sub: "Plaid · Gmail · SMS", href: "/connections", icon: Cable, tint: "c2" },
+  { key: "cross-border", label: "International Money", sub: "Transfers · reporting", href: "/guidance?section=cross-border", icon: Globe, tint: "c3" },
+  { key: "connections", label: "Connections", sub: "Plaid · Email · SMS", href: "/connections", icon: Cable, tint: "c2" },
   { key: "review", label: "Review queue", sub: "Items need you", href: "/review", icon: ListChecks, tint: "muted" },
   { key: "settings", label: "Settings", sub: "Account · security · export", href: "/settings", icon: Settings, tint: "muted" },
 ];
@@ -85,7 +85,7 @@ const TOP_TABS: Record<string, Tab[]> = {
   "/income": INSIGHTS_TABS,
   "/guidance": [
     { label: "Overview", href: "/guidance" },
-    { label: "Cross-border", href: "/guidance?section=cross-border" },
+    { label: "International Money", href: "/guidance?section=cross-border" },
     { label: "My Plan", href: "/guidance?section=plan" },
   ],
 };

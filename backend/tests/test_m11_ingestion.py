@@ -95,8 +95,27 @@ async def test_plaid_email_and_sms_ingestion(session):
     txn = (await session.execute(select(Transaction).where(Transaction.external_id == "txn-1"))).scalar_one()
     assert txn.account_id is not None
 
-    email_doc = await create_email_document(session, user, EmailInboundIn(from_address="bank@example.com", subject="Statement", body="Your statement is ready"))
+    email_doc = await create_email_document(
+        session,
+        user,
+        EmailInboundIn(
+            from_address="bank@example.com",
+            subject="Statement",
+            body="Your statement is ready",
+            message_id="message-1",
+            attachments=[{"filename": "statement.pdf", "data_base64url": "sensitive"}],
+        ),
+    )
     assert email_doc.source_channel == "email"
+    assert email_doc.ocr_meta["email"] == {
+        "from_address": "bank@example.com",
+        "subject": "Statement",
+        "message_id": "message-1",
+        "received_at": None,
+        "attachment_count": 1,
+    }
+    assert "Your statement is ready" not in str(email_doc.ocr_meta)
+    assert "sensitive" not in str(email_doc.ocr_meta)
 
     token = await rotate_sms_token(session, user, ["BANK"])
     sms = await sms_webhook(session, token["token"], SmsWebhookIn(**{"from": "BANK", "body": "Rs. 1,200 debited at DMart"}), llm=None)
@@ -198,6 +217,9 @@ async def test_email_sync_parses_body_into_draft_transaction(session):
     assert txn.amount == Decimal("-23.45")
     assert txn.status == "draft"
     assert txn.external_id.startswith("email:")
+    assert txn.notes == "Imported from email"
+    assert "STARBUCKS" not in txn.notes
     # second sync of the same message dedups
     out2 = await service.email_sync(session, user, FakeGmail())
     assert out2["transactions_created"] == 0
+    assert out2["documents_created"] == 0

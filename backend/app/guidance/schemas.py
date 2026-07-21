@@ -5,7 +5,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 GuidanceDomain = Literal["general", "investment", "cross_border"]
@@ -138,16 +138,28 @@ class GuidancePlanItemOut(BaseModel):
 
 
 class CrossBorderTransferIn(BaseModel):
-    direction: str
-    from_currency: str
-    to_currency: str
-    amount: Decimal
-    fx_rate: Decimal | None = None
-    purpose: str | None = None
-    channel: str | None = None
+    direction: Literal["out", "in"]
+    from_currency: str = Field(min_length=3, max_length=3)
+    to_currency: str = Field(min_length=3, max_length=3)
+    amount: Decimal = Field(gt=0)
+    fx_rate: Decimal | None = Field(default=None, gt=0)
+    purpose: str | None = Field(default=None, max_length=255)
+    channel: str | None = Field(default=None, max_length=128)
     transfer_date: date | None = None
-    base_currency: str | None = None
-    base_amount: Decimal | None = None
+
+    @field_validator("from_currency", "to_currency")
+    @classmethod
+    def normalize_currency(cls, value: str) -> str:
+        value = value.strip().upper()
+        if len(value) != 3 or not value.isalpha():
+            raise ValueError("currency must be a three-letter ISO code")
+        return value
+
+    @model_validator(mode="after")
+    def validate_conversion(self) -> "CrossBorderTransferIn":
+        if self.from_currency == self.to_currency:
+            raise ValueError("cross-border transfers must use different currencies")
+        return self
 
 
 class CrossBorderTransferOut(BaseModel):

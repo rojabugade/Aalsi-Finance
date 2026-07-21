@@ -7,8 +7,6 @@ import { toast } from "sonner";
 import {
   useDisconnectEmail,
   useDisconnectSms,
-  useEmailOAuthStart,
-  useEmailSync,
   useRotateSmsToken,
   useSplitwiseOAuthStart,
   useSplitwiseSync,
@@ -46,35 +44,7 @@ export default function ConnectionsPage() {
 }
 
 function EmailCard() {
-  const start = useEmailOAuthStart();
-  const sync = useEmailSync();
   const disconnect = useDisconnectEmail();
-
-  async function connect() {
-    const popup = window.open("", "_blank");
-    try {
-      const res = await start.mutateAsync();
-      if (popup) {
-        popup.opener = null;
-        popup.location.href = res.authorization_url;
-      } else {
-        window.location.assign(res.authorization_url);
-      }
-      toast.success("Opening Google authorization…");
-    } catch {
-      popup?.close();
-      toast.error("Gmail isn't configured in this environment");
-    }
-  }
-
-  async function runSync() {
-    try {
-      const res = await sync.mutateAsync();
-      toast.success(`Imported ${res.documents_created} document(s)`);
-    } catch {
-      toast.error("Couldn't sync Gmail");
-    }
-  }
 
   async function remove() {
     try {
@@ -87,24 +57,18 @@ function EmailCard() {
 
   return (
     <ConnectionShell
-      title="Email (Gmail)"
-      description="Forward receipts & statements from your inbox."
+      title="Email forwarding"
+      description="Forward receipts and statements without mailbox-wide access."
       footer={
         <>
-          <Button onClick={connect} disabled={start.isPending}>
-            {start.isPending ? "Starting…" : "Connect Gmail"}
-          </Button>
-          <Button variant="outline" onClick={runSync} disabled={sync.isPending}>
-            {sync.isPending ? "Syncing…" : "Sync now"}
-          </Button>
           <Button variant="ghost" onClick={remove} disabled={disconnect.isPending}>
-            Disconnect
+            Remove existing connection
           </Button>
         </>
       }
     >
       <p className="text-muted">
-        Connect opens Google&apos;s consent screen in a new tab; Sync pulls recent receipts.
+        Forwarding setup is being prepared. Until it is available, upload receipts and statements directly.
       </p>
     </ConnectionShell>
   );

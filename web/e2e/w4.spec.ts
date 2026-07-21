@@ -20,11 +20,11 @@ test("notifications surface shows prefs + recent list", async ({ page }) => {
   await expect(page.getByRole("button", { name: /save preferences/i })).toBeVisible();
 });
 
-test("connections surface lists Plaid, Gmail, SMS, bot", async ({ page }) => {
+test("connections surface lists Plaid, email forwarding, SMS, bot", async ({ page }) => {
   await login(page);
   await page.goto("/connections");
   await expect(page.getByRole("button", { name: /connect bank/i })).toBeVisible();
-  await expect(page.getByRole("button", { name: /connect gmail/i })).toBeVisible();
+  await expect(page.getByText(/email forwarding/i)).toBeVisible();
 });
 
 test("settings surface shows household, prefs, and data controls", async ({ page }) => {

@@ -20,6 +20,7 @@ from app.guidance.service import (
     create_transfer,
     guidance_thread_history,
     limits,
+    retrieve_docs,
     wizard,
 )
 from app.models.conversation import AnalystThread
@@ -59,8 +60,8 @@ async def _user(session):
     await session.flush()
     user = User(household_id=hh.id, email=f"{uuid.uuid4().hex}@example.com", password_hash="x", role="owner")
     session.add(user)
-    session.add(GuidanceDoc(country="IN", topic="remittance limits", title="pytest-m10-India LRS", body="limit_amount: 250000\nlimit_currency: USD\nlimit_period: financial year\nLRS applies to resident outward remittance.", source_url="https://rbi.example", source_type="govt", effective_date=date(2026, 1, 1)))
-    session.add(GuidanceDoc(country="US", topic="investment education", title="pytest-m10-Community investing", body="Community consensus favors diversification and low costs.", source_url="https://community.example", source_type="community", effective_date=date(2026, 1, 1)))
+    session.add(GuidanceDoc(country="IN", topic="remittance limits", domain="cross_border", title="pytest-m10-India LRS", body="limit_amount: 250000\nlimit_currency: USD\nlimit_period: financial year\nLRS applies to resident outward remittance.", source_url="https://rbi.example", source_type="govt", effective_date=date(2026, 1, 1)))
+    session.add(GuidanceDoc(country="US", topic="investment education", domain="investment", title="pytest-m10-Community investing", body="Community consensus favors diversification and low costs.", source_url="https://community.example", source_type="community", effective_date=date(2026, 1, 1)))
     await session.commit()
     return user
 
@@ -68,7 +69,16 @@ async def _user(session):
 @pytest.mark.asyncio
 async def test_guidance_answer_wizard_and_limits(session):
     user = await _user(session)
-    answer = await ask_guidance(session, user, GuidanceAskIn(question="What should I know about India remittance limits?", country="IN"), llm=None)
+    answer = await ask_guidance(
+        session,
+        user,
+        GuidanceAskIn(
+            question="What should I know about India remittance limits?",
+            country="IN",
+            domain="cross_border",
+        ),
+        llm=None,
+    )
     assert answer["citations"][0]["source_type"] == "govt"
     assert "not financial" in answer["disclaimer"]
 
@@ -78,8 +88,32 @@ async def test_guidance_answer_wizard_and_limits(session):
 
     await create_transfer(session, user, CrossBorderTransferIn(direction="out", from_currency="USD", to_currency="INR", amount=Decimal("210000"), fx_rate=Decimal("83.0"), transfer_date=date.today()))
     out = await limits(session, user)
-    assert out["limits"][0]["amount"] == "250000"
-    assert out["warnings"]
+    assert out == {"totals": [], "limits": [], "warnings": [], "citations": []}
+
+
+def test_cross_border_transfer_input_rejects_invalid_direction_and_amounts():
+    valid = CrossBorderTransferIn(
+        direction="out", from_currency="usd", to_currency="inr", amount="1", fx_rate="80"
+    )
+    assert valid.from_currency == "USD"
+    assert valid.to_currency == "INR"
+
+    for payload in (
+        {"direction": "outbound", "from_currency": "USD", "to_currency": "INR", "amount": "1"},
+        {"direction": "out", "from_currency": "USD", "to_currency": "INR", "amount": "0"},
+        {"direction": "out", "from_currency": "US", "to_currency": "INR", "amount": "1"},
+        {"direction": "out", "from_currency": "USD", "to_currency": "USD", "amount": "1"},
+    ):
+        with pytest.raises(ValidationError):
+            CrossBorderTransferIn(**payload)
+
+
+@pytest.mark.asyncio
+async def test_retrieval_uses_the_explicit_domain_boundary(session):
+    user = await _user(session)
+    docs = await retrieve_docs(session, "remittance diversification", domain="cross_border")
+    assert [doc.domain for doc in docs] == ["cross_border"]
+    assert all(doc.title != "pytest-m10-Community investing" for doc in docs)
 
 
 class _GuidanceLLM:
@@ -104,6 +138,7 @@ async def test_guidance_thread_persists_citations_and_uses_recent_context(sessio
         GuidanceAskIn(
             question="What is the India remittance limit?",
             country="IN",
+            domain="cross_border",
             thread_id="overview",
         ),
         llm,
@@ -114,6 +149,7 @@ async def test_guidance_thread_persists_citations_and_uses_recent_context(sessio
         GuidanceAskIn(
             question="What should I verify about that remittance limit?",
             country="IN",
+            domain="cross_border",
             thread_id="overview",
         ),
         llm,

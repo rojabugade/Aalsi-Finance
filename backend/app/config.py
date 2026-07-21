@@ -73,7 +73,7 @@ class Settings(BaseSettings):
     refresh_token_ttl_days: int = 30
     invite_token_ttl_hours: int = 72
     # TOTP issuer name shown in authenticator apps.
-    totp_issuer: str = "CrossBorderFinance"
+    totp_issuer: str = "AlsiFinance"
     # Refresh tokens live in an httpOnly cookie (never readable by JS) so an XSS in the
     # web app can't exfiltrate them. SameSite=strict + the double-submit CSRF cookie
     # protect the cookie-authenticated /auth/refresh and /auth/logout endpoints.
@@ -108,8 +108,8 @@ class Settings(BaseSettings):
     # Blank enables LM Studio loaded-instance discovery. Hosted providers should
     # configure this explicitly because they do not expose loaded instances.
     chat_model: str = ""
-    vision_model: str = "gpt-4o-mini"
-    embed_model: str = "text-embedding-3-small"
+    vision_model: str = ""
+    embed_model: str = ""
     # Local servers (LM Studio / Ollama) may lack these — flip off to degrade
     # to prompt-based JSON / skip vision instead of erroring.
     llm_supports_structured_output: bool = True
@@ -142,6 +142,10 @@ class Settings(BaseSettings):
     plaid_webhook_url: str = ""
     gmail_client_id: str = ""
     gmail_client_secret: str = ""
+    # Mailbox-wide OAuth is deliberately disabled pending restricted-scope
+    # compliance.  Raw email is never sent to an external LLM unless this
+    # explicit, separately reviewed opt-in is enabled.
+    email_llm_processing_enabled: bool = False
     # OAuth callbacks default to the web app's /api proxy path under app_origin, which
     # routes to this backend in every stack (dev, compose, Coolify, domain). Override
     # only if you front the API on its own public host. Register the resolved URL as the

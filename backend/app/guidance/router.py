@@ -100,12 +100,12 @@ async def guidance_wizard(data: GuidanceWizardIn, user: User = Depends(get_curre
 
 @router.post("/cross-border/wizard", response_model=GuidanceWizardOut)
 async def cross_border_wizard(data: GuidanceWizardIn, user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
-    return await service.wizard(session, user, data)
+    return await service.wizard(session, user, data, domain="cross_border")
 
 
 @router.get("/cross-border/checklist", response_model=dict)
 async def cross_border_checklist(_user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
-    return await service.checklist(session)
+    return await service.checklist(session, domain="cross_border")
 
 
 @router.get("/cross-border/transfers", response_model=list[CrossBorderTransferOut])
@@ -127,5 +127,8 @@ async def limits(user: User = Depends(get_current_user), session: AsyncSession =
 
 
 @router.post("/admin/corpus/reindex", response_model=ReindexOut, tags=["admin"])
-async def reindex_corpus(_user: User = Depends(require_role("owner")), session: AsyncSession = Depends(get_session), llm: LLMClient = Depends(get_llm_client)):
-    return await service.reindex_corpus(session, llm)
+async def reindex_corpus():
+    # Household ownership is not a platform-administrator capability.  Keep the
+    # global mutation unavailable until it has a separately authenticated admin
+    # control plane.
+    raise HTTPException(status.HTTP_404_NOT_FOUND, "Corpus reindexing is not available")

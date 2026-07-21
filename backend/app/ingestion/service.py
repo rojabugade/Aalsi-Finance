@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.documents import service as doc_service
 from app.documents.processing import UnsupportedFile
 from app.documents.storage import get_object_store
+from app.config import get_settings
 from app.ingestion import plaid_matching
 from app.ingestion.crypto import decrypt_string, encrypt_string
 from app.ingestion.gateways import GmailGateway, PlaidGateway
@@ -588,6 +589,23 @@ async def email_sync(session: AsyncSession, user: User, gateway: GmailGateway, l
     txns_created = 0
     for msg in messages:
         payload = EmailInboundIn(**msg)
+        # Deduplicate the provider message before creating any document or
+        # attachment work.  Transaction-level dedup is too late: it still
+        # repeats storage writes and OCR for every sync.
+        message_key = payload.message_id or hashlib.sha256(
+            f"{payload.from_address}\n{payload.subject or ''}\n{payload.body or ''}\n{payload.received_at or ''}".encode()
+        ).hexdigest()
+        payload = payload.model_copy(update={"message_id": message_key})
+        existing = await session.scalar(
+            select(Document.id).where(
+                Document.household_id == user.household_id,
+                Document.uploaded_by_user_id == user.id,
+                Document.source_channel == "email",
+                Document.ocr_meta["email"]["message_id"].astext == message_key,
+            )
+        )
+        if existing is not None:
+            continue
         doc = await create_email_document(session, user, payload)
         docs += 1
         ingested = await _ingest_email_attachments(session, user, payload.attachments)
@@ -600,7 +618,7 @@ async def email_sync(session: AsyncSession, user: User, gateway: GmailGateway, l
         amount = _money(parsed.amount)
         if parsed.type != "credit":  # money out -> negative (canonical)
             amount = -amount
-        external_seed = payload.message_id or hashlib.sha256(f"{payload.from_address}{payload.subject}{payload.body}".encode()).hexdigest()[:24]
+        external_seed = payload.message_id
         needs_review = (parsed.confidence or 0) < 0.75
         txn = await txn_service.create_transaction(session, user, TransactionCreate(
             merchant=parsed.merchant or payload.from_address,
@@ -610,7 +628,10 @@ async def email_sync(session: AsyncSession, user: User, gateway: GmailGateway, l
             status="draft",
             source_document_id=doc.id,
             source_channel="email",
-            notes=(payload.subject or payload.body or "")[:500],
+            # Email subjects and bodies are untrusted raw mailbox content.  Keep
+            # normalized transaction fields only; source metadata lives on the
+            # minimal email document record rather than in transaction notes.
+            notes="Imported from email",
             confidence=parsed.confidence,
             external_id=f"email:{conn.id}:{external_seed}",
         ))
@@ -628,7 +649,7 @@ async def _parse_email(payload: EmailInboundIn, llm: LLMClient | None, user: Use
     """Extract a single transaction from an alert/receipt email body: LLM when
     configured, regex fallback otherwise. Returns None when it isn't one."""
     text = f"Subject: {payload.subject or ''}\nFrom: {payload.from_address}\n\n{(payload.body or '')[:4000]}"
-    if llm is not None:
+    if llm is not None and get_settings().email_llm_processing_enabled:
         try:
             out = await llm.chat(
                 [{"role": "user", "content": "Decide if this email describes a single money transaction (bank/card alert or merchant receipt). If yes set is_transaction=true and extract merchant, amount, ISO currency, date (YYYY-MM-DD), type debit|credit, confidence. Email:\n" + text}],
@@ -653,8 +674,27 @@ async def delete_email_connection(session: AsyncSession, user: User) -> None:
 
 
 async def create_email_document(session: AsyncSession, user: User, data: EmailInboundIn) -> Document:
-    body = data.body or ""
-    doc = Document(household_id=user.household_id, uploaded_by_user_id=user.id, storage_key=f"email://{uuid.uuid4()}", type="statement" if data.attachments else "other", source_channel="email", status="uploaded", ocr_meta={"email": data.model_dump(mode="json") | {"body_preview": body[:500]}})
+    # Store only the minimum metadata needed for review.  In particular, never
+    # persist raw body text (including a preview) or attachment base64 in JSONB;
+    # attachments that are explicitly accepted travel through the encrypted
+    # document pipeline.
+    doc = Document(
+        household_id=user.household_id,
+        uploaded_by_user_id=user.id,
+        storage_key=f"email://{uuid.uuid4()}",
+        type="statement" if data.attachments else "other",
+        source_channel="email",
+        status="uploaded",
+        ocr_meta={
+            "email": {
+                "from_address": data.from_address,
+                "subject": data.subject,
+                "message_id": data.message_id,
+                "received_at": data.received_at.isoformat() if data.received_at else None,
+                "attachment_count": len(data.attachments),
+            }
+        },
+    )
     session.add(doc)
     await record_consent(session, user, "email")
     await session.commit()
