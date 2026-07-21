@@ -1,9 +1,13 @@
 """M2 done-condition test.
 
 Exercises the full flow against the live schema: a user signs up (creating a
-household + owner), enables TOTP MFA, logs in with a code, invites a second member
-who joins, and we assert refresh-token rotation/reuse detection plus the
-`scoped_query` visibility rule (personal rows hidden cross-member, shared rows not).
+private single-user household + owner), enables TOTP MFA, logs in with a code, and
+we assert refresh-token rotation/reuse detection plus the `scoped_query` visibility
+rule (the household_id tenant boundary; per-member visibility still enforced at the
+model level).
+
+Multi-user sharing (invite/join/member management) was removed, so those flows are
+no longer exercised here.
 
 Skips when no Postgres is reachable, mirroring test_m1_schema. Point at a DB with
 `alembic upgrade head` applied via TEST_DATABASE_URL (defaults to compose port 5433).
@@ -98,15 +102,16 @@ async def _signup(client, household_name: str) -> tuple[dict, str]:
 
 
 @pytest.mark.asyncio
-async def test_signup_login_mfa_and_invite_flow(client, session_factory):
-    # 1. Signup -> household + owner + tokens.
+async def test_signup_login_and_mfa_flow(client, session_factory):
+    # 1. Signup -> private household + owner + tokens.
     tokens, owner_email = await _signup(client, f"{HOUSEHOLD_PREFIX}alpha")
     access = tokens["access_token"]
 
     me = await client.get("/household", headers=_auth(access))
     assert me.status_code == 200
     assert me.json()["name"] == f"{HOUSEHOLD_PREFIX}alpha"
-    assert me.json()["sharing_enabled"] is True
+    # Sharing was removed: every account is single-user, so sharing is never enabled.
+    assert me.json()["sharing_enabled"] is False
 
     # 2. Enroll + enable MFA.
     enroll = await client.post("/auth/mfa/enroll", headers=_auth(access))
@@ -133,72 +138,13 @@ async def test_signup_login_mfa_and_invite_flow(client, session_factory):
     )
     assert good.status_code == 200
 
-    # 4. Invite a second member; they join.
-    inv = await client.post(
-        "/household/invite", headers=_auth(access), json={"email": _email(), "role": "member"}
-    )
-    assert inv.status_code == 200
-    invite_token = inv.json()["invite_token"]
-
-    join = await client.post(
-        "/household/join",
-        json={"invite_token": invite_token, "password": "memberpass1", "display_name": "Member"},
-    )
-    assert join.status_code == 201
-    member_access = join.json()["access_token"]
-
+    # 4. The removed sharing surface is gone (invite/join/members/create-household).
+    # Unknown paths 404; the still-present GET /household rejects POST with 405.
+    for path in ("/household/invite", "/household", "/household/join"):
+        gone = await client.post(path, headers=_auth(access), json={})
+        assert gone.status_code in (404, 405), f"POST {path} -> {gone.status_code}"
     members = await client.get("/household/members", headers=_auth(access))
-    assert members.status_code == 200
-    assert len(members.json()) == 2
-
-    # 5. A viewer/member without owner role cannot invite.
-    forbidden = await client.post(
-        "/household/invite", headers=_auth(member_access), json={"email": _email()}
-    )
-    assert forbidden.status_code == 403
-
-    cannot_create = await client.post(
-        "/household", headers=_auth(member_access), json={"name": "Member household"}
-    )
-    assert cannot_create.status_code == 403
-
-
-@pytest.mark.asyncio
-async def test_household_sharing_is_opt_in(client):
-    email = _email()
-    signup = await client.post(
-        "/auth/signup",
-        json={
-            "email": email,
-            "password": "hunter2pass",
-            "display_name": "Owner",
-        },
-    )
-    assert signup.status_code == 201, signup.text
-    access = signup.json()["access_token"]
-
-    personal = await client.get("/household", headers=_auth(access))
-    assert personal.status_code == 200
-    assert personal.json()["name"] == "Owner"
-    assert personal.json()["sharing_enabled"] is False
-
-    invite_before_creation = await client.post(
-        "/household/invite", headers=_auth(access), json={"email": _email()}
-    )
-    assert invite_before_creation.status_code == 409
-
-    created = await client.post(
-        "/household", headers=_auth(access), json={"name": "The Owners"}
-    )
-    assert created.status_code == 200, created.text
-    assert created.json()["name"] == "The Owners"
-    assert created.json()["sharing_enabled"] is True
-
-    # Retrying the same creation request is safe after a lost response.
-    retry = await client.post(
-        "/household", headers=_auth(access), json={"name": "The Owners"}
-    )
-    assert retry.status_code == 200
+    assert members.status_code == 404
 
 
 @pytest.mark.asyncio

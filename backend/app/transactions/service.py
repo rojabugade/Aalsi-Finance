@@ -15,8 +15,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.analyst.memory.ingest import enqueue_index_source
 from app.auth.deps import scoped_query
 from app.fx import service as fx_service
-from app.models.accounts import PaymentMethod
+from app.models.accounts import AccountLogical, PaymentMethod
 from app.models.core import User
+from app.models.documents import Document
 from app.models.transactions import (
     Category,
     LineItem,
@@ -273,6 +274,9 @@ async def create_transaction(
             return duplicate
     base_amount, fx_rate = await _snapshot_base_amount(session, user.household_id, amount, currency, data.txn_date)
     await _validate_widget_links(session, user, data.payment_method_id, data.recurring_series_id)
+    await _validate_transaction_refs(
+        session, user, data.account_id, data.category_id, data.source_document_id, data.line_items
+    )
     txn = Transaction(
         household_id=user.household_id,
         account_id=data.account_id,
@@ -447,6 +451,9 @@ async def delete_external_transactions(
 async def add_line_items(session: AsyncSession, txn: Transaction, items: list[LineItemIn]) -> list[LineItem]:
     rows: list[LineItem] = []
     for item in items:
+        # Line items can carry a category id straight from client input; keep it
+        # scoped to the transaction's household (or a global category).
+        await _validate_category_ref(session, txn.household_id, item.item_type_category_id)
         row = LineItem(
             transaction_id=txn.id,
             name=item.name,
@@ -504,6 +511,13 @@ async def patch_transaction(
         merchant = await session.get(Merchant, txn.merchant_id)
 
     changed = data.model_dump(exclude_unset=True)
+    await _validate_transaction_refs(
+        session,
+        user,
+        changed.get("account_id") if "account_id" in changed else None,
+        changed.get("category_id") if "category_id" in changed else None,
+        None,
+    )
     if "payment_method_id" in changed or "recurring_series_id" in changed:
         await _validate_widget_links(
             session,
@@ -530,6 +544,48 @@ async def patch_transaction(
     await session.commit()
     await session.refresh(txn)
     return txn
+
+
+async def _validate_category_ref(
+    session: AsyncSession, household_id: uuid.UUID, category_id: uuid.UUID | None
+) -> None:
+    """A transaction/line-item may reference the household's own category or a global
+    (system, household_id IS NULL) one — nothing else. Blocks cross-tenant reference
+    injection where a client attaches another household's category id."""
+    if category_id is None:
+        return
+    cat = await session.get(Category, category_id)
+    if cat is None or cat.household_id not in (None, household_id):
+        raise NotFound("Category not found")
+
+
+async def _validate_transaction_refs(
+    session: AsyncSession,
+    user: User,
+    account_id: uuid.UUID | None,
+    category_id: uuid.UUID | None,
+    source_document_id: uuid.UUID | None,
+    line_items: list[LineItemIn] | None = None,
+) -> None:
+    """Confirm every client-supplied FK belongs to the caller's household before it
+    is written. Without this a member could point a transaction at another
+    household's account/category/document id (data-integrity break + disclosure when
+    those ids are later resolved to names)."""
+    if account_id is not None:
+        row = (await session.execute(
+            scoped_query(AccountLogical, user).where(AccountLogical.id == account_id)
+        )).scalar_one_or_none()
+        if row is None:
+            raise NotFound("Account not found")
+    if source_document_id is not None:
+        row = (await session.execute(
+            scoped_query(Document, user).where(Document.id == source_document_id)
+        )).scalar_one_or_none()
+        if row is None:
+            raise NotFound("Source document not found")
+    await _validate_category_ref(session, user.household_id, category_id)
+    for item in line_items or []:
+        await _validate_category_ref(session, user.household_id, item.item_type_category_id)
 
 
 async def _validate_widget_links(
@@ -799,7 +855,19 @@ async def list_categories(session: AsyncSession, user: User) -> list[Category]:
 
 
 async def create_category(session: AsyncSession, user: User, data: CategoryIn) -> Category:
-    cat = Category(household_id=None if data.is_system and user.role == "owner" else user.household_id, parent_id=data.parent_id, name=data.name, kind=data.kind, is_system=data.is_system and user.role == "owner")
+    # Categories created through the tenant API always belong to the caller's
+    # household. Global system categories (household_id IS NULL, visible to every
+    # household) are a seed/operator concern — letting a tenant mint them lets one
+    # account pollute the category list of every other account.
+    if data.parent_id is not None:
+        await _validate_category_ref(session, user.household_id, data.parent_id)
+    cat = Category(
+        household_id=user.household_id,
+        parent_id=data.parent_id,
+        name=data.name,
+        kind=data.kind,
+        is_system=False,
+    )
     session.add(cat)
     await session.commit()
     await session.refresh(cat)
@@ -809,13 +877,38 @@ async def create_category(session: AsyncSession, user: User, data: CategoryIn) -
 async def merge_category(session: AsyncSession, user: User, source_id: uuid.UUID, into_id: uuid.UUID) -> None:
     source = await session.get(Category, source_id)
     dest = await session.get(Category, into_id)
-    if source is None or dest is None or source.household_id not in (None, user.household_id) or dest.household_id not in (None, user.household_id):
+    # Both categories must be this household's OWN. System categories
+    # (household_id IS NULL) are global; merging one would repoint every other
+    # household's transactions at the caller's category — cross-tenant corruption.
+    if (
+        source is None
+        or dest is None
+        or source.household_id != user.household_id
+        or dest.household_id != user.household_id
+    ):
         raise NotFound("Category not found")
-    await session.execute(update(Transaction).where(Transaction.category_id == source_id).values(category_id=into_id))
-    await session.execute(update(LineItem).where(LineItem.item_type_category_id == source_id).values(item_type_category_id=into_id))
-    await session.execute(update(Merchant).where(Merchant.default_category_id == source_id).values(default_category_id=into_id))
-    if source.household_id == user.household_id:
-        await session.delete(source)
+    hid = user.household_id
+    # Every rewrite is household-scoped so it can only touch the caller's own rows.
+    await session.execute(
+        update(Transaction)
+        .where(Transaction.category_id == source_id, Transaction.household_id == hid)
+        .values(category_id=into_id)
+    )
+    household_txn_ids = select(Transaction.id).where(Transaction.household_id == hid)
+    await session.execute(
+        update(LineItem)
+        .where(
+            LineItem.item_type_category_id == source_id,
+            LineItem.transaction_id.in_(household_txn_ids),
+        )
+        .values(item_type_category_id=into_id)
+    )
+    await session.execute(
+        update(Merchant)
+        .where(Merchant.default_category_id == source_id, Merchant.household_id == hid)
+        .values(default_category_id=into_id)
+    )
+    await session.delete(source)
     await session.commit()
 
 

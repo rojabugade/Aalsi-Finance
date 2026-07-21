@@ -24,7 +24,6 @@ settings = get_settings()
 _pwd = CryptContext(schemes=["argon2"], deprecated="auto")
 
 ACCESS_TOKEN_TYPE = "access"
-INVITE_TOKEN_TYPE = "invite"
 DOWNLOAD_TOKEN_TYPE = "download"
 OAUTH_STATE_TOKEN_TYPE = "oauth_state"
 
@@ -65,18 +64,6 @@ def create_access_token(user_id: uuid.UUID, household_id: uuid.UUID, role: str) 
         "role": role,
         "type": ACCESS_TOKEN_TYPE,
         "iat": int(_now().timestamp()),
-        "exp": int(exp.timestamp()),
-    }
-    return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)
-
-
-def create_invite_token(household_id: uuid.UUID, email: str, role: str) -> str:
-    exp = _now() + timedelta(hours=settings.invite_token_ttl_hours)
-    payload = {
-        "hid": str(household_id),
-        "email": email.lower(),
-        "role": role,
-        "type": INVITE_TOKEN_TYPE,
         "exp": int(exp.timestamp()),
     }
     return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)

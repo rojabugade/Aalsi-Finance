@@ -10,7 +10,6 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timedelta, timezone
 
-import jwt
 from fastapi import HTTPException, status
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -73,8 +72,8 @@ async def signup(session: AsyncSession, data: SignupIn) -> tuple[str, str]:
     household = Household(
         name=data.household_name or data.display_name or data.email,
         base_currency=data.base_currency.upper(),
-        # Supplying a name is the explicit API-level opt-in for a shared household.
-        sharing_enabled=bool(data.household_name),
+        # Sharing was removed: every account is a single-user, private workspace.
+        sharing_enabled=False,
     )
     session.add(household)
     await session.flush()  # populate household.id
@@ -179,79 +178,7 @@ async def mfa_verify(session: AsyncSession, user: User, code: str) -> None:
     await session.commit()
 
 
-# --- Household membership ----------------------------------------------------
-
-async def enable_household_sharing(
-    session: AsyncSession, actor: User, name: str
-) -> Household:
-    household = await session.get(Household, actor.household_id)
-    if household is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Workspace not found")
-
-    if household.sharing_enabled:
-        if household.name == name:
-            return household
-        raise HTTPException(
-            status.HTTP_409_CONFLICT, "Household sharing is already enabled"
-        )
-
-    household.name = name
-    household.sharing_enabled = True
-    await _audit(session, household.id, actor.id, "household.create", "household")
-    await session.commit()
-    await session.refresh(household)
-    return household
-
-
-async def create_invite(
-    session: AsyncSession, actor: User, email: str, role: str
-) -> str:
-    household = await session.get(Household, actor.household_id)
-    if household is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Workspace not found")
-    if not household.sharing_enabled:
-        raise HTTPException(
-            status.HTTP_409_CONFLICT,
-            "Create a household before inviting people",
-        )
-    return security.create_invite_token(household.id, email, role)
-
-
-async def join(session: AsyncSession, data) -> tuple[str, str]:
-    try:
-        payload = security.decode_token(data.invite_token, security.INVITE_TOKEN_TYPE)
-    except jwt.PyJWTError:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid or expired invite")
-
-    email = payload["email"].lower()
-    if await _get_user_by_email(session, email):
-        raise HTTPException(status.HTTP_409_CONFLICT, "Email already registered")
-
-    household = await session.get(Household, uuid.UUID(payload["hid"]))
-    if household is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Household no longer exists")
-
-    user = User(
-        household_id=household.id,
-        email=email,
-        password_hash=security.hash_password(data.password),
-        display_name=data.display_name,
-        role=payload["role"],
-    )
-    session.add(user)
-    await session.flush()
-    await _audit(session, household.id, user.id, "household.join", "user")
-    tokens = await _issue_tokens(session, user)
-    await session.commit()
-    return tokens
-
-
-async def list_members(session: AsyncSession, household_id: uuid.UUID) -> list[User]:
-    res = await session.execute(
-        select(User).where(User.household_id == household_id).order_by(User.created_at)
-    )
-    return list(res.scalars().all())
-
+# --- Household (private workspace) -------------------------------------------
 
 async def set_household_base_currency(session: AsyncSession, actor: User, currency: str) -> Household:
     household = await session.get(Household, actor.household_id)
@@ -262,50 +189,3 @@ async def set_household_base_currency(session: AsyncSession, actor: User, curren
     await session.commit()
     await session.refresh(household)
     return household
-
-
-async def _member_or_404(
-    session: AsyncSession, household_id: uuid.UUID, member_id: uuid.UUID
-) -> User:
-    member = await session.get(User, member_id)
-    if member is None or member.household_id != household_id:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Member not found")
-    return member
-
-
-async def change_role(
-    session: AsyncSession, actor: User, member_id: uuid.UUID, role: str
-) -> User:
-    member = await _member_or_404(session, actor.household_id, member_id)
-    # Don't allow demoting the last remaining owner.
-    if member.role == "owner" and role != "owner":
-        if await _count_owners(session, actor.household_id) <= 1:
-            raise HTTPException(
-                status.HTTP_409_CONFLICT, "Household must keep at least one owner"
-            )
-    member.role = role
-    await _audit(session, actor.household_id, actor.id, "member.role_change", "user")
-    await session.commit()
-    return member
-
-
-async def remove_member(
-    session: AsyncSession, actor: User, member_id: uuid.UUID
-) -> None:
-    member = await _member_or_404(session, actor.household_id, member_id)
-    if member.id == actor.id:
-        raise HTTPException(status.HTTP_409_CONFLICT, "Cannot remove yourself")
-    if member.role == "owner" and await _count_owners(session, actor.household_id) <= 1:
-        raise HTTPException(
-            status.HTTP_409_CONFLICT, "Household must keep at least one owner"
-        )
-    await _audit(session, actor.household_id, actor.id, "member.remove", "user")
-    await session.delete(member)
-    await session.commit()
-
-
-async def _count_owners(session: AsyncSession, household_id: uuid.UUID) -> int:
-    res = await session.execute(
-        select(User).where(User.household_id == household_id, User.role == "owner")
-    )
-    return len(res.scalars().all())

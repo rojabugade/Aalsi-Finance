@@ -3,7 +3,10 @@ replicas and restarts.
 
 Only abuse-prone endpoints opt in via ``@limiter.limit(...)``: login and refresh
 (brute-force / token-guessing) and the public SMS webhook. The limiter keys on the
-real client IP, honoring the first X-Forwarded-For hop when behind a proxy.
+real client IP. X-Forwarded-For is client-supplied and trivially spoofable, so it is
+only honoured for the number of proxy hops configured in ``trusted_proxy_count``;
+otherwise the socket peer is used. This stops an attacker from rotating XFF per
+request to mint unlimited buckets and defeat the brute-force protection.
 """
 
 from __future__ import annotations
@@ -18,9 +21,16 @@ settings = get_settings()
 
 
 def client_ip(request: Request) -> str:
-    forwarded = request.headers.get("x-forwarded-for")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
+    trusted = settings.trusted_proxy_count
+    if trusted > 0:
+        forwarded = request.headers.get("x-forwarded-for")
+        if forwarded:
+            hops = [hop.strip() for hop in forwarded.split(",") if hop.strip()]
+            # With N trusted proxies the real client is the Nth hop from the right;
+            # anything to its left is forged by the client. Fall through to the
+            # socket peer if the header is shorter than the trusted chain.
+            if len(hops) >= trusted:
+                return hops[-trusted]
     return get_remote_address(request)
 
 

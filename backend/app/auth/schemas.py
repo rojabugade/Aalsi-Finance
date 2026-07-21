@@ -3,11 +3,8 @@
 from __future__ import annotations
 
 import uuid
-from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
-
-Role = Literal["owner", "member", "viewer"]
 
 
 # --- Auth --------------------------------------------------------------------
@@ -16,6 +13,8 @@ class SignupIn(BaseModel):
     email: EmailStr
     password: str = Field(min_length=8, max_length=256)
     display_name: str | None = Field(default=None, max_length=255)
+    # Optional label for the account's private workspace. Sharing was removed, so
+    # this no longer opts into a multi-user household — it is purely cosmetic.
     household_name: str | None = Field(default=None, max_length=255)
     base_currency: str = Field(default="USD", min_length=3, max_length=3)
 
@@ -55,7 +54,7 @@ class MfaVerifyIn(BaseModel):
     totp_code: str = Field(max_length=10)
 
 
-# --- Household ---------------------------------------------------------------
+# --- Household (private workspace; sharing/membership removed) ----------------
 
 class HouseholdOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -65,40 +64,5 @@ class HouseholdOut(BaseModel):
     sharing_enabled: bool
 
 
-class HouseholdCreateIn(BaseModel):
-    name: str = Field(min_length=1, max_length=255)
-
-
 class HouseholdBaseCurrencyPatch(BaseModel):
     base_currency: str = Field(min_length=3, max_length=3)
-
-
-class InviteIn(BaseModel):
-    email: EmailStr
-    role: Role = "member"
-
-
-class InviteOut(BaseModel):
-    invite_token: str
-    email: EmailStr
-    role: Role
-
-
-class JoinIn(BaseModel):
-    invite_token: str
-    password: str = Field(min_length=8, max_length=256)
-    display_name: str | None = Field(default=None, max_length=255)
-
-
-class MemberOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-    id: uuid.UUID
-    email: EmailStr
-    display_name: str | None
-    role: Role
-    mfa_enabled: bool
-    is_active: bool
-
-
-class RoleUpdateIn(BaseModel):
-    role: Role

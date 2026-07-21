@@ -48,6 +48,23 @@ class PlaidSyncOut(BaseModel):
     cursor: str | None = None
 
 
+class PlaidWebhookIn(BaseModel):
+    # Public, unauthenticated endpoint: validate the shape instead of accepting an
+    # arbitrary dict. `extra="allow"` keeps forward-compatibility with Plaid adding
+    # fields, while the two required discriminators must be present and well-typed.
+    model_config = {"extra": "allow"}
+
+    webhook_type: str = Field(max_length=64)
+    webhook_code: str = Field(max_length=64)
+    item_id: str | None = Field(default=None, max_length=128)
+
+
+class PlaidWebhookOut(BaseModel):
+    status: str
+    payload_type: str
+    payload_code: str
+
+
 class PlaidItemOut(BaseModel):
     id: uuid.UUID
     institution_name: str | None = None

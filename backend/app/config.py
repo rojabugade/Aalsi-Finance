@@ -9,6 +9,11 @@ from functools import lru_cache
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# Known-insecure defaults that are safe only in local dev. Booting a real
+# environment with any of these still set is a hard failure (see Settings validator).
+_DEV_JWT_SECRET = "dev-insecure-change-me"
+_DEV_STORAGE_KEY = "ZGV2LWluc2VjdXJlLTMyLWJ5dGUta2V5LS0tLS0tLS0="
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -71,7 +76,6 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     access_token_ttl_minutes: int = 15
     refresh_token_ttl_days: int = 30
-    invite_token_ttl_hours: int = 72
     # TOTP issuer name shown in authenticator apps.
     totp_issuer: str = "AlsiFinance"
     # Refresh tokens live in an httpOnly cookie (never readable by JS) so an XSS in the
@@ -89,6 +93,13 @@ class Settings(BaseSettings):
     # Redis-backed so limits hold across API replicas and restarts. Disabled in the
     # test suite (see tests/conftest.py) for determinism.
     rate_limit_enabled: bool = True
+    # Number of trusted reverse proxies in front of the app. The rate limiter only
+    # honours that many rightmost X-Forwarded-For hops; anything beyond is
+    # attacker-controlled and ignored. 0 (the default) means "no trusted proxy" —
+    # the limiter keys on the socket peer and ignores X-Forwarded-For entirely, so a
+    # spoofed header can't mint unlimited buckets. Set to the real hop count (e.g. 1
+    # behind a single nginx/Coolify proxy) in deployments that terminate at a proxy.
+    trusted_proxy_count: int = 0
     # Defaults to redis_url when blank; override to isolate the limiter's storage.
     rate_limit_storage_uri: str = ""
     rate_limit_login: str = "10/minute"
@@ -159,6 +170,29 @@ class Settings(BaseSettings):
     # --- M14 FX ---
     # Frankfurter is a public, no-key ECB-backed FX API.
     fx_api_base_url: str = "https://api.frankfurter.app"
+
+    @model_validator(mode="after")
+    def _forbid_default_secrets_in_prod(self) -> "Settings":
+        """Refuse to boot a non-dev environment with publicly-known dev secrets.
+
+        The prod compose files inject these via ``${JWT_SECRET:?...}``, but a direct
+        ``uvicorn`` launch would otherwise silently run with a secret anyone can read
+        from source — allowing full access-token forgery for any user. `dev` and
+        `test` keep the convenient defaults; everything else must override them.
+        """
+        if self.environment.lower() in {"dev", "test"}:
+            return self
+        insecure = []
+        if self.jwt_secret == _DEV_JWT_SECRET:
+            insecure.append("jwt_secret")
+        if self.storage_encryption_key == _DEV_STORAGE_KEY:
+            insecure.append("storage_encryption_key")
+        if insecure:
+            raise ValueError(
+                f"Refusing to start in environment={self.environment!r} with default "
+                f"dev secret(s): {', '.join(insecure)}. Set them via the environment."
+            )
+        return self
 
     @model_validator(mode="after")
     def _derive_origin_defaults(self) -> "Settings":

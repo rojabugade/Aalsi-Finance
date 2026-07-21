@@ -704,6 +704,18 @@ async def create_email_document(session: AsyncSession, user: User, data: EmailIn
 
 async def rotate_sms_token(session: AsyncSession, user: User, allowed_senders: list[str] | None = None) -> dict:
     token = secrets.token_urlsafe(32)
+    # Rotation must invalidate the previous token: revoke any still-active SMS
+    # connections for this user first, otherwise a leaked webhook token would stay
+    # valid forever (the webhook accepts any active SMS connection by token hash).
+    await session.execute(
+        update(IngestionConnection)
+        .where(
+            IngestionConnection.user_id == user.id,
+            IngestionConnection.channel == "sms",
+            IngestionConnection.status == "active",
+        )
+        .values(status="revoked")
+    )
     conn = IngestionConnection(user_id=user.id, channel="sms", provider="android-forwarder", token_encrypted=None, config={"token_hash": _hash(token), "allowed_senders": allowed_senders or []}, status="active")
     session.add(conn)
     await record_consent(session, user, "sms")

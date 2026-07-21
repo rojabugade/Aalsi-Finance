@@ -220,6 +220,20 @@ async def patch_settings(session: AsyncSession, user: User, data) -> dict:
     household = await session.get(Household, user.household_id)
     values = data.model_dump(exclude_unset=True)
     before = await get_settings(session, user)
+    # Household-wide settings (base currency and the LLM config that builds the client
+    # for every call in the household) are owner-only. Without this a non-owner could
+    # repoint every LLM call at an attacker-controlled base_url and exfiltrate the
+    # financial data flowing through prompts, or inject a malicious API key. Per-user
+    # preferences (locale/language) below stay open to any authenticated member.
+    llm_fields = {"llm_provider", "llm_base_url", "llm_model", "llm_api_key"}
+    household_wide = ("base_currency" in values and values["base_currency"] is not None) or bool(
+        llm_fields.intersection(values)
+    )
+    if household_wide and user.role != "owner":
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Only a household owner can change base currency or LLM configuration",
+        )
     if "base_currency" in values and values["base_currency"] is not None:
         if household is None:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Household not found")
@@ -228,7 +242,6 @@ async def patch_settings(session: AsyncSession, user: User, data) -> dict:
         user.locale = values["locale"]
     elif values.get("language") is not None:
         user.locale = _locale_from_language(values["language"])
-    llm_fields = {"llm_provider", "llm_base_url", "llm_model", "llm_api_key"}
     if llm_fields.intersection(values):
         if household is None:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Household not found")

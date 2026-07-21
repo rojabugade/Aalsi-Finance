@@ -1,7 +1,11 @@
 """The login endpoint is rate limited: after the per-window budget is spent, further
 attempts from the same client get 429 instead of another credential check. Runs
 DB-free (login 401s on a missing user via a stub session) and keys on a unique
-forwarded IP so it doesn't collide with other runs sharing the Redis limiter store."""
+forwarded IP so it doesn't collide with other runs sharing the Redis limiter store.
+
+X-Forwarded-For is only trusted for a configured number of proxy hops (a spoofed
+header must not mint unlimited buckets), so the fixture sets trusted_proxy_count=1
+to make the single forwarded hop authoritative for this test."""
 
 import uuid
 
@@ -35,13 +39,18 @@ async def _fake_session():
 @pytest_asyncio.fixture
 async def client():
     was_enabled = limiter.enabled
+    settings = get_settings()
+    was_trusted = settings.trusted_proxy_count
     limiter.enabled = True
+    # Honour the single X-Forwarded-For hop this test uses to isolate its bucket.
+    settings.trusted_proxy_count = 1
     app.dependency_overrides[get_session] = _fake_session
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as c:
         yield c
     app.dependency_overrides.pop(get_session, None)
     limiter.enabled = was_enabled
+    settings.trusted_proxy_count = was_trusted
     limiter.reset()
 
 

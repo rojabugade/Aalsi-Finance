@@ -124,7 +124,6 @@ class CategoryIn(BaseModel):
     name: str
     kind: str = "category"
     parent_id: uuid.UUID | None = None
-    is_system: bool = False
 
 
 class CategoryOut(BaseModel):

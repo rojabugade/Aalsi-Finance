@@ -26,6 +26,8 @@ from app.ingestion.schemas import (
     PlaidLinkTokenOut,
     PlaidSyncIn,
     PlaidSyncOut,
+    PlaidWebhookIn,
+    PlaidWebhookOut,
     SmsTokenOut,
     SmsWebhookIn,
     SmsWebhookOut,
@@ -102,9 +104,15 @@ async def plaid_items(user: User = Depends(require_role("owner", "member")), ses
     return await service.list_plaid_items(session, user)
 
 
-@router.post("/webhooks/plaid")
-async def plaid_webhook(payload: dict):
-    return {"status": "accepted", "payload_type": payload.get("webhook_type"), "payload_code": payload.get("webhook_code")}
+@router.post("/webhooks/plaid", response_model=PlaidWebhookOut)
+async def plaid_webhook(payload: PlaidWebhookIn):
+    # This endpoint is public and unauthenticated. Today it only echoes the event
+    # type — it performs no privileged work — so a spoofed body has no effect beyond
+    # this response. The body is now shape-validated (see PlaidWebhookIn) so it can
+    # never smuggle an arbitrary object downstream. IMPORTANT: before this handler is
+    # wired to do real work (triggering a sync, mutating items), it MUST verify the
+    # `Plaid-Verification` JWT against Plaid's webhook verification key.
+    return PlaidWebhookOut(status="accepted", payload_type=payload.webhook_type, payload_code=payload.webhook_code)
 
 
 @router.delete("/plaid/items/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
