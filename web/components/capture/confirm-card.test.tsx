@@ -13,7 +13,7 @@ describe("ConfirmCard", () => {
   it("confirms with edited total", () => {
     const onResolve = vi.fn().mockResolvedValue(undefined);
     render(<ConfirmCard item={item as never} onResolve={onResolve} pending={false} />);
-    fireEvent.click(screen.getByRole("button", { name: /fix/i }));
+    fireEvent.click(screen.getByRole("button", { name: /edit/i }));
     fireEvent.change(screen.getByLabelText(/total/i), { target: { value: "43.00" } });
     fireEvent.click(screen.getByRole("button", { name: /confirm/i }));
     expect(onResolve).toHaveBeenCalledWith("confirm", expect.objectContaining({ total: "43.00" }));

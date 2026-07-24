@@ -608,7 +608,8 @@ async def test_run_debt_plan_explicit_aggression_uses_engine_amount(monkeypatch)
     assert out.ordered[0].name == "Card"
     assert out.phases
     assert len(out.alternatives) == 4
-    assert "USD 750.00/month" in out.final_recommendation
+    # Narration renders the engine's amount with the workspace currency symbol.
+    assert "$750.00/month" in out.final_recommendation
 
 
 def test_order_loans_avalanche_tiebreaks_small_balance():

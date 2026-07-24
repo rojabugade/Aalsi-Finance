@@ -93,6 +93,9 @@ export function ConfirmCard({
               <dt className="text-[11px] uppercase tracking-wide text-muted">{humanize(k)}</dt>
               {editing ? (
                 <input
+                  // The <dt> above is the visual label but isn't associated with the
+                  // input, so without this the field has no accessible name.
+                  aria-label={humanize(k)}
                   className="mt-0.5 w-full rounded border border-border bg-background px-2 py-1 text-sm"
                   value={fields[k]}
                   onChange={(e) => setFields((f) => ({ ...f, [k]: e.target.value }))}

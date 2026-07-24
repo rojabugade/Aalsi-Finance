@@ -24,7 +24,10 @@ async def _ping() -> int:
 def test_run_task_survives_repeated_invocations() -> None:
     try:
         first = run_task(_ping())
-    except (OperationalError, InterfaceError) as exc:  # no DB reachable
+    except (OperationalError, InterfaceError, OSError) as exc:  # no DB reachable
+        # asyncpg raises a bare OSError/ConnectionRefusedError when nothing is
+        # listening, so this guard has to be wider than the SQLAlchemy wrappers or
+        # the test errors instead of skipping.
         pytest.skip(f"no Postgres reachable: {exc}")
 
     assert first == 1

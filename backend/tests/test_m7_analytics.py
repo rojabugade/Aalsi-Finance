@@ -219,16 +219,22 @@ async def test_breakdown_excludes_income_category_transactions(session):
 
     result = await breakdown(session, user, "merchant", None, date(2026, 1, 1), date(2026, 1, 31))
     totals = {row["dimensions"]["merchant"]: row["total"] for row in result["rows"]}
-    assert totals == {"Trader Joe's": Decimal("42.50")}
+    # Merchants are keyed by canonical_name, which is upper-cased at creation.
+    assert totals == {"TRADER JOE'S": Decimal("42.50")}
 
 
 @pytest.mark.asyncio
 async def test_budget_spend_includes_child_categories_and_line_items(session):
     user = await _user(session)
+    # Category ids come from a server-side gen_random_uuid(), so the parent must be
+    # flushed before a child can reference it — otherwise parent_id is silently None
+    # and the parent-budget rollup has nothing to roll up.
     food = Category(household_id=user.household_id, name="Food & Dining", kind="category")
-    restaurants = Category(household_id=user.household_id, parent_id=food.id, name="Restaurants", kind="subcategory")
     groceries = Category(household_id=user.household_id, name="Groceries", kind="category")
-    session.add_all([food, restaurants, groceries])
+    session.add_all([food, groceries])
+    await session.flush()
+    restaurants = Category(household_id=user.household_id, parent_id=food.id, name="Restaurants", kind="subcategory")
+    session.add(restaurants)
     await session.flush()
     merchant = await get_or_create_merchant(session, user.household_id, "Mixed Market")
     today = date.today()

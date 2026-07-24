@@ -8,7 +8,7 @@ from difflib import SequenceMatcher
 from statistics import median
 
 from fastapi import HTTPException, status
-from sqlalchemy import cast, delete, or_, select, update
+from sqlalchemy import cast, delete, func, or_, select, update
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -714,13 +714,22 @@ async def reconcile_receipt(session: AsyncSession, receipt_txn: Transaction, mer
         return receipt_txn
     start = receipt_txn.txn_date - timedelta(days=3)
     end = receipt_txn.txn_date + timedelta(days=7)
+    # Match on magnitude, not signed amount. Receipts are ingested canonical-negative
+    # ("money out"), but StatementTxnExtract has no debit/credit field, so a statement
+    # row keeps whatever sign the extractor emitted — commonly positive for the same
+    # purchase. Comparing signed amounts therefore never matched, and every receipt
+    # was double-counted alongside its statement line.
+    magnitude = abs(receipt_txn.amount)
     stmt = select(Transaction).where(
         Transaction.household_id == receipt_txn.household_id,
         Transaction.id != receipt_txn.id,
-        Transaction.amount == receipt_txn.amount,
+        func.abs(Transaction.amount) == magnitude,
         Transaction.txn_date.between(start, end),
     )
-    candidates = (await session.execute(stmt)).scalars().all()
+    candidates = list((await session.execute(stmt)).scalars().all())
+    # Prefer a same-sign counterpart so a refund of the same amount at the same
+    # merchant inside the window isn't absorbed ahead of the actual purchase.
+    candidates.sort(key=lambda c: (c.amount < 0) != (receipt_txn.amount < 0))
     for candidate in candidates:
         cand_merchant = await session.get(Merchant, candidate.merchant_id) if candidate.merchant_id else None
         if cand_merchant and SequenceMatcher(None, merchant.canonical_name, cand_merchant.canonical_name).ratio() >= 0.72:

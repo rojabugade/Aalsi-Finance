@@ -118,7 +118,14 @@ async def test_receipt_reconciles_into_statement_without_double_count(session):
     )
 
     txn_count = await session.scalar(select(func.count()).select_from(Transaction).where(Transaction.household_id == user.household_id))
-    item_count = await session.scalar(select(func.count()).select_from(LineItem))
+    # Scope to this workspace — the suite shares one database, so an unqualified
+    # count picks up line items created by other tests.
+    item_count = await session.scalar(
+        select(func.count())
+        .select_from(LineItem)
+        .join(Transaction, Transaction.id == LineItem.transaction_id)
+        .where(Transaction.household_id == user.household_id)
+    )
     assert txn_count == 1
     assert item_count == 3
     txn = (await session.execute(select(Transaction).where(Transaction.household_id == user.household_id))).scalar_one()

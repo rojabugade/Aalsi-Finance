@@ -200,6 +200,33 @@ async def test_insert_one_row_per_table(engine):
                             shares=25, fmv=50, est_tax={"fed": 300}))
         await s.flush()
 
+        # Balances, analyst/memory (M22), loan payments (M27) and guidance plan
+        # items (M30) — added after this test was first written.
+        thread = m.AnalystThread(household_id=hh.id, key="explain:default")
+        s.add(thread)
+        await s.flush()
+
+        s.add_all([
+            m.AccountBalance(household_id=hh.id, account_id=acct.id, as_of=today,
+                             balance=1234.56),
+            m.AnalystAlertRow(household_id=hh.id, kind="overspend", severity=5,
+                              tone="warning", signature="overspend:groceries",
+                              title="Groceries over budget", detail="Over by $50."),
+            m.AnalystMessage(thread_id=thread.id, role="user", text="why?"),
+            m.MemoryChunk(household_id=hh.id, source_type="transaction",
+                          source_id=txn.id, text="Bought groceries",
+                          embedding=[0.0] * get_settings().embed_dim),
+            m.MemoryFact(household_id=hh.id, domain="finance",
+                         text="Prefers avalanche payoff", confidence=0.9,
+                         embedding=[0.0] * get_settings().embed_dim),
+            m.LoanPayment(loan_id=loan.id, payment_date=today, amount=100,
+                          interest_component=15, principal_component=85,
+                          balance_after=915),
+            m.GuidancePlanItem(household_id=hh.id, user_id=user.id, domain="investment",
+                               title="Open a 401k", rationale="Employer match"),
+        ])
+        await s.flush()
+
         # Every mapped table now has at least the row(s) we added in this txn.
         for table in Base.metadata.sorted_tables:
             count = await s.scalar(select(func.count()).select_from(table))

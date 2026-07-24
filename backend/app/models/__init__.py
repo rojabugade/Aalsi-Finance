@@ -22,7 +22,7 @@ from app.models.core import (
     RefreshToken,
     User,
 )
-from app.models.debt import CreditCardDetail, Loan, PaymentSchedule
+from app.models.debt import CreditCardDetail, Loan, LoanPayment, PaymentSchedule
 from app.models.documents import Document
 from app.models.fx import CrossBorderTransfer, FXRate
 from app.models.guidance import GuidanceDoc, GuidancePlanItem, Notification, Recommendation
@@ -73,6 +73,7 @@ __all__ = [
     "LineItemTag",
     "LLMUsageLog",
     "Loan",
+    "LoanPayment",
     "MemoryChunk",
     "MemoryFact",
     "Merchant",

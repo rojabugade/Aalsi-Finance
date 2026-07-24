@@ -136,7 +136,9 @@ class Settings(BaseSettings):
     corpus_dir: str = "../corpus"
     plaid_client_id: str = ""
     plaid_secret: str = ""
-    plaid_environment: str = "Production"
+    # Default to Sandbox so an unconfigured or half-configured deployment can never
+    # reach real bank accounts. Production must be opted into explicitly.
+    plaid_environment: str = "Sandbox"
     # Liabilities lets us pull credit-card/student/mortgage balances into the Debt
     # page. Plaid only returns a product if it was requested at link time, so
     # changing this requires re-linking existing items.

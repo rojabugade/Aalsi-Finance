@@ -159,7 +159,7 @@ async def test_blank_model_rejected_for_non_lmstudio_provider():
 
 @pytest.mark.asyncio
 async def test_blank_openrouter_model_uses_auto_router():
-    fake = FakeOpenAI()
+    fake = FakeOpenAI(chat_script=[_chat_response(content="ok")])
     client = _client(fake, llm_provider="openrouter", chat_model="")
     await client.chat([{"role": "user", "content": "hi"}])
     assert fake.chat.completions.calls[0]["model"] == "openrouter/auto"
