@@ -1,0 +1,117 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+
+    services:
+      # pgvector, not plain postgres: M1 creates vector(N) columns for the analyst
+      # memory store, so migrations fail against a stock image.
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: finance
+          POSTGRES_PASSWORD: finance
+          POSTGRES_DB: finance
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U finance"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+
+      # The rate limiter is Redis-backed; test_rate_limit exercises it for real.
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+
+      # bitnami/minio starts the server with no extra command, which GitHub service
+      # containers cannot supply. Only the email-attachment ingestion test needs real
+      # object storage; the rest stub boto3.
+      minio:
+        image: bitnami/minio:latest
+        env:
+          MINIO_ROOT_USER: minioadmin
+          MINIO_ROOT_PASSWORD: minioadmin
+          MINIO_DEFAULT_BUCKETS: documents
+        ports: ["9000:9000"]
+        options: >-
+          --health-cmd "curl -f http://localhost:9000/minio/health/live"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+
+    env:
+      DATABASE_URL: postgresql+asyncpg://finance:finance@localhost:5432/finance
+      TEST_DATABASE_URL: postgresql+asyncpg://finance:finance@localhost:5432/finance
+      REDIS_URL: redis://localhost:6379/0
+      S3_ENDPOINT_URL: http://localhost:9000
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin
+      S3_BUCKET: documents
+      # Any test that skips itself for missing infrastructure is a CI failure —
+      # otherwise a service that fails to start reports a green, near-empty run.
+      REQUIRE_NO_SKIPPED_TESTS: "1"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Create venv and install dependencies
+        working-directory: backend
+        run: |
+          uv venv --python 3.12
+          uv pip install -r requirements.txt
+
+      - name: Run migrations
+        working-directory: backend
+        run: uv run --no-project alembic upgrade head
+
+      - name: Run tests
+        working-directory: backend
+        run: uv run --no-project pytest -q -rs
+
+  web:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        working-directory: web
+        run: npm ci
+
+      - name: Typecheck
+        working-directory: web
+        run: npm run typecheck
+
+      - name: Unit tests
+        working-directory: web
+        run: npm run test:unit
+
+      - name: Production build
+        working-directory: web
+        run: npm run build
