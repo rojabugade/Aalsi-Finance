@@ -247,7 +247,6 @@ def seed_transactions(token: str, categories: dict[str, str]) -> None:
             "category_id": categories.get(row["category_id"]),
             "status": row["status"],
             "source_channel": "dataset",
-            "is_shared": row["is_shared"].lower() in {"t", "true", "1"},
             "flags": parse_dict(row["flags"]),
             "notes": clean(row["notes"]),
             "confidence": float(row["confidence"]) if row["confidence"] else None,

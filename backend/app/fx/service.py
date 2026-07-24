@@ -54,7 +54,7 @@ async def household_base_currency(session: AsyncSession, household_id) -> str:
 async def set_household_base_currency(session: AsyncSession, household_id, currency: str) -> Household:
     household = await session.get(Household, household_id)
     if household is None:
-        raise FXRateUnavailable("Household not found")
+        raise FXRateUnavailable("Workspace not found")
     household.base_currency = normalize_currency(currency)
     await session.commit()
     await session.refresh(household)

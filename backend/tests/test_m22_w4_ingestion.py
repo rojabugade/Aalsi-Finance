@@ -45,7 +45,7 @@ async def _user(session):
     hh = Household(name=f"{PREFIX}{uuid.uuid4().hex[:8]}", base_currency="USD")
     session.add(hh)
     await session.flush()
-    user = User(household_id=hh.id, email=f"{uuid.uuid4().hex}@example.com", password_hash="x", role="owner")
+    user = User(household_id=hh.id, email=f"{uuid.uuid4().hex}@example.com", password_hash="x")
     session.add(user)
     await session.commit()
     return user
@@ -111,7 +111,6 @@ async def test_index_source_indexes_account_record(session):
         label="Main Checking",
         type="checking",
         currency="USD",
-        is_shared=True,
         mask="1234",
     )
     session.add(account)
@@ -244,7 +243,7 @@ async def test_run_reindex_returns_all_source_counts(session):
         Transaction(household_id=user.household_id, amount=Decimal("4.00"),
                     currency="USD", txn_date=date(2026, 6, 4), status="confirmed"),
         AccountLogical(household_id=user.household_id, label="Main Checking",
-                       type="checking", currency="USD", is_shared=False),
+                       type="checking", currency="USD"),
     ])
     await session.commit()
     out = await run_reindex(session, user, _FakeLLM())

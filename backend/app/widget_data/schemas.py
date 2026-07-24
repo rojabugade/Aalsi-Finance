@@ -32,7 +32,6 @@ class PaymentMethodOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
-    household_id: uuid.UUID
     owner_user_id: uuid.UUID | None = None
     account_id: uuid.UUID | None = None
     type: str
@@ -95,7 +94,6 @@ class RecurringSeriesOut(RecurringSeriesIn):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
-    household_id: uuid.UUID
     owner_user_id: uuid.UUID | None = None
     merchant_name: str | None = None
     category_name: str | None = None
@@ -131,7 +129,6 @@ class ValuationOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
-    household_id: uuid.UUID
     holding_id: uuid.UUID
     as_of: date
     price: Decimal
@@ -142,6 +139,5 @@ class HoldingOut(HoldingIn):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
-    household_id: uuid.UUID
     owner_user_id: uuid.UUID | None = None
     latest_valuation: ValuationOut | None = None

@@ -135,7 +135,6 @@ function NewQuickAdd({ categories, defaultCurrency }: { categories: Category[]; 
         txn_date: ymd(new Date()),
         source_channel: "manual",
         status: "draft",
-        is_shared: false,
       });
       toast.success("Transaction added");
       setForm((prev) => ({ ...prev, amount: "", merchant: "" }));

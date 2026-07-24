@@ -1,7 +1,7 @@
-"""Primitives: password hashing, JWT access/invite tokens, refresh-token hashing, TOTP.
+"""Primitives: password hashing, JWT access tokens, refresh-token hashing, TOTP.
 
 Refresh tokens are opaque random strings; only their SHA-256 hash is persisted
-(`refresh_token.token_hash`). Access and invite tokens are signed JWTs. Nothing
+(`refresh_token.token_hash`). Access tokens are signed JWTs. Nothing
 here touches the database — callers wire these into the service layer.
 """
 
@@ -56,12 +56,11 @@ def _now() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def create_access_token(user_id: uuid.UUID, household_id: uuid.UUID, role: str) -> str:
+def create_access_token(user_id: uuid.UUID, household_id: uuid.UUID) -> str:
     exp = _now() + timedelta(minutes=settings.access_token_ttl_minutes)
     payload = {
         "sub": str(user_id),
         "hid": str(household_id),
-        "role": role,
         "type": ACCESS_TOKEN_TYPE,
         "iat": int(_now().timestamp()),
         "exp": int(exp.timestamp()),
@@ -101,7 +100,7 @@ def create_oauth_state(user_id: uuid.UUID, household_id: uuid.UUID) -> str:
 
 
 def decode_oauth_state(state: str) -> dict[str, Any]:
-    """Verify an OAuth state value and return its user/household claims."""
+    """Verify an OAuth state value and return its user/workspace claims."""
     _user_id, separator, signed = state.partition(".")
     if not separator or not signed:
         raise jwt.InvalidTokenError("invalid OAuth state")

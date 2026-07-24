@@ -3,8 +3,6 @@ import type { components } from "@shared/api-schema";
 import { api } from "./client";
 
 export type PlaidLinkToken = components["schemas"]["PlaidLinkTokenOut"];
-export type EmailOAuthStart = components["schemas"]["EmailOAuthStartOut"];
-export type EmailSync = components["schemas"]["EmailSyncOut"];
 export type SmsToken = components["schemas"]["SmsTokenOut"];
 export type SplitwiseOAuthStart = components["schemas"]["SplitwiseOAuthStartOut"];
 export type SplitwiseSync = components["schemas"]["SplitwiseSyncOut"];

@@ -13,7 +13,7 @@ under the Guidance surface (`/cross-border/*`), not a top-level concern.
 - [x] **W1 Core money loop** — Dashboard, Capture (Dexie offline + sync), Review, Transactions + line items.
 - [x] **W2** — Analytics (faceted breakdown + contribution), Budgets (create + track), Debt (loans, schedule, payoff calc + snowball/avalanche).
 - [x] **W3** — Income/equity (sources, take-home, grants/events/summary); Guidance (cited ask, planning wizard, cross-border module: transfers + remittance limits).
-- [x] **W4** — Notifications (list + mark-read, channel/quiet-hours prefs); Connections (Plaid link-token, Gmail OAuth/sync/disconnect, SMS token rotate/disconnect; bot on hold); Settings (household + members, base-currency/locale/language, consents, CSV/PDF export, account delete).
+- [x] **W4** — Notifications (list + mark-read, channel/quiet-hours prefs); Connections (Plaid link-token, Gmail OAuth/sync/disconnect, SMS token rotate/disconnect; bot on hold); Settings (private workspace preferences, base-currency/locale/language, consents, CSV/PDF export, account delete).
 
 ## Surfaces
 
@@ -31,7 +31,7 @@ under the Guidance surface (`/cross-border/*`), not a top-level concern.
 | Guidance | done | /guidance/ask+wizard, /cross-border/* | cited ask, wizard checklist/reminders, cross-border transfers + limits (cross-border = module here) |
 | Notifications | done | /notifications/*, prefs | list + mark-read, channel toggles, quiet hours (web push informational) |
 | Connections | done | /plaid/*, /email/*, /sms/* | Plaid link-token, Gmail OAuth/sync/disconnect, SMS token rotate/disconnect (bot on hold) |
-| Settings | done | /household, /settings, /consents, /export, /account | household+members, prefs, consents revoke, CSV/PDF export, account delete |
+| Settings | done | /workspace, /settings, /consents, /export, /account | private-workspace preferences, consents revoke, CSV/PDF export, account delete |
 
 ## W1 notes
 - **Nav-shell 404 fix:** unbuilt surfaces (W2–W4) now ship `ComingSoon` placeholder
@@ -41,9 +41,9 @@ under the Guidance surface (`/cross-border/*`), not a top-level concern.
   `liveQuery`). Uploads go through a hand-built multipart fetch (openapi-fetch is
   awkward with `File`). Items are marked `syncing` then deleted on success → no dup.
 - **Transactions filtering** is client-side; `GET /transactions` returns the full
-  household set (no server query params).
-- Old monolith (`FinancePwaApp.tsx`, `lib/api.ts`, `lib/offlineQueue.ts`) kept as
-  reference for W2–W4 surfaces; orphaned (unrouted) but still typechecks.
+  private-workspace set (no server query params).
+- Legacy API helpers (`lib/api.ts`, `lib/offlineQueue.ts`) remain while rebuilt
+  screens are validated.
 
 ## W2 notes
 - Analytics breakdown is server-aggregated; the page sorts/limits client-side and computes

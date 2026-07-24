@@ -49,7 +49,6 @@ export function QuickAdd({ categories, defaultCurrency = "USD" }: { categories: 
         category_id: categoryId || null,
         source_channel: "manual",
         status: "draft",
-        is_shared: false,
       });
       form.reset();
       const dateField = form.elements.namedItem("txn_date") as HTMLInputElement | null;

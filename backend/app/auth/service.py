@@ -34,7 +34,7 @@ async def _get_user_by_email(session: AsyncSession, email: str) -> User | None:
 
 async def _issue_tokens(session: AsyncSession, user: User) -> tuple[str, str]:
     """Mint an access token and a persisted (hashed) refresh token."""
-    access = security.create_access_token(user.id, user.household_id, user.role)
+    access = security.create_access_token(user.id, user.household_id)
     raw_refresh, token_hash = security.new_refresh_token()
     session.add(
         RefreshToken(
@@ -70,10 +70,8 @@ async def signup(session: AsyncSession, data: SignupIn) -> tuple[str, str]:
         raise HTTPException(status.HTTP_409_CONFLICT, "Email already registered")
 
     household = Household(
-        name=data.household_name or data.display_name or data.email,
+        name=data.workspace_name or data.display_name or data.email,
         base_currency=data.base_currency.upper(),
-        # Sharing was removed: every account is a single-user, private workspace.
-        sharing_enabled=False,
     )
     session.add(household)
     await session.flush()  # populate household.id
@@ -83,7 +81,6 @@ async def signup(session: AsyncSession, data: SignupIn) -> tuple[str, str]:
         email=data.email.lower(),
         password_hash=security.hash_password(data.password),
         display_name=data.display_name,
-        role="owner",
     )
     session.add(user)
     await session.flush()
@@ -180,12 +177,12 @@ async def mfa_verify(session: AsyncSession, user: User, code: str) -> None:
 
 # --- Household (private workspace) -------------------------------------------
 
-async def set_household_base_currency(session: AsyncSession, actor: User, currency: str) -> Household:
+async def set_workspace_base_currency(session: AsyncSession, actor: User, currency: str) -> Household:
     household = await session.get(Household, actor.household_id)
     if household is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Household not found")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Workspace not found")
     household.base_currency = normalize_currency(currency)
-    await _audit(session, household.id, actor.id, "household.base_currency", "household")
+    await _audit(session, household.id, actor.id, "workspace.base_currency", "workspace")
     await session.commit()
     await session.refresh(household)
     return household

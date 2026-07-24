@@ -107,12 +107,12 @@
 
 **Tables (key columns):**
 - **household** (id, name, base_currency, created_at)
-- **user** (id, household_id→household, email unique, password_hash, display_name, locale, role[owner|member|viewer], mfa_secret nullable, created_at)
+- **user** (id, household_id→household, email unique, password_hash, display_name, locale, mfa_secret nullable, created_at)
 - **refresh_token** (id, user_id, token_hash, expires_at, revoked bool)
-- **account_logical** (id, household_id, owner_user_id nullable, label, type[checking|savings|credit|cash|loan|investment], currency, is_shared bool, mask nullable, plaid_item_id nullable, plaid_account_id nullable) — *labels only; never store bank credentials.*
+- **account_logical** (id, household_id, owner_user_id nullable, label, type[checking|savings|credit|cash|loan|investment], currency, mask nullable, plaid_item_id nullable, plaid_account_id nullable) — *labels only; never store bank credentials.*
 - **plaid_item** (id, household_id, access_token_encrypted, institution_name, status, created_at) — M11a.
 - **document** (id, household_id, uploaded_by_user_id, storage_key, type[receipt|statement|paystub|invoice|csv|other], source_channel[upload|email|sms|bot|plaid|manual], status[uploaded|processing|needs_review|processed|failed], ocr_meta jsonb, created_at)
-- **transaction** (id, household_id, account_id, owner_user_id nullable, merchant_id nullable, amount NUMERIC, currency, base_amount NUMERIC, fx_rate, txn_date date, category_id nullable, status[draft|confirmed], source_document_id nullable, source_channel, is_shared bool, flags jsonb[business,reimbursable,recurring], notes, confidence float, external_id nullable, created_at) — `external_id` unique-per-source for dedup (Plaid txn id, email msg id).
+- **transaction** (id, household_id, account_id, owner_user_id nullable, merchant_id nullable, amount NUMERIC, currency, base_amount NUMERIC, fx_rate, txn_date date, category_id nullable, status[draft|confirmed], source_document_id nullable, source_channel, flags jsonb[business,reimbursable,recurring], notes, confidence float, external_id nullable, created_at) — `external_id` unique-per-source for dedup (Plaid txn id, email msg id).
 - **line_item** (id, transaction_id→transaction, name, item_type_category_id nullable, amount NUMERIC, quantity nullable, confidence float)
 - **merchant** (id, household_id nullable, canonical_name, aliases jsonb, default_category_id nullable) — household_id null = global seed merchant.
 - **category** (id, household_id nullable, parent_id nullable, name, kind[category|subcategory|item_type], is_system bool) — self-referential hierarchy; system categories have household_id null.
@@ -145,22 +145,21 @@
 
 ---
 
-# M2 — Auth & Household / Multi-User
+# M2 — Auth & Private Workspace
 
-**Goal:** Secure auth with households (you + family), roles, and strict per-household data isolation.
+**Goal:** Secure auth with one private workspace per account and strict data isolation.
 
 **Depends on:** M1.
 
 **Build:**
-- Signup creates a household + owner user (or join an existing household via invite token).
+- Signup creates one private workspace and its account.
 - Login → JWT access (short) + refresh (rotating, stored hashed in `refresh_token`); logout revokes.
 - TOTP MFA enroll/verify (`pyotp`, QR provisioning URI).
 - Optional WebAuthn/passkey registration + assertion for biometric unlock on the PWA.
-- Household management: invite member (email + role), list members, change role, remove member.
-- Roles: `owner` (full), `member` (own + shared data), `viewer` (read-only).
-- A `current_user` FastAPI dependency that yields user + household and a `scoped_query` helper enforcing `household_id`. Personal vs shared visibility: `member` sees shared items + their own `owner_user_id` items; not other members' personal items.
+- A `current_user` FastAPI dependency that yields the signed-in account and a
+  `scoped_query` helper enforcing the internal workspace key (`household_id`).
 
-**Don't build:** social login, SSO, org/multi-household tenancy.
+**Don't build:** social login, SSO, shared/family workspaces, or multi-workspace tenancy.
 
 **Data:** household, user, refresh_token, consent_record, audit_log.
 
@@ -168,13 +167,13 @@
 - `POST /auth/signup`, `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout`
 - `POST /auth/mfa/enroll`, `POST /auth/mfa/verify`
 - `POST /auth/webauthn/register`, `POST /auth/webauthn/login` (optional)
-- `GET /household`, `POST /household/invite`, `POST /household/join`, `GET /household/members`, `PATCH /household/members/{id}`, `DELETE /household/members/{id}`
+- `GET /workspace`, `PATCH /workspace/base-currency`
 
 **Approach & libs:** passlib[argon2], python-jose or pyjwt, pyotp, webauthn (py_webauthn).
 
-**Watch out:** Hash refresh tokens at rest; rotate on every refresh and detect reuse. Every downstream endpoint depends on `current_user` and uses `scoped_query`. Don't leak other members' personal (`is_shared=false`, different `owner_user_id`) rows.
+**Watch out:** Hash refresh tokens at rest; rotate on every refresh and detect reuse. Every downstream endpoint depends on `current_user` and uses `scoped_query`.
 
-**Done when:** A user can sign up, enable MFA, log in, invite a second member, and verify that personal items aren't visible cross-member while shared items are.
+**Done when:** A user can sign up, enable MFA, log in, and verify that another account's private workspace cannot be queried.
 
 ---
 
@@ -611,7 +610,7 @@
 - **Guidance:** ask (cited answers, govt vs community), wizard, remittance tracker.
 - **Connections:** Plaid link, Gmail connect, SMS token + setup guide, bot linking.
 - **Notifications center + preferences.**
-- **Settings/household:** members/roles, base currency, language (English + Hindi/Hinglish), data controls (export/delete).
+- **Settings:** private-workspace base currency, language (English + Hindi/Hinglish), and data controls (export/delete).
 
 **Don't build:** native iOS/Android apps (PWA covers it; RN/Expo is a later upgrade).
 

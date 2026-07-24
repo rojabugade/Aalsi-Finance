@@ -79,7 +79,6 @@ class BudgetOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
-    household_id: uuid.UUID
     category_id: uuid.UUID | None = None
     period: str
     amount: Decimal
@@ -94,7 +93,6 @@ class RecommendationOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
-    household_id: uuid.UUID
     user_id: uuid.UUID | None = None
     type: str
     payload: dict | None = None

@@ -47,6 +47,9 @@ from app.models.transactions import (
 CONFIRM_DELETE = "DELETE MY ACCOUNT"
 NOTIFICATION_PREFS_LINK = "/notifications/preferences"
 CONSENT_CHANNELS = {"sms", "email", "bot", "plaid"}
+# Settings that rebuild the workspace's LLM client. Grouped so a patch touching any
+# of them writes a complete override rather than half-applying one field.
+LLM_FIELDS = {"llm_provider", "llm_base_url", "llm_model", "llm_api_key"}
 
 
 def _now() -> datetime:
@@ -108,7 +111,7 @@ async def export_csv_zip(session: AsyncSession, user: User) -> bytes:
         if grant_ids:
             equity_events = list((await session.execute(select(EquityEvent).where(EquityEvent.equity_grant_id.in_(grant_ids)).order_by(EquityEvent.id))).scalars().all())
 
-    txn_fields = ["id", "household_id", "account_id", "owner_user_id", "merchant_id", "amount", "currency", "base_amount", "fx_rate", "txn_date", "category_id", "status", "source_document_id", "source_channel", "is_shared", "flags", "notes", "confidence", "external_id"]
+    txn_fields = ["id", "household_id", "account_id", "owner_user_id", "merchant_id", "amount", "currency", "base_amount", "fx_rate", "txn_date", "category_id", "status", "source_document_id", "source_channel", "flags", "notes", "confidence", "external_id"]
     line_item_fields = ["id", "transaction_id", "name", "item_type_category_id", "amount", "quantity", "confidence"]
     loan_fields = ["id", "household_id", "owner_user_id", "name", "type", "schedule_kind", "principal", "currency", "interest_rate", "compounding", "min_or_emi_amount", "due_day", "penalty_rules", "start_date", "end_date"]
     schedule_fields = ["id", "loan_id", "installment_no", "due_date", "principal_component", "interest_component", "balance_after", "status"]
@@ -145,7 +148,7 @@ async def export_pdf(session: AsyncSession, user: User) -> bytes:
     lines = [
         "Personal Finance Export Summary",
         f"Generated at: {_now().isoformat(timespec='seconds')}",
-        f"Household: {household.name if household else user.household_id}",
+        f"Workspace: {household.name if household else user.household_id}",
         f"Base currency: {household.base_currency if household else 'USD'}",
         f"Transactions visible to requester: {txn_count}",
         f"Transaction amount total: {total_spend}",
@@ -220,31 +223,18 @@ async def patch_settings(session: AsyncSession, user: User, data) -> dict:
     household = await session.get(Household, user.household_id)
     values = data.model_dump(exclude_unset=True)
     before = await get_settings(session, user)
-    # Household-wide settings (base currency and the LLM config that builds the client
-    # for every call in the household) are owner-only. Without this a non-owner could
-    # repoint every LLM call at an attacker-controlled base_url and exfiltrate the
-    # financial data flowing through prompts, or inject a malicious API key. Per-user
-    # preferences (locale/language) below stay open to any authenticated member.
-    llm_fields = {"llm_provider", "llm_base_url", "llm_model", "llm_api_key"}
-    household_wide = ("base_currency" in values and values["base_currency"] is not None) or bool(
-        llm_fields.intersection(values)
-    )
-    if household_wide and user.role != "owner":
-        raise HTTPException(
-            status.HTTP_403_FORBIDDEN,
-            "Only a household owner can change base currency or LLM configuration",
-        )
+    # The workspace has exactly one active account, so these settings are private.
     if "base_currency" in values and values["base_currency"] is not None:
         if household is None:
-            raise HTTPException(status.HTTP_404_NOT_FOUND, "Household not found")
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Workspace not found")
         household.base_currency = values["base_currency"].upper()[:3]
     if values.get("locale") is not None:
         user.locale = values["locale"]
     elif values.get("language") is not None:
         user.locale = _locale_from_language(values["language"])
-    if llm_fields.intersection(values):
+    if LLM_FIELDS.intersection(values):
         if household is None:
-            raise HTTPException(status.HTTP_404_NOT_FOUND, "Household not found")
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Workspace not found")
         current = dict(household.llm_config or {})
         if values.get("llm_provider") is not None:
             current["provider"] = values["llm_provider"]
@@ -331,8 +321,8 @@ async def delete_account(session: AsyncSession, user: User, confirmation: str) -
         raise HTTPException(status.HTTP_400_BAD_REQUEST, f"confirmation must equal {CONFIRM_DELETE!r}")
 
     household_users = list((await session.execute(select(User).where(User.household_id == user.household_id))).scalars().all())
-    owner_count = len([row for row in household_users if row.role == "owner" and row.is_active])
-    full_household_delete = user.role == "owner" and owner_count <= 1
+    active_user_count = len([row for row in household_users if row.is_active])
+    full_household_delete = active_user_count <= 1
     before = {"user_id": str(user.id), "household_id": str(user.household_id), "full_household_delete": full_household_delete}
     session.add(AuditLog(household_id=user.household_id, actor_user_id=user.id, action="account.delete", entity="user", before=before, after={"status": "deactivated"}))
     await session.flush()

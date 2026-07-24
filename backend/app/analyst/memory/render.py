@@ -31,11 +31,10 @@ def render_recurring(series) -> str:
 
 
 def render_account(account) -> str:
-    shared = "shared" if getattr(account, "is_shared", False) else "personal"
     mask = getattr(account, "mask", None)
     suffix = f" ending in {mask}" if mask else ""
     return (
-        f"Account '{getattr(account, 'label', 'account')}' is a {shared} "
+        f"Account '{getattr(account, 'label', 'account')}' is a "
         f"{getattr(account, 'type', 'account')} account in {getattr(account, 'currency', '')}{suffix}."
     )
 

@@ -37,7 +37,6 @@ export function ManualTransactionEntry() {
         notes: String(f.get("notes") ?? "") || null,
         source_channel: "manual",
         status: "draft",
-        is_shared: false,
       });
       toast.success("Transaction added");
       setOpen(false);

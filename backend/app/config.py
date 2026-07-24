@@ -71,7 +71,7 @@ class Settings(BaseSettings):
     ocr_max_scan_pages: int = 12
 
     # --- Auth / security (M2) ---
-    # MUST be overridden in any non-dev environment. Signs access & invite JWTs.
+    # MUST be overridden in any non-dev environment. Signs access JWTs.
     jwt_secret: str = "dev-insecure-change-me"
     jwt_algorithm: str = "HS256"
     access_token_ttl_minutes: int = 15

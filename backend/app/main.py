@@ -72,7 +72,7 @@ async def version() -> dict[str, str]:
 
 
 # Feature routers (mounted as modules land).
-from app.auth.household_router import router as household_router  # noqa: E402
+from app.auth.workspace_router import router as workspace_router  # noqa: E402
 from app.auth.router import router as auth_router  # noqa: E402
 from app.analytics.router import router as analytics_router  # noqa: E402
 from app.analyst.router import router as analyst_router  # noqa: E402
@@ -91,7 +91,7 @@ from app.transactions.router import router as transactions_router  # noqa: E402
 from app.widget_data.router import router as widget_data_router  # noqa: E402
 
 app.include_router(auth_router)
-app.include_router(household_router)
+app.include_router(workspace_router)
 app.include_router(llm_router)
 app.include_router(documents_router)
 app.include_router(ocr_router)

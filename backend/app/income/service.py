@@ -140,8 +140,6 @@ async def create_equity_grant(session: AsyncSession, user: User, data: EquityGra
 
 async def list_equity_grants(session: AsyncSession, user: User) -> list[EquityGrant]:
     stmt = select(EquityGrant).join(IncomeSource, EquityGrant.income_source_id == IncomeSource.id).where(IncomeSource.household_id == user.household_id)
-    if user.role != "owner":
-        stmt = stmt.where(IncomeSource.owner_user_id == user.id)
     return list((await session.execute(stmt)).scalars().all())
 
 
@@ -170,8 +168,6 @@ async def list_equity_events(session: AsyncSession, user: User) -> list[EquityEv
         .join(IncomeSource, EquityGrant.income_source_id == IncomeSource.id)
         .where(IncomeSource.household_id == user.household_id)
     )
-    if user.role != "owner":
-        stmt = stmt.where(IncomeSource.owner_user_id == user.id)
     return list((await session.execute(stmt)).scalars().all())
 
 
@@ -231,8 +227,6 @@ async def _get_grant(session: AsyncSession, user: User, grant_id: uuid.UUID) -> 
         .join(IncomeSource, EquityGrant.income_source_id == IncomeSource.id)
         .where(EquityGrant.id == grant_id, IncomeSource.household_id == user.household_id)
     )
-    if user.role != "owner":
-        stmt = stmt.where(IncomeSource.owner_user_id == user.id)
     row = (await session.execute(stmt)).scalar_one_or_none()
     if row is None:
         raise NotFound("Equity grant not found")

@@ -1,12 +1,13 @@
 """Regression tests for the backend security-audit fixes.
 
-Covers the cross-tenant and role-gating remediations that don't need MinIO/LLM:
+Covers the cross-tenant remediations that don't need MinIO/LLM:
 
 - transaction create/patch reject FK ids (account, category, source document)
   belonging to another household;
 - category creation is always household-scoped (no tenant-minted system categories);
 - category merge refuses system categories and only rewrites the caller's own rows;
-- household-wide settings (base currency / LLM config) are owner-only.
+- private-workspace settings (base currency / LLM config) remain scoped to the
+  signed-in account.
 
 Skips when no Postgres is reachable, mirroring the other DB-backed suites.
 """
@@ -64,7 +65,7 @@ async def session(engine):
         yield s
 
 
-async def _user(session, role: str = "owner") -> User:
+async def _user(session) -> User:
     hh = Household(name=f"{HOUSEHOLD_PREFIX}{uuid.uuid4().hex[:8]}", base_currency="USD")
     session.add(hh)
     await session.flush()
@@ -72,7 +73,6 @@ async def _user(session, role: str = "owner") -> User:
         household_id=hh.id,
         email=f"{uuid.uuid4().hex}@example.com",
         password_hash="x",
-        role=role,
     )
     session.add(user)
     await session.flush()
@@ -183,17 +183,8 @@ async def test_merge_category_only_touches_own_household(session):
 
 
 @pytest.mark.asyncio
-async def test_patch_settings_household_wide_is_owner_only(session):
-    viewer = await _user(session, role="viewer")
-
-    # Per-user preference is fine for any role.
-    await dc_service.patch_settings(session, viewer, SettingsPatch(language="hi"))
-
-    for payload in (SettingsPatch(base_currency="INR"), SettingsPatch(llm_base_url="http://evil.example/v1")):
-        with pytest.raises(HTTPException) as exc:
-            await dc_service.patch_settings(session, viewer, payload)
-        assert exc.value.status_code == 403
-
-    owner = await _user(session, role="owner")
-    out = await dc_service.patch_settings(session, owner, SettingsPatch(base_currency="INR"))
+async def test_patch_settings_are_private_to_the_current_workspace(session):
+    account = await _user(session)
+    await dc_service.patch_settings(session, account, SettingsPatch(language="hi"))
+    out = await dc_service.patch_settings(session, account, SettingsPatch(base_currency="INR"))
     assert out["base_currency"] == "INR"

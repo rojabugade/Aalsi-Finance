@@ -11,7 +11,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.deps import get_current_user, require_role
+from app.auth.deps import get_current_user
 from app.auth.security import decode_oauth_state
 from app.config import get_settings
 from app.db import get_session
@@ -72,7 +72,7 @@ def _not_found(exc: service.NotFound):
 
 
 @router.post("/plaid/link-token", response_model=PlaidLinkTokenOut)
-async def plaid_link_token(data: PlaidLinkTokenIn | None = None, user: User = Depends(require_role("owner", "member")), session: AsyncSession = Depends(get_session), gateway: PlaidGateway = Depends(get_plaid_gateway)):
+async def plaid_link_token(data: PlaidLinkTokenIn | None = None, user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session), gateway: PlaidGateway = Depends(get_plaid_gateway)):
     try:
         return await service.plaid_link_token(session, user, data or PlaidLinkTokenIn(), gateway)
     except IntegrationUnavailable as exc:
@@ -82,7 +82,7 @@ async def plaid_link_token(data: PlaidLinkTokenIn | None = None, user: User = De
 
 
 @router.post("/plaid/exchange", response_model=PlaidExchangeOut)
-async def plaid_exchange(data: PlaidExchangeIn, user: User = Depends(require_role("owner", "member")), session: AsyncSession = Depends(get_session), gateway: PlaidGateway = Depends(get_plaid_gateway)):
+async def plaid_exchange(data: PlaidExchangeIn, user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session), gateway: PlaidGateway = Depends(get_plaid_gateway)):
     try:
         return await service.plaid_exchange(session, user, data, gateway)
     except IntegrationUnavailable as exc:
@@ -90,7 +90,7 @@ async def plaid_exchange(data: PlaidExchangeIn, user: User = Depends(require_rol
 
 
 @router.post("/plaid/sync", response_model=PlaidSyncOut)
-async def plaid_sync(data: PlaidSyncIn, user: User = Depends(require_role("owner", "member")), session: AsyncSession = Depends(get_session), gateway: PlaidGateway = Depends(get_plaid_gateway)):
+async def plaid_sync(data: PlaidSyncIn, user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session), gateway: PlaidGateway = Depends(get_plaid_gateway)):
     try:
         return await service.plaid_sync(session, user, data, gateway)
     except IntegrationUnavailable as exc:
@@ -100,7 +100,7 @@ async def plaid_sync(data: PlaidSyncIn, user: User = Depends(require_role("owner
 
 
 @router.get("/plaid/items", response_model=list[PlaidItemOut])
-async def plaid_items(user: User = Depends(require_role("owner", "member")), session: AsyncSession = Depends(get_session)):
+async def plaid_items(user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
     return await service.list_plaid_items(session, user)
 
 
@@ -116,7 +116,7 @@ async def plaid_webhook(payload: PlaidWebhookIn):
 
 
 @router.delete("/plaid/items/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def plaid_delete(item_id: uuid.UUID, user: User = Depends(require_role("owner", "member")), session: AsyncSession = Depends(get_session), gateway: PlaidGateway = Depends(get_plaid_gateway)):
+async def plaid_delete(item_id: uuid.UUID, user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session), gateway: PlaidGateway = Depends(get_plaid_gateway)):
     try:
         await service.delete_plaid_item(session, user, item_id, gateway)
     except IntegrationUnavailable as exc:
@@ -151,12 +151,12 @@ async def email_inbound():
 
 
 @router.delete("/email/connection", status_code=status.HTTP_204_NO_CONTENT)
-async def email_delete(user: User = Depends(require_role("owner", "member")), session: AsyncSession = Depends(get_session)):
+async def email_delete(user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
     await service.delete_email_connection(session, user)
 
 
 @router.post("/splitwise/oauth/start", response_model=SplitwiseOAuthStartOut)
-async def splitwise_oauth_start(user: User = Depends(require_role("owner", "member")), gateway=Depends(get_splitwise_gateway)):
+async def splitwise_oauth_start(user: User = Depends(get_current_user), gateway=Depends(get_splitwise_gateway)):
     try:
         return await service.splitwise_oauth_start(user, gateway)
     except IntegrationUnavailable as exc:
@@ -176,7 +176,7 @@ async def splitwise_oauth_callback(code: str = Query(...), state: str = Query(..
 
 
 @router.post("/splitwise/sync", response_model=SplitwiseSyncOut)
-async def splitwise_sync(user: User = Depends(require_role("owner", "member")), session: AsyncSession = Depends(get_session), gateway=Depends(get_splitwise_gateway)):
+async def splitwise_sync(user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session), gateway=Depends(get_splitwise_gateway)):
     try:
         return await service.splitwise_sync(session, user, gateway)
     except IntegrationUnavailable as exc:
@@ -187,19 +187,19 @@ async def splitwise_sync(user: User = Depends(require_role("owner", "member")), 
 
 @router.get("/splitwise/balances", response_model=SplitwiseBalancesOut)
 async def splitwise_balances(
-    user: User = Depends(require_role("owner", "member")),
+    user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
     return await service.splitwise_balances(session, user)
 
 
 @router.delete("/splitwise/connection", status_code=status.HTTP_204_NO_CONTENT)
-async def splitwise_delete(user: User = Depends(require_role("owner", "member")), session: AsyncSession = Depends(get_session)):
+async def splitwise_delete(user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
     await service.delete_splitwise_connection(session, user)
 
 
 @router.post("/sms/token/rotate", response_model=SmsTokenOut)
-async def rotate_sms_token(allowed_senders: list[str] | None = None, user: User = Depends(require_role("owner", "member")), session: AsyncSession = Depends(get_session)):
+async def rotate_sms_token(allowed_senders: list[str] | None = None, user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
     return await service.rotate_sms_token(session, user, allowed_senders)
 
 

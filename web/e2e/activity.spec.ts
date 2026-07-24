@@ -6,7 +6,7 @@ const PASSWORD = process.env.E2E_PASSWORD ?? "hunter2pass";
 
 async function signup(request: APIRequestContext) {
   const res = await request.post(`${API}/auth/signup`, {
-    data: { email: EMAIL, password: PASSWORD, display_name: "E2E", household_name: "E2E House" },
+    data: { email: EMAIL, password: PASSWORD, display_name: "E2E", workspace_name: "E2E Workspace" },
   });
   if (res.ok()) return (await res.json()) as { access_token: string; refresh_token: string };
   const login = await request.post(`${API}/auth/login`, { data: { email: EMAIL, password: PASSWORD, totp_code: null } });

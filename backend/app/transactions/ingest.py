@@ -25,7 +25,7 @@ async def ingest_extraction(session: AsyncSession, document_id: uuid.UUID, paylo
     if document is None:
         return None
     owner = await session.get(User, document.uploaded_by_user_id) if document.uploaded_by_user_id else None
-    user = owner or User(id=document.uploaded_by_user_id, household_id=document.household_id, email="system", password_hash="x", role="owner")
+    user = owner or User(id=document.uploaded_by_user_id, household_id=document.household_id, email="system", password_hash="x")
     if payload.doc_type in {"receipt", "invoice"}:
         return await _ingest_receipt(session, user, document, payload)
     if payload.doc_type in {"statement", "csv"}:

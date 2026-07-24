@@ -330,7 +330,7 @@ async def test_admin_ping_logs_usage(engine):
                     "email": email,
                     "password": "hunter2pass",
                     "display_name": "Owner",
-                    "household_name": f"{HOUSEHOLD_PREFIX}ping",
+                    "workspace_name": f"{HOUSEHOLD_PREFIX}ping",
                 },
             )
             assert su.status_code == 201, su.text

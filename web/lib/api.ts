@@ -92,7 +92,7 @@ export const api = {
     email: string;
     password: string;
     display_name?: string;
-    household_name?: string;
+    workspace_name?: string;
     base_currency?: string;
   }) => {
     const r = await authApi.signup(payload);

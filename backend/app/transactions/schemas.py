@@ -42,7 +42,6 @@ class TransactionCreate(BaseModel):
     status: str = "draft"
     source_document_id: uuid.UUID | None = None
     source_channel: str = "manual"
-    is_shared: bool = False
     flags: dict | None = None
     notes: str | None = None
     confidence: float | None = Field(default=None, ge=0, le=1)
@@ -63,7 +62,6 @@ class TransactionPatch(BaseModel):
     txn_date: date | None = None
     category_id: uuid.UUID | None = None
     status: str | None = None
-    is_shared: bool | None = None
     flags: dict | None = None
     notes: str | None = None
     confidence: float | None = Field(default=None, ge=0, le=1)
@@ -73,7 +71,6 @@ class TransactionOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
-    household_id: uuid.UUID
     account_id: uuid.UUID | None = None
     payment_method_id: uuid.UUID | None = None
     recurring_series_id: uuid.UUID | None = None
@@ -89,7 +86,6 @@ class TransactionOut(BaseModel):
     status: str
     source_document_id: uuid.UUID | None = None
     source_channel: str | None = None
-    is_shared: bool
     flags: dict | None = None
     notes: str | None = None
     confidence: float | None = None
@@ -130,7 +126,6 @@ class CategoryOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
-    household_id: uuid.UUID | None = None
     parent_id: uuid.UUID | None = None
     name: str
     kind: str
@@ -149,7 +144,6 @@ class TagOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
-    household_id: uuid.UUID
     name: str
 
 
@@ -164,7 +158,6 @@ class RuleOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
-    household_id: uuid.UUID
     matcher: dict
     action: dict
     priority: int

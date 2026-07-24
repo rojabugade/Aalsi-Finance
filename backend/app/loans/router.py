@@ -5,7 +5,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.deps import get_current_user, require_role
+from app.auth.deps import get_current_user
 from app.db import get_session
 from app.loans import service
 from app.loans.schemas import (
@@ -41,7 +41,7 @@ async def list_loans(
 @router.post("/loans", response_model=LoanOut, status_code=status.HTTP_201_CREATED)
 async def create_loan(
     data: LoanIn,
-    user: User = Depends(require_role("owner", "member")),
+    user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> LoanOut:
     return await service.create_loan(session, user, data)
@@ -51,7 +51,7 @@ async def create_loan(
 async def patch_loan(
     loan_id: uuid.UUID,
     data: LoanPatch,
-    user: User = Depends(require_role("owner", "member")),
+    user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> LoanOut:
     try:
@@ -63,7 +63,7 @@ async def patch_loan(
 @router.delete("/loans/{loan_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_loan(
     loan_id: uuid.UUID,
-    user: User = Depends(require_role("owner", "member")),
+    user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
     try:
@@ -106,7 +106,7 @@ async def list_loan_payments(
 async def create_loan_payment(
     loan_id: uuid.UUID,
     data: LoanPaymentIn,
-    user: User = Depends(require_role("owner", "member")),
+    user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> LoanPaymentOut:
     try:
@@ -122,7 +122,7 @@ async def create_loan_payment(
 async def delete_loan_payment(
     loan_id: uuid.UUID,
     payment_id: uuid.UUID,
-    user: User = Depends(require_role("owner", "member")),
+    user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
     try:

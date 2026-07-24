@@ -29,7 +29,7 @@ START_DATE = date(2025, 7, 1)
 END_DATE = date(2026, 6, 30)  # ~1 year
 
 NUM_HOUSEHOLDS = 2
-USERS_PER_HOUSEHOLD = [2, 3]   # 2 in HH-1, 3 in HH-2
+USERS_PER_HOUSEHOLD = [1, 1]   # one private account per workspace
 INCOME_TYPES = ["Salary", "Freelance", "Mixed"]
 CURRENCIES = ["USD", "EUR", "INR", "GBP"]
 BASE_CURRENCY = "USD"
@@ -378,7 +378,7 @@ for hh_idx in range(NUM_HOUSEHOLDS):
     household_ids.append(hh_id)
     rows["household"].append({
         "id": str(hh_id),
-        "name": f"Household {hh_idx + 1}",
+        "name": f"Workspace {hh_idx + 1}",
         "base_currency": BASE_CURRENCY,
         "created_at": datetime(2025, 1, 1, 0, 0, 0).isoformat(),
     })
@@ -386,20 +386,19 @@ for hh_idx in range(NUM_HOUSEHOLDS):
     num_users = USERS_PER_HOUSEHOLD[hh_idx]
     for u_idx in range(num_users):
         uid = stable_uuid(f"user:{hh_idx}:{u_idx}")
-        role = "owner" if u_idx == 0 else random.choice(["member", "member", "viewer"])
         display_name = f"Person {hh_idx+1}-{u_idx+1}"
         email = f"p{hh_idx+1}_{u_idx+1}@example.com"
         income_profile = INCOME_PROFILES[hh_idx * 2 + u_idx] if u_idx < 2 else INCOME_PROFILES[-1]
 
         user_map[f"{hh_idx}:{u_idx}"] = {
             "id": uid, "hh_id": hh_id, "display_name": display_name,
-            "email": email, "role": role, "income": income_profile,
+            "email": email, "income": income_profile,
         }
         rows["user"].append({
             "id": str(uid), "household_id": str(hh_id),
             "email": email, "password_hash": "<placeholder>",
             "display_name": display_name, "locale": "en-US",
-            "role": role, "mfa_secret": "", "created_at": datetime(2025, 1, 1, 0, 0, 0).isoformat(),
+            "mfa_secret": "", "created_at": datetime(2025, 1, 1, 0, 0, 0).isoformat(),
         })
 
         # Accounts per user
@@ -415,7 +414,6 @@ for hh_idx in range(NUM_HOUSEHOLDS):
                 "id": str(aid), "household_id": str(hh_id),
                 "owner_user_id": str(uid), "label": f"{display_name}'s {acct_type.title()}",
                 "type": acct_type, "currency": currency,
-                "is_shared": "f" if acct_type != "savings" else "t",
                 "mask": f"xxxx{rand_int(1000,9999)}", "plaid_item_id": "", "plaid_account_id": "",
             })
 
@@ -719,7 +717,6 @@ for d in daterange(START_DATE, END_DATE):
                 "status": status,
                 "source_document_id": "",
                 "source_channel": random.choice(["manual", "plaid", "manual", "manual"]),
-                "is_shared": "f",
                 "flags": str({}) if random.random() < 0.8 else str({"recurring": True}),
                 "notes": description[:100],
                 "confidence": str(round(random.uniform(0.7, 1.0), 2)),
@@ -809,7 +806,6 @@ for uk, uinfo in user_map.items():
                 "status": "confirmed",
                 "source_document_id": "",
                 "source_channel": "manual",
-                "is_shared": "f",
                 "flags": str({}),
                 "notes": f"Paycheck - {employer}",
                 "confidence": "1.0",

@@ -83,7 +83,7 @@ async def _user(session):
     hh = Household(name=f"{HOUSEHOLD_PREFIX}{uuid.uuid4().hex[:8]}", base_currency="USD")
     session.add(hh)
     await session.flush()
-    user = User(household_id=hh.id, email=f"{uuid.uuid4().hex}@example.com", password_hash="x", role="owner")
+    user = User(household_id=hh.id, email=f"{uuid.uuid4().hex}@example.com", password_hash="x")
     session.add(user)
     await session.flush()
     return user

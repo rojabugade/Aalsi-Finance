@@ -25,7 +25,7 @@ Or via the root `docker compose up` (api + worker + beat + backing services).
 ## Deferred (later modules)
 
 - DB schema & migrations → **M1**
-- Auth / households / per-household scoping → **M2**
+- Auth / private workspaces / per-workspace scoping → **M2**
 - LLM gateway → **M3**
 - Document storage, OCR, transactions, analytics, debt, income, guidance, bot,
   notifications, FX, export → **M4–M16**

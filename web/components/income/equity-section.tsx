@@ -72,7 +72,7 @@ export function EquitySection({ sources }: { sources: IncomeSource[] }) {
       <div className="rounded-card-sm border border-border bg-card p-4 shadow-card">
         <div className="mb-3">
           <h2 className="text-base font-bold tracking-tight">Grants</h2>
-          <p className="text-sm text-muted">All equity grants in your household.</p>
+          <p className="text-sm text-muted">All equity grants in your workspace.</p>
         </div>
         <div className="space-y-2">
           {grants.isLoading ? (

@@ -12,7 +12,7 @@
 
 const SERVER_AUTH_BASE =
   process.env.API_INTERNAL_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-// Empty in the browser => same-origin => Next rewrites /auth/* and /household/* to the API.
+// Empty in the browser => same-origin => Next rewrites /auth/* and /workspace/* to the API.
 const authBase = typeof window === "undefined" ? SERVER_AUTH_BASE : "";
 
 const CSRF_COOKIE = "cbf_csrf";

@@ -124,7 +124,6 @@ class GuidancePlanItemOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
-    household_id: uuid.UUID
     user_id: uuid.UUID
     domain: GuidanceDomain
     title: str
@@ -166,7 +165,6 @@ class CrossBorderTransferOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
-    household_id: uuid.UUID
     owner_user_id: uuid.UUID | None = None
     direction: str
     from_currency: str

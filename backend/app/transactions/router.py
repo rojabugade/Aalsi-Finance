@@ -5,7 +5,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.deps import get_current_user, require_role
+from app.auth.deps import get_current_user
 from app.db import get_session
 from app.models.core import User
 from app.models.transactions import Transaction
@@ -67,7 +67,7 @@ async def list_transactions(
 @router.post("/transactions", response_model=TransactionOut, status_code=status.HTTP_201_CREATED)
 async def create_transaction(
     data: TransactionCreate,
-    user: User = Depends(require_role("owner", "member")),
+    user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> TransactionOut:
     try:
@@ -80,7 +80,7 @@ async def create_transaction(
 @router.post("/transactions/merge", response_model=TransactionOut)
 async def merge_transactions(
     data: MergeIn,
-    user: User = Depends(require_role("owner", "member")),
+    user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> TransactionOut:
     try:
@@ -107,7 +107,7 @@ async def get_transaction(
 async def patch_transaction(
     transaction_id: uuid.UUID,
     data: TransactionPatch,
-    user: User = Depends(require_role("owner", "member")),
+    user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> TransactionOut:
     try:
@@ -120,7 +120,7 @@ async def patch_transaction(
 @router.delete("/transactions/{transaction_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_transaction(
     transaction_id: uuid.UUID,
-    user: User = Depends(require_role("owner", "member")),
+    user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
     try:
@@ -132,7 +132,7 @@ async def delete_transaction(
 @router.post("/transactions/{transaction_id}/confirm", response_model=TransactionOut)
 async def confirm_transaction(
     transaction_id: uuid.UUID,
-    user: User = Depends(require_role("owner", "member")),
+    user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> TransactionOut:
     try:
@@ -146,7 +146,7 @@ async def confirm_transaction(
 async def split_transaction(
     transaction_id: uuid.UUID,
     data: SplitIn,
-    user: User = Depends(require_role("owner", "member")),
+    user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> list[TransactionOut]:
     try:
@@ -160,7 +160,7 @@ async def split_transaction(
 async def add_line_items(
     transaction_id: uuid.UUID,
     items: list[LineItemIn],
-    user: User = Depends(require_role("owner", "member")),
+    user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> TransactionOut:
     try:
@@ -177,7 +177,7 @@ async def add_line_items(
 async def link_receipt(
     transaction_id: uuid.UUID,
     data: LinkReceiptIn,
-    user: User = Depends(require_role("owner", "member")),
+    user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> TransactionOut:
     try:
@@ -200,7 +200,7 @@ async def list_categories(
 @router.post("/categories", response_model=CategoryOut, status_code=status.HTTP_201_CREATED, tags=["taxonomy"])
 async def create_category(
     data: CategoryIn,
-    user: User = Depends(require_role("owner", "member")),
+    user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> CategoryOut:
     return await service.create_category(session, user, data)
@@ -210,7 +210,7 @@ async def create_category(
 async def merge_category(
     category_id: uuid.UUID,
     data: CategoryMergeIn,
-    user: User = Depends(require_role("owner", "member")),
+    user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
     try:
@@ -230,7 +230,7 @@ async def list_tags(
 @router.post("/tags", response_model=TagOut, status_code=status.HTTP_201_CREATED, tags=["taxonomy"])
 async def create_tag(
     data: TagIn,
-    user: User = Depends(require_role("owner", "member")),
+    user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> TagOut:
     return await service.create_tag(session, user, data)
@@ -247,7 +247,7 @@ async def list_rules(
 @router.post("/rules", response_model=RuleOut, status_code=status.HTTP_201_CREATED, tags=["taxonomy"])
 async def create_rule(
     data: RuleIn,
-    user: User = Depends(require_role("owner", "member")),
+    user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> RuleOut:
     return await service.create_rule(session, user, data)

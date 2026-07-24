@@ -12,7 +12,7 @@ import { DesktopRail } from "@/components/shell/desktop-rail";
 import { TopBar } from "@/components/shell/top-bar";
 import { TopTabs } from "@/components/shell/top-tabs";
 import { OfflineBanner } from "@/components/pwa/offline-banner";
-import { useHousehold, useMembers } from "@/lib/api/settings";
+import { useWorkspace } from "@/lib/api/settings";
 import { formatCurrency } from "@/lib/format";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -22,19 +22,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const touchX = useRef<number | null>(null);
 
-  const householdQ = useHousehold();
-  const membersQ = useMembers();
-
-  const householdName = householdQ.data?.name ?? "Household";
-  const currency = (householdQ.data as { base_currency?: string } | undefined)?.base_currency ?? "USD";
-  const memberCount = membersQ.data?.length ?? 0;
-  const isSharedHousehold = householdQ.data?.sharing_enabled ?? false;
-  const soloName = membersQ.data?.[0]?.display_name?.trim() || householdName.replace(/'s household$/i, "");
-  const name = isSharedHousehold ? householdName : soloName;
-  const household = {
+  const workspaceQ = useWorkspace();
+  const name = workspaceQ.data?.name ?? "My finances";
+  const currency = workspaceQ.data?.base_currency ?? "USD";
+  const workspace = {
     name,
     initial: name.slice(0, 1).toUpperCase(),
-    meta: isSharedHousehold ? `Household · ${currency}${memberCount > 1 ? ` · ${memberCount} members` : ""}` : currency,
+    meta: currency,
     // Net worth is not a dedicated endpoint; show a placeholder R2 may wire to analytics.
     netWorth: formatCurrency(0, { currency }),
   };
@@ -59,12 +53,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return (
       <div className="flex min-h-dvh w-full">
         <OfflineBanner />
-        <DesktopRail household={household} />
+        <DesktopRail workspace={workspace} />
         <main className="min-w-0 flex-1">
           <header className="sticky top-0 z-30 border-b border-border bg-bg/85 backdrop-blur-md">
             <div className="w-full px-8 pt-6 2xl:px-10">
               <div className="pb-1">
-                <TopBar title={title} secondary={secondary} avatarInitial={household.initial} switchTab={switchTab} />
+                <TopBar title={title} secondary={secondary} avatarInitial={workspace.initial} switchTab={switchTab} />
               </div>
               <TopTabs tabs={tabs} compact />
               {tabs.length === 0 && <div className="h-3" />}
@@ -83,13 +77,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       onTouchEnd={onTouchEnd}
     >
       <OfflineBanner />
-      <Drawer open={open} onClose={() => setOpen(false)} household={household} />
+      <Drawer open={open} onClose={() => setOpen(false)} workspace={workspace} />
 
       <div className="app-window absolute inset-0 z-10 min-h-dvh overflow-hidden bg-bg" data-open={open}>
         <GlassBar
           title={title}
           tabs={tabs}
-          avatarInitial={household.initial}
+          avatarInitial={workspace.initial}
           switchTab={switchTab}
           secondary={secondary}
           onBack={() => router.back()}

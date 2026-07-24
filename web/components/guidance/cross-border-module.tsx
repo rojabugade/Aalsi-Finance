@@ -101,7 +101,7 @@ function NewTransferDialog() {
     };
     try {
       await create.mutateAsync({
-        direction: String(form.get("direction") ?? "out"),
+        direction: String(form.get("direction") ?? "out") === "in" ? "in" : "out",
         from_currency: String(form.get("from_currency") ?? "USD"),
         to_currency: String(form.get("to_currency") ?? "INR"),
         amount: String(form.get("amount") ?? "0"),

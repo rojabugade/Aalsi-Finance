@@ -21,11 +21,11 @@ const TINT: Record<DrawerItem["tint"], string> = {
 export function Drawer({
   open,
   onClose,
-  household,
+  workspace,
 }: {
   open: boolean;
   onClose: () => void;
-  household: { name: string; meta: string; netWorth: string; initial: string };
+  workspace: { name: string; meta: string; netWorth: string; initial: string };
 }) {
   const router = useRouter();
   const panelRef = useRef<HTMLDivElement>(null);
@@ -72,12 +72,12 @@ export function Drawer({
       {/* header */}
       <div className="px-[22px] pb-4">
         <BrandWordmark className="text-[2rem]" />
-        <div className="mt-3 text-[18px] font-extrabold tracking-tight">{household.name}</div>
-        <div className="mt-0.5 text-xs text-muted">{household.meta}</div>
+        <div className="mt-3 text-[18px] font-extrabold tracking-tight">{workspace.name}</div>
+        <div className="mt-0.5 text-xs text-muted">{workspace.meta}</div>
         <div className="mt-3.5 text-[12.5px] text-muted">
           Net worth
           <b className="mt-px block text-[23px] font-extrabold tracking-tight text-fg tabular-nums">
-            {household.netWorth}
+            {workspace.netWorth}
           </b>
         </div>
       </div>

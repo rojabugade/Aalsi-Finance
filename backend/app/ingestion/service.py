@@ -157,7 +157,6 @@ async def plaid_exchange(session: AsyncSession, user: User, data: PlaidExchangeI
             label=account.get("name") or account.get("official_name") or "Plaid account",
             type=acct_type,
             currency=_currency(account.get("currency") or account.get("iso_currency_code")),
-            is_shared=False,
             mask=mask,
             plaid_item_id=item.id,
             plaid_account_id=new_plaid_account_id,

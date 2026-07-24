@@ -1,13 +1,8 @@
 """M2 done-condition test.
 
-Exercises the full flow against the live schema: a user signs up (creating a
-private single-user household + owner), enables TOTP MFA, logs in with a code, and
-we assert refresh-token rotation/reuse detection plus the `scoped_query` visibility
-rule (the household_id tenant boundary; per-member visibility still enforced at the
-model level).
-
-Multi-user sharing (invite/join/member management) was removed, so those flows are
-no longer exercised here.
+Exercises the full flow against the live schema: a user signs up (creating one
+private workspace), enables TOTP MFA, logs in with a code, and we assert
+refresh-token rotation/reuse detection plus the tenant-isolation query rule.
 
 Skips when no Postgres is reachable, mirroring test_m1_schema. Point at a DB with
 `alembic upgrade head` applied via TEST_DATABASE_URL (defaults to compose port 5433).
@@ -30,7 +25,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from app.auth.deps import scoped_query
 from app.db import get_session
 from app.main import app
-from app.models.core import User
+from app.models.core import Household, User
 from app.models.transactions import Transaction
 
 TEST_DATABASE_URL = os.getenv(
@@ -86,7 +81,7 @@ def _auth(token: str) -> dict[str, str]:
     return {"Authorization": f"Bearer {token}"}
 
 
-async def _signup(client, household_name: str) -> tuple[dict, str]:
+async def _signup(client, workspace_name: str) -> tuple[dict, str]:
     email = _email()
     r = await client.post(
         "/auth/signup",
@@ -94,7 +89,7 @@ async def _signup(client, household_name: str) -> tuple[dict, str]:
             "email": email,
             "password": "hunter2pass",
             "display_name": "Owner",
-            "household_name": household_name,
+            "workspace_name": workspace_name,
         },
     )
     assert r.status_code == 201, r.text
@@ -103,15 +98,13 @@ async def _signup(client, household_name: str) -> tuple[dict, str]:
 
 @pytest.mark.asyncio
 async def test_signup_login_and_mfa_flow(client, session_factory):
-    # 1. Signup -> private household + owner + tokens.
+    # 1. Signup -> private workspace + one account + tokens.
     tokens, owner_email = await _signup(client, f"{HOUSEHOLD_PREFIX}alpha")
     access = tokens["access_token"]
 
-    me = await client.get("/household", headers=_auth(access))
+    me = await client.get("/workspace", headers=_auth(access))
     assert me.status_code == 200
     assert me.json()["name"] == f"{HOUSEHOLD_PREFIX}alpha"
-    # Sharing was removed: every account is single-user, so sharing is never enabled.
-    assert me.json()["sharing_enabled"] is False
 
     # 2. Enroll + enable MFA.
     enroll = await client.post("/auth/mfa/enroll", headers=_auth(access))
@@ -138,13 +131,11 @@ async def test_signup_login_and_mfa_flow(client, session_factory):
     )
     assert good.status_code == 200
 
-    # 4. The removed sharing surface is gone (invite/join/members/create-household).
-    # Unknown paths 404; the still-present GET /household rejects POST with 405.
-    for path in ("/household/invite", "/household", "/household/join"):
+    # 4. The old public household surface is gone; workspace is read-only except
+    # its explicit base-currency endpoint.
+    for path in ("/household/invite", "/household", "/household/join", "/workspace/invite"):
         gone = await client.post(path, headers=_auth(access), json={})
-        assert gone.status_code in (404, 405), f"POST {path} -> {gone.status_code}"
-    members = await client.get("/household/members", headers=_auth(access))
-    assert members.status_code == 404
+        assert gone.status_code == 404, f"POST {path} -> {gone.status_code}"
 
 
 @pytest.mark.asyncio
@@ -180,51 +171,35 @@ async def test_refresh_rotation_and_reuse_detection(client):
 
 
 @pytest.mark.asyncio
-async def test_scoped_query_visibility(session_factory):
-    """member sees shared + own rows; not another member's personal rows. owner sees all."""
+async def test_scoped_query_workspace_isolation(session_factory):
+    """Private workspaces never return another account's records."""
     async with session_factory() as s:
-        hid = uuid.uuid4()
-        await s.execute(
-            text(
-                "INSERT INTO household (id, name, base_currency) "
-                "VALUES (:id, :name, 'USD')"
-            ),
-            {"id": hid, "name": f"{HOUSEHOLD_PREFIX}scope"},
-        )
-        owner = User(
-            household_id=hid, email=_email(), password_hash="x", role="owner"
-        )
-        m1 = User(household_id=hid, email=_email(), password_hash="x", role="member")
-        m2 = User(household_id=hid, email=_email(), password_hash="x", role="member")
-        s.add_all([owner, m1, m2])
+        first = Household(name=f"{HOUSEHOLD_PREFIX}scope-a", base_currency="USD")
+        second = Household(name=f"{HOUSEHOLD_PREFIX}scope-b", base_currency="USD")
+        s.add_all([first, second])
+        await s.flush()
+        account_a = User(household_id=first.id, email=_email(), password_hash="x")
+        account_b = User(household_id=second.id, email=_email(), password_hash="x")
+        s.add_all([account_a, account_b])
         await s.flush()
 
-        def _txn(owner_id, shared):
+        def _txn(household_id, owner_id):
             return Transaction(
-                household_id=hid,
+                household_id=household_id,
                 owner_user_id=owner_id,
                 amount=Decimal("10.00"),
                 currency="USD",
                 txn_date=date(2026, 1, 1),
-                is_shared=shared,
             )
 
-        t_m1_personal = _txn(m1.id, False)
-        t_m2_personal = _txn(m2.id, False)
-        t_shared = _txn(m2.id, True)
-        s.add_all([t_m1_personal, t_m2_personal, t_shared])
+        mine = _txn(first.id, account_a.id)
+        foreign = _txn(second.id, account_b.id)
+        s.add_all([mine, foreign])
         await s.flush()
 
-        # m1: own personal + shared, but NOT m2's personal.
-        rows = (await s.execute(scoped_query(Transaction, m1))).scalars().all()
+        rows = (await s.execute(scoped_query(Transaction, account_a))).scalars().all()
         ids = {r.id for r in rows}
-        assert t_m1_personal.id in ids
-        assert t_shared.id in ids
-        assert t_m2_personal.id not in ids
-
-        # owner: everything in the household.
-        owner_rows = (await s.execute(scoped_query(Transaction, owner))).scalars().all()
-        owner_ids = {r.id for r in owner_rows}
-        assert {t_m1_personal.id, t_m2_personal.id, t_shared.id} <= owner_ids
+        assert mine.id in ids
+        assert foreign.id not in ids
 
         await s.rollback()

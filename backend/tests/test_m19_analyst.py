@@ -555,7 +555,7 @@ async def test_debt_loans_excludes_credit_cards():
             return None
 
     kept = await svc._debt_loans(
-        _Session(), SimpleNamespace(id="u", household_id=uuid.uuid4(), role="owner")
+        _Session(), SimpleNamespace(id="u", household_id=uuid.uuid4())
     )
     assert [loan.name for loan in kept] == ["Auto"]
 

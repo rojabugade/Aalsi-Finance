@@ -40,7 +40,7 @@ function formatDate(d: string) {
 }
 
 /**
- * Roll household transactions up into a category → sub-category → transaction
+ * Roll private-workspace transactions up into a category → sub-category → transaction
  * tree (expenses only; amount >= 0). Parents are sorted by spend; a synthetic
  * "Uncategorized" bucket collects anything without a category.
  */

@@ -54,7 +54,7 @@ async def session(engine):
         yield value
 
 
-async def _user(session, role: str = "owner") -> User:
+async def _user(session) -> User:
     household = Household(name=f"{HOUSEHOLD_PREFIX}{uuid.uuid4().hex[:8]}", base_currency="USD")
     session.add(household)
     await session.flush()
@@ -62,7 +62,6 @@ async def _user(session, role: str = "owner") -> User:
         household_id=household.id,
         email=f"{uuid.uuid4().hex}@example.com",
         password_hash="x",
-        role=role,
     )
     session.add(user)
     await session.flush()
@@ -92,7 +91,6 @@ async def test_widget_data_round_trip_and_household_scope(session):
         label="Brokerage",
         type="investment",
         currency="USD",
-        is_shared=False,
     )
     card = Loan(
         household_id=user.household_id,

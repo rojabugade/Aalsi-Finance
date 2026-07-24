@@ -80,12 +80,11 @@ async def _signup(session_factory, household_name: str) -> tuple[str, str]:
             password_hash="test-only-not-used",
             display_name="Owner",
             locale="en-US",
-            role="owner",
             is_active=True,
         )
         s.add(user)
         await s.commit()
-        return create_access_token(user.id, household.id, user.role), email
+        return create_access_token(user.id, household.id), email
 
 
 async def _user_by_email(session_factory, email: str) -> User:
@@ -107,7 +106,6 @@ async def test_export_csv_zip_and_pdf(client, session_factory):
             base_amount=Decimal("12.34"),
             txn_date=date(2026, 1, 2),
             status="confirmed",
-            is_shared=False,
             notes="coffee",
         )
         loan = Loan(
@@ -238,7 +236,6 @@ async def test_delete_account_requires_confirmation_and_keeps_audit(client, sess
             currency="USD",
             txn_date=date(2026, 1, 1),
             status="confirmed",
-            is_shared=False,
         )
         s.add(txn)
         await s.commit()

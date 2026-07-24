@@ -58,7 +58,7 @@ async def _user(session):
     hh = Household(name=f"{HOUSEHOLD_PREFIX}{uuid.uuid4().hex[:8]}", base_currency="USD")
     session.add(hh)
     await session.flush()
-    user = User(household_id=hh.id, email=f"{uuid.uuid4().hex}@example.com", password_hash="x", role="owner")
+    user = User(household_id=hh.id, email=f"{uuid.uuid4().hex}@example.com", password_hash="x")
     session.add(user)
     session.add(GuidanceDoc(country="IN", topic="remittance limits", domain="cross_border", title="pytest-m10-India LRS", body="limit_amount: 250000\nlimit_currency: USD\nlimit_period: financial year\nLRS applies to resident outward remittance.", source_url="https://rbi.example", source_type="govt", effective_date=date(2026, 1, 1)))
     session.add(GuidanceDoc(country="US", topic="investment education", domain="investment", title="pytest-m10-Community investing", body="Community consensus favors diversification and low costs.", source_url="https://community.example", source_type="community", effective_date=date(2026, 1, 1)))
@@ -189,7 +189,6 @@ async def test_guidance_threads_are_user_scoped_within_household(session):
         household_id=user_a.household_id,
         email=f"{uuid.uuid4().hex}@example.com",
         password_hash="x",
-        role="member",
     )
     session.add(user_b)
     await session.commit()

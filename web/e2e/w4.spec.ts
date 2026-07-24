@@ -27,7 +27,7 @@ test("connections surface lists Plaid, email forwarding, SMS, bot", async ({ pag
   await expect(page.getByText(/email forwarding/i)).toBeVisible();
 });
 
-test("settings surface shows household, prefs, and data controls", async ({ page }) => {
+test("settings surface shows workspace, prefs, and data controls", async ({ page }) => {
   await login(page);
   await page.goto("/settings");
   await expect(page.getByText("Export everything, or delete your account.")).toBeVisible();

@@ -42,7 +42,7 @@ async def _user(session):
     hh = Household(name=f"{PREFIX}{uuid.uuid4().hex[:8]}", base_currency="USD")
     session.add(hh)
     await session.flush()
-    user = User(household_id=hh.id, email=f"{uuid.uuid4().hex}@example.com", password_hash="x", role="owner")
+    user = User(household_id=hh.id, email=f"{uuid.uuid4().hex}@example.com", password_hash="x")
     session.add(user)
     await session.commit()
     return user
@@ -219,7 +219,6 @@ async def test_analyst_service_rejects_reserved_guidance_thread_namespace(sessio
         household_id=user_a.household_id,
         email=f"{uuid.uuid4().hex}@example.com",
         password_hash="x",
-        role="member",
     )
     session.add(user_b)
     await session.commit()

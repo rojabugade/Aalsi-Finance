@@ -62,7 +62,6 @@ async def _seed(session):
         household_id=hh.id,
         email=f"{uuid.uuid4().hex}@e.com",
         password_hash="x",
-        role="owner",
     )
     merchant = Merchant(household_id=hh.id, canonical_name="Netflix")
     session.add_all([user, merchant])

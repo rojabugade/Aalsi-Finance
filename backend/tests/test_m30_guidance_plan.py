@@ -61,7 +61,6 @@ async def _household_users(session):
             household_id=household.id,
             email=f"{uuid.uuid4().hex}@example.com",
             password_hash="x",
-            role="owner" if index == 0 else "member",
         )
         for index in range(2)
     ]
@@ -83,7 +82,6 @@ async def test_guidance_plan_item_and_analyst_message_payload_round_trip(session
         household_id=household.id,
         email=f"{uuid.uuid4().hex}@example.com",
         password_hash="x",
-        role="owner",
     )
     session.add(user)
     await session.flush()

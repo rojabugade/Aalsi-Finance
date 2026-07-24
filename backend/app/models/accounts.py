@@ -43,7 +43,6 @@ class AccountLogical(Base):
         nullable=False,
     )
     currency: Mapped[str] = currency_col(nullable=False)
-    is_shared: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     mask: Mapped[str | None] = mapped_column(String(16))
     plaid_item_id: Mapped[uuid.UUID | None] = fk_uuid(
         ForeignKey("plaid_item.id", ondelete="SET NULL")

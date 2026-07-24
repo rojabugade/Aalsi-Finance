@@ -55,7 +55,6 @@ async def _user(session):
         household_id=hh.id,
         email=f"{uuid.uuid4().hex}@example.com",
         password_hash="x",
-        role="owner",
     )
     session.add(user)
     await session.flush()
@@ -69,7 +68,6 @@ async def _account(session, user, type_: str, label: str) -> AccountLogical:
         label=label,
         type=type_,
         currency="USD",
-        is_shared=False,
     )
     session.add(acct)
     await session.flush()
@@ -133,7 +131,7 @@ async def test_net_worth_converts_foreign_balances_to_base(session):
     checking = await _account(session, user, "checking", "USD Checking")
     euro = AccountLogical(
         household_id=user.household_id, owner_user_id=user.id, label="EU", type="savings",
-        currency="EUR", is_shared=False,
+        currency="EUR",
     )
     session.add(euro)
     await session.flush()
@@ -173,7 +171,7 @@ async def test_net_worth_dedups_plaid_loan_against_account_balance(session):
     # A Plaid credit account: has a balance snapshot AND a Loan sharing the plaid id.
     credit = AccountLogical(
         household_id=user.household_id, owner_user_id=user.id, label="Card", type="credit",
-        currency="USD", is_shared=False, plaid_account_id="plaid-acct-1",
+        currency="USD", plaid_account_id="plaid-acct-1",
     )
     session.add(credit)
     await session.flush()

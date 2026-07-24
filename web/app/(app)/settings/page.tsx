@@ -6,10 +6,7 @@ import { toast } from "sonner";
 import {
   downloadExport,
   useConsents,
-  useCreateHousehold,
   useDeleteAccount,
-  useHousehold,
-  useMembers,
   usePingLlm,
   useRevokeConsent,
   useSettings,
@@ -47,7 +44,6 @@ export default function SettingsPage() {
         </div>
       </div>
       <LlmSettingsCard />
-      <HouseholdCard />
       <PreferencesCard />
       <ConsentsCard />
       <MemoryCard />
@@ -181,114 +177,6 @@ function LlmSettingsCard() {
         <Button variant="outline" onClick={testConnection} disabled={ping.isPending}>
           {ping.isPending ? "Testing…" : "Test connection"}
         </Button>
-      </div>
-    </div>
-  );
-}
-
-function HouseholdCard() {
-  const household = useHousehold();
-  const members = useMembers();
-  const create = useCreateHousehold();
-  const [open, setOpen] = useState(false);
-  const [name, setName] = useState("");
-
-  async function createHousehold(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    try {
-      await create.mutateAsync({ name: name.trim() });
-      toast.success("Household created");
-      setOpen(false);
-    } catch {
-      toast.error("Couldn't create household");
-    }
-  }
-
-  if (household.isLoading) return <Skeleton className="h-32" />;
-  if (!household.data) return null;
-
-  if (!household.data.sharing_enabled) {
-    return (
-      <div className="rounded-card-sm border border-border bg-card p-4 shadow-card">
-        <div className="mb-4">
-          <h2 className="text-base font-bold tracking-tight">Share with others</h2>
-          <p className="text-sm text-muted">
-            Your finances are personal by default. Create a household only when you want to invite people.
-          </p>
-        </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button>Create household</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create a household</DialogTitle>
-              <DialogDescription>
-                Give your shared workspace a name. Your existing financial records remain personal.
-              </DialogDescription>
-            </DialogHeader>
-            <form className="space-y-4" onSubmit={createHousehold}>
-              <div className="space-y-1.5">
-                <Label htmlFor="new_household_name">Household name</Label>
-                <Input
-                  id="new_household_name"
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                  placeholder="The Smiths"
-                  autoFocus
-                />
-              </div>
-              <DialogFooter>
-                <Button type="submit" disabled={!name.trim() || create.isPending}>
-                  {create.isPending ? "Creating…" : "Create household"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
-    );
-  }
-
-  return (
-    <div className="rounded-card-sm border border-border bg-card p-4 shadow-card">
-      <div className="mb-3">
-        <h2 className="text-base font-bold tracking-tight">Household</h2>
-        <p className="text-sm text-muted">Members sharing this workspace.</p>
-      </div>
-      <div className="space-y-4">
-        {household.isLoading ? (
-          <Skeleton className="h-6 w-40" />
-        ) : household.data ? (
-          <div>
-            <p className="font-medium">{household.data.name}</p>
-            <p className="text-sm text-muted">
-              Base currency {household.data.base_currency}
-            </p>
-          </div>
-        ) : null}
-
-        {members.isLoading ? (
-          <Skeleton className="h-20" />
-        ) : (
-          <ul className="space-y-2">
-            {(members.data ?? []).map((m) => (
-              <li
-                key={m.id}
-                className="flex items-center justify-between rounded-lg border border-border p-3 text-sm"
-              >
-                <div>
-                  <span className="font-medium">{m.display_name ?? m.email}</span>
-                  <span className="ml-2 text-muted">{m.email}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {m.mfa_enabled && <Badge variant="secondary">MFA</Badge>}
-                  <Badge className="capitalize">{m.role}</Badge>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
       </div>
     </div>
   );

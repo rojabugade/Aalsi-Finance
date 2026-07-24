@@ -293,7 +293,6 @@ async def create_transaction(
         status=data.status,
         source_document_id=data.source_document_id,
         source_channel=data.source_channel,
-        is_shared=data.is_shared,
         flags=data.flags or {},
         notes=data.notes,
         confidence=data.confidence,
@@ -389,7 +388,7 @@ async def _apply_external_update(
     provider-owned facts (amount, currency, date, merchant, notes, confidence,
     pending/plaid_pfc flags, draft->confirmed promotion) and re-snapshots the base
     amount; deliberately preserves user-owned fields (category, other flags,
-    is_shared, and a status the user already advanced)."""
+    and a status the user already advanced)."""
     txn.amount = _money(data.amount)
     txn.currency = _currency(data.currency)
     txn.txn_date = data.txn_date
@@ -529,7 +528,7 @@ async def patch_transaction(
             if field in changed:
                 setattr(txn, field, changed[field])
     for field in (
-        "account_id", "amount", "currency", "txn_date", "category_id", "status", "is_shared", "flags", "notes", "confidence",
+        "account_id", "amount", "currency", "txn_date", "category_id", "status", "flags", "notes", "confidence",
     ):
         value = getattr(data, field)
         if value is not None:
@@ -567,9 +566,9 @@ async def _validate_transaction_refs(
     source_document_id: uuid.UUID | None,
     line_items: list[LineItemIn] | None = None,
 ) -> None:
-    """Confirm every client-supplied FK belongs to the caller's household before it
-    is written. Without this a member could point a transaction at another
-    household's account/category/document id (data-integrity break + disclosure when
+    """Confirm every client-supplied FK belongs to the caller's private workspace before it
+    is written. Without this a caller could point a transaction at another
+    workspace's account/category/document id (data-integrity break + disclosure when
     those ids are later resolved to names)."""
     if account_id is not None:
         row = (await session.execute(
@@ -648,7 +647,6 @@ async def split_transaction(session: AsyncSession, user: User, transaction_id: u
             status="draft",
             source_document_id=txn.source_document_id,
             source_channel=txn.source_channel,
-            is_shared=txn.is_shared,
             flags=part.flags or txn.flags or {},
             notes=part.notes or f"Split from {txn.id} part {idx}",
             confidence=txn.confidence,

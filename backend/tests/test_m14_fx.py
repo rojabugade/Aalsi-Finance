@@ -55,7 +55,6 @@ async def _user(session, base_currency: str = "USD") -> User:
         household_id=household.id,
         email=f"{uuid.uuid4().hex}@example.com",
         password_hash="x",
-        role="owner",
     )
     session.add(user)
     await session.flush()

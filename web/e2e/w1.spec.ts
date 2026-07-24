@@ -12,7 +12,7 @@ async function signup(request: APIRequestContext) {
   const email = `e2e+${Date.now()}@codenamefinance.app`;
   const password = "hunter2pass";
   const res = await request.post(`${API}/auth/signup`, {
-    data: { email, password, display_name: "E2E", household_name: "E2E House" },
+    data: { email, password, display_name: "E2E", workspace_name: "E2E Workspace" },
   });
   expect(res.ok(), `signup failed: ${res.status()}`).toBeTruthy();
   const tokens = (await res.json()) as { access_token: string; refresh_token: string };

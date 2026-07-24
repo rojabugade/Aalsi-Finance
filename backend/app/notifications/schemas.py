@@ -60,7 +60,6 @@ class NotificationOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
-    household_id: uuid.UUID
     user_id: uuid.UUID | None = None
     type: str
     channel: str

@@ -5,7 +5,7 @@ from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.deps import require_role
+from app.auth.deps import get_current_user
 from app.db import get_session
 from app.fx import service
 from app.fx.schemas import FXRateOut, FXRefreshOut
@@ -32,7 +32,7 @@ async def get_rate(
 
 @router.post("/refresh", response_model=FXRefreshOut, tags=["admin"])
 async def refresh_rates(
-    _user: User = Depends(require_role("owner")),
+    _user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> dict:
     return await service.refresh_used_rates(session)

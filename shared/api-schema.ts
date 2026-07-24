@@ -140,25 +140,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/household": {
+    "/workspace": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Get Household */
-        get: operations["get_household_household_get"];
+        /** Get Workspace */
+        get: operations["get_workspace_workspace_get"];
         put?: never;
-        /** Create Household */
-        post: operations["create_household_household_post"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/household/base-currency": {
+    "/workspace/base-currency": {
         parameters: {
             query?: never;
             header?: never;
@@ -172,76 +171,7 @@ export interface paths {
         options?: never;
         head?: never;
         /** Update Base Currency */
-        patch: operations["update_base_currency_household_base_currency_patch"];
-        trace?: never;
-    };
-    "/household/invite": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Invite Member */
-        post: operations["invite_member_household_invite_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/household/join": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Join Household */
-        post: operations["join_household_household_join_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/household/members": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Members */
-        get: operations["list_members_household_members_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/household/members/{member_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Remove Member */
-        delete: operations["remove_member_household_members__member_id__delete"];
-        options?: never;
-        head?: never;
-        /** Change Member Role */
-        patch: operations["change_member_role_household_members__member_id__patch"];
+        patch: operations["update_base_currency_workspace_base_currency_patch"];
         trace?: never;
     };
     "/admin/llm/ping": {
@@ -2205,11 +2135,6 @@ export interface components {
              * Format: uuid
              */
             id: string;
-            /**
-             * Household Id
-             * Format: uuid
-             */
-            household_id: string;
             /** Category Id */
             category_id?: string | null;
             /** Period */
@@ -2289,11 +2214,6 @@ export interface components {
             kind: string;
             /** Parent Id */
             parent_id?: string | null;
-            /**
-             * Is System
-             * @default false
-             */
-            is_system: boolean;
         };
         /** CategoryMergeIn */
         CategoryMergeIn: {
@@ -2310,8 +2230,6 @@ export interface components {
              * Format: uuid
              */
             id: string;
-            /** Household Id */
-            household_id?: string | null;
             /** Parent Id */
             parent_id?: string | null;
             /** Name */
@@ -2385,8 +2303,11 @@ export interface components {
         };
         /** CrossBorderTransferIn */
         CrossBorderTransferIn: {
-            /** Direction */
-            direction: string;
+            /**
+             * Direction
+             * @enum {string}
+             */
+            direction: "out" | "in";
             /** From Currency */
             from_currency: string;
             /** To Currency */
@@ -2401,10 +2322,6 @@ export interface components {
             channel?: string | null;
             /** Transfer Date */
             transfer_date?: string | null;
-            /** Base Currency */
-            base_currency?: string | null;
-            /** Base Amount */
-            base_amount?: number | string | null;
         };
         /** CrossBorderTransferOut */
         CrossBorderTransferOut: {
@@ -2413,11 +2330,6 @@ export interface components {
              * Format: uuid
              */
             id: string;
-            /**
-             * Household Id
-             * Format: uuid
-             */
-            household_id: string;
             /** Owner User Id */
             owner_user_id?: string | null;
             /** Direction */
@@ -2682,53 +2594,6 @@ export interface components {
             /** Transactions */
             transactions?: components["schemas"]["TransactionRef"][];
         };
-        /** EmailInboundIn */
-        EmailInboundIn: {
-            /** From Address */
-            from_address: string;
-            /** Subject */
-            subject?: string | null;
-            /** Body */
-            body?: string | null;
-            /** Received At */
-            received_at?: string | null;
-            /** Message Id */
-            message_id?: string | null;
-            /** Attachments */
-            attachments?: Record<string, never>[];
-        };
-        /** EmailOAuthCallbackOut */
-        EmailOAuthCallbackOut: {
-            /**
-             * Connection Id
-             * Format: uuid
-             */
-            connection_id: string;
-            /** Status */
-            status: string;
-        };
-        /** EmailOAuthStartOut */
-        EmailOAuthStartOut: {
-            /** Authorization Url */
-            authorization_url: string;
-            /** State */
-            state: string;
-        };
-        /** EmailSyncOut */
-        EmailSyncOut: {
-            /** Documents Created */
-            documents_created: number;
-            /**
-             * Attachments Ingested
-             * @default 0
-             */
-            attachments_ingested: number;
-            /**
-             * Transactions Created
-             * @default 0
-             */
-            transactions_created: number;
-        };
         /** EquityEventIn */
         EquityEventIn: {
             /**
@@ -2968,11 +2833,6 @@ export interface components {
              */
             id: string;
             /**
-             * Household Id
-             * Format: uuid
-             */
-            household_id: string;
-            /**
              * User Id
              * Format: uuid
              */
@@ -3131,11 +2991,6 @@ export interface components {
              * Format: uuid
              */
             id: string;
-            /**
-             * Household Id
-             * Format: uuid
-             */
-            household_id: string;
             /** Owner User Id */
             owner_user_id?: string | null;
             latest_valuation?: components["schemas"]["ValuationOut"] | null;
@@ -3156,30 +3011,6 @@ export interface components {
             avg_buy_price?: number | string | null;
             /** Currency */
             currency?: string | null;
-        };
-        /** HouseholdBaseCurrencyPatch */
-        HouseholdBaseCurrencyPatch: {
-            /** Base Currency */
-            base_currency: string;
-        };
-        /** HouseholdCreateIn */
-        HouseholdCreateIn: {
-            /** Name */
-            name: string;
-        };
-        /** HouseholdOut */
-        HouseholdOut: {
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /** Name */
-            name: string;
-            /** Base Currency */
-            base_currency: string;
-            /** Sharing Enabled */
-            sharing_enabled: boolean;
         };
         /** IncomeSourceIn */
         IncomeSourceIn: {
@@ -3211,11 +3042,6 @@ export interface components {
              * Format: uuid
              */
             id: string;
-            /**
-             * Household Id
-             * Format: uuid
-             */
-            household_id: string;
             /** Owner User Id */
             owner_user_id?: string | null;
             /** Employer */
@@ -3249,44 +3075,6 @@ export interface components {
             net?: number | string | null;
             /** Withholding */
             withholding?: Record<string, never> | null;
-        };
-        /** InviteIn */
-        InviteIn: {
-            /**
-             * Email
-             * Format: email
-             */
-            email: string;
-            /**
-             * Role
-             * @default member
-             * @enum {string}
-             */
-            role: "owner" | "member" | "viewer";
-        };
-        /** InviteOut */
-        InviteOut: {
-            /** Invite Token */
-            invite_token: string;
-            /**
-             * Email
-             * Format: email
-             */
-            email: string;
-            /**
-             * Role
-             * @enum {string}
-             */
-            role: "owner" | "member" | "viewer";
-        };
-        /** JoinIn */
-        JoinIn: {
-            /** Invite Token */
-            invite_token: string;
-            /** Password */
-            password: string;
-            /** Display Name */
-            display_name?: string | null;
         };
         /** LimitsOut */
         LimitsOut: {
@@ -3392,11 +3180,6 @@ export interface components {
              * Format: uuid
              */
             id: string;
-            /**
-             * Household Id
-             * Format: uuid
-             */
-            household_id: string;
             /** Owner User Id */
             owner_user_id?: string | null;
             /** Name */
@@ -3544,30 +3327,6 @@ export interface components {
             /** Refresh Token */
             refresh_token?: string | null;
         };
-        /** MemberOut */
-        MemberOut: {
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /**
-             * Email
-             * Format: email
-             */
-            email: string;
-            /** Display Name */
-            display_name: string | null;
-            /**
-             * Role
-             * @enum {string}
-             */
-            role: "owner" | "member" | "viewer";
-            /** Mfa Enabled */
-            mfa_enabled: boolean;
-            /** Is Active */
-            is_active: boolean;
-        };
         /** MemorySourceStatus */
         MemorySourceStatus: {
             /** Source Type */
@@ -3644,11 +3403,6 @@ export interface components {
              * Format: uuid
              */
             id: string;
-            /**
-             * Household Id
-             * Format: uuid
-             */
-            household_id: string;
             /** User Id */
             user_id?: string | null;
             /** Type */
@@ -3725,11 +3479,6 @@ export interface components {
              * Format: uuid
              */
             id: string;
-            /**
-             * Household Id
-             * Format: uuid
-             */
-            household_id: string;
             /** Owner User Id */
             owner_user_id?: string | null;
             /** Account Id */
@@ -4055,6 +3804,26 @@ export interface components {
             /** Cursor */
             cursor?: string | null;
         };
+        /** PlaidWebhookIn */
+        PlaidWebhookIn: {
+            /** Webhook Type */
+            webhook_type: string;
+            /** Webhook Code */
+            webhook_code: string;
+            /** Item Id */
+            item_id?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /** PlaidWebhookOut */
+        PlaidWebhookOut: {
+            /** Status */
+            status: string;
+            /** Payload Type */
+            payload_type: string;
+            /** Payload Code */
+            payload_code: string;
+        };
         /** QuietHours */
         QuietHours: {
             /**
@@ -4085,11 +3854,6 @@ export interface components {
              * Format: uuid
              */
             id: string;
-            /**
-             * Household Id
-             * Format: uuid
-             */
-            household_id: string;
             /** User Id */
             user_id?: string | null;
             /** Type */
@@ -4191,11 +3955,6 @@ export interface components {
              * Format: uuid
              */
             id: string;
-            /**
-             * Household Id
-             * Format: uuid
-             */
-            household_id: string;
             /** Owner User Id */
             owner_user_id?: string | null;
             /** Merchant Name */
@@ -4293,14 +4052,6 @@ export interface components {
             /** Items */
             items?: components["schemas"]["ReviewItemOut"][];
         };
-        /** RoleUpdateIn */
-        RoleUpdateIn: {
-            /**
-             * Role
-             * @enum {string}
-             */
-            role: "owner" | "member" | "viewer";
-        };
         /** RuleIn */
         RuleIn: {
             /** Matcher */
@@ -4325,11 +4076,6 @@ export interface components {
              * Format: uuid
              */
             id: string;
-            /**
-             * Household Id
-             * Format: uuid
-             */
-            household_id: string;
             /** Matcher */
             matcher: Record<string, never>;
             /** Action */
@@ -4403,8 +4149,8 @@ export interface components {
             password: string;
             /** Display Name */
             display_name?: string | null;
-            /** Household Name */
-            household_name?: string | null;
+            /** Workspace Name */
+            workspace_name?: string | null;
             /**
              * Base Currency
              * @default USD
@@ -4504,11 +4250,6 @@ export interface components {
              * Format: uuid
              */
             id: string;
-            /**
-             * Household Id
-             * Format: uuid
-             */
-            household_id: string;
             /** Name */
             name: string;
         };
@@ -4619,11 +4360,6 @@ export interface components {
              * @default manual
              */
             source_channel: string;
-            /**
-             * Is Shared
-             * @default false
-             */
-            is_shared: boolean;
             /** Flags */
             flags?: Record<string, never> | null;
             /** Notes */
@@ -4642,11 +4378,6 @@ export interface components {
              * Format: uuid
              */
             id: string;
-            /**
-             * Household Id
-             * Format: uuid
-             */
-            household_id: string;
             /** Account Id */
             account_id?: string | null;
             /** Payment Method Id */
@@ -4680,8 +4411,6 @@ export interface components {
             source_document_id?: string | null;
             /** Source Channel */
             source_channel?: string | null;
-            /** Is Shared */
-            is_shared: boolean;
             /** Flags */
             flags?: Record<string, never> | null;
             /** Notes */
@@ -4724,8 +4453,6 @@ export interface components {
             category_id?: string | null;
             /** Status */
             status?: string | null;
-            /** Is Shared */
-            is_shared?: boolean | null;
             /** Flags */
             flags?: Record<string, never> | null;
             /** Notes */
@@ -4781,11 +4508,6 @@ export interface components {
              */
             id: string;
             /**
-             * Household Id
-             * Format: uuid
-             */
-            household_id: string;
-            /**
              * Holding Id
              * Format: uuid
              */
@@ -4799,6 +4521,23 @@ export interface components {
             price: string;
             /** Value */
             value: string;
+        };
+        /** WorkspaceBaseCurrencyPatch */
+        WorkspaceBaseCurrencyPatch: {
+            /** Base Currency */
+            base_currency: string;
+        };
+        /** WorkspaceOut */
+        WorkspaceOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Base Currency */
+            base_currency: string;
         };
         /** _PrivacyIn */
         _PrivacyIn: {
@@ -5124,7 +4863,7 @@ export interface operations {
             };
         };
     };
-    get_household_household_get: {
+    get_workspace_workspace_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -5139,12 +4878,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HouseholdOut"];
+                    "application/json": components["schemas"]["WorkspaceOut"];
                 };
             };
         };
     };
-    create_household_household_post: {
+    update_base_currency_workspace_base_currency_patch: {
         parameters: {
             query?: never;
             header?: never;
@@ -5153,7 +4892,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["HouseholdCreateIn"];
+                "application/json": components["schemas"]["WorkspaceBaseCurrencyPatch"];
             };
         };
         responses: {
@@ -5163,190 +4902,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HouseholdOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_base_currency_household_base_currency_patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["HouseholdBaseCurrencyPatch"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HouseholdOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    invite_member_household_invite_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["InviteIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["InviteOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    join_household_household_join_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["JoinIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AccessToken"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_members_household_members_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MemberOut"][];
-                };
-            };
-        };
-    };
-    remove_member_household_members__member_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                member_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    change_member_role_household_members__member_id__patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                member_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RoleUpdateIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MemberOut"];
+                    "application/json": components["schemas"]["WorkspaceOut"];
                 };
             };
             /** @description Validation Error */
@@ -7938,7 +7494,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": Record<string, never>;
+                "application/json": components["schemas"]["PlaidWebhookIn"];
             };
         };
         responses: {
@@ -7948,7 +7504,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["PlaidWebhookOut"];
                 };
             };
             /** @description Validation Error */
@@ -8001,22 +7557,19 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Successful Response */
-            200: {
+            410: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["EmailOAuthStartOut"];
+                    "application/json": unknown;
                 };
             };
         };
     };
     email_oauth_callback_email_oauth_callback_get: {
         parameters: {
-            query: {
-                code: string;
-                state: string;
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
@@ -8024,21 +7577,12 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Successful Response */
-            200: {
+            410: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["EmailOAuthCallbackOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": unknown;
                 };
             };
         };
@@ -8053,12 +7597,12 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Successful Response */
-            200: {
+            410: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["EmailSyncOut"];
+                    "application/json": unknown;
                 };
             };
         };
@@ -8070,28 +7614,15 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["EmailInboundIn"];
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
-            201: {
+            410: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": Record<string, never>;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": unknown;
                 };
             };
         };

@@ -64,7 +64,7 @@ async def test_insert_one_row_per_table(engine):
 
         user = m.User(
             household_id=hh.id, email=f"t+{hh.id}@example.com",
-            password_hash="x", display_name="Tester", role="owner",
+            password_hash="x", display_name="Tester",
         )
         s.add(user)
         await s.flush()

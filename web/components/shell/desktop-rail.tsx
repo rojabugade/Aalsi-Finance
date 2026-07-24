@@ -11,9 +11,9 @@ import { BrandMark, BrandWordmark } from "@/components/brand";
 import { cn } from "@/lib/utils";
 
 export function DesktopRail({
-  household,
+  workspace,
 }: {
-  household: { name: string; meta: string; netWorth: string; initial: string };
+  workspace: { name: string; meta: string; netWorth: string; initial: string };
 }) {
   const pathname = usePathname();
   const activeKey = activeBottomKey(pathname);
@@ -40,12 +40,12 @@ export function DesktopRail({
         </div>
         {!collapsed && (
           <>
-            <div className="mt-2.5 text-base font-extrabold tracking-tight">{household.name}</div>
-            <div className="text-xs text-muted">{household.meta}</div>
+            <div className="mt-2.5 text-base font-extrabold tracking-tight">{workspace.name}</div>
+            <div className="text-xs text-muted">{workspace.meta}</div>
             <div className="mt-2 text-xs text-muted">
               Net worth
               <b className="block text-lg font-extrabold tracking-tight text-fg tabular-nums">
-                {household.netWorth}
+                {workspace.netWorth}
               </b>
             </div>
           </>

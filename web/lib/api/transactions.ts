@@ -17,7 +17,7 @@ async function unwrap<T>(p: Promise<{ data?: T; error?: unknown }>): Promise<T> 
 
 const KEY = ["transactions"] as const;
 
-/** All household transactions (server returns them unfiltered; filtering is client-side). */
+/** All transactions in the signed-in account's private workspace (filtering is client-side). */
 export function useTransactions() {
   return useQuery<Transaction[]>({
     queryKey: KEY,

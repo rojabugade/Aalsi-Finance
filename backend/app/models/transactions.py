@@ -139,7 +139,6 @@ class Transaction(Base, TimestampMixin):
         ForeignKey("document.id", ondelete="SET NULL")
     )
     source_channel: Mapped[str | None] = mapped_column(String(32))
-    is_shared: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     flags: Mapped[dict | None] = mapped_column(JSONB)
     notes: Mapped[str | None] = mapped_column(Text)
     confidence: Mapped[float | None] = mapped_column(Float)

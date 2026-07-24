@@ -6,7 +6,7 @@ const PASSWORD = process.env.E2E_PASSWORD ?? "hunter2pass";
 
 async function signup(request: APIRequestContext) {
   const res = await request.post(`${API}/auth/signup`, {
-    data: { email: EMAIL, password: PASSWORD, display_name: "E2E", household_name: "E2E House" },
+    data: { email: EMAIL, password: PASSWORD, display_name: "E2E", workspace_name: "E2E Workspace" },
   });
   if (res.ok()) return (await res.json()) as { access_token: string; refresh_token: string };
   const login = await request.post(`${API}/auth/login`, {
@@ -34,10 +34,10 @@ test.describe("desktop top bar", () => {
     await expect(page.getByRole("button", { name: /^add$/i })).toBeVisible();
   });
 
-  test("household avatar menu opens settings", async ({ page, request }) => {
+  test("account menu opens settings", async ({ page, request }) => {
     await authenticate(page, await signup(request));
     await page.goto("/dashboard");
-    await page.getByRole("button", { name: /open household menu/i }).click();
+    await page.getByRole("button", { name: /account menu/i }).click();
     await page.getByRole("menuitem", { name: /^settings$/i }).click();
     await expect(page).toHaveURL(/\/settings$/);
   });
@@ -45,7 +45,7 @@ test.describe("desktop top bar", () => {
   test("desktop rail signs out", async ({ page, request }) => {
     await authenticate(page, await signup(request));
     await page.goto("/dashboard");
-    await page.getByRole("button", { name: /open household menu/i }).click();
+    await page.getByRole("button", { name: /account menu/i }).click();
     await page.getByRole("menuitem", { name: /sign out/i }).click();
 
     await expect(page).toHaveURL(/\/login$/);

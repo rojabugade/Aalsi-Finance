@@ -25,11 +25,6 @@ class Household(Base, TimestampMixin):
     id: Mapped[uuid.UUID] = uuid_pk()
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     base_currency: Mapped[str] = currency_col(nullable=False, default="USD")
-    # Every account has an internal workspace for tenant isolation. It becomes a
-    # user-visible household only after its owner explicitly enables sharing.
-    sharing_enabled: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=False, server_default="false"
-    )
     # Temporary, removable UI-managed LLM override. The API key is encrypted
     # before it is placed in this JSON document.
     llm_config: Mapped[dict | None] = mapped_column(JSONB)
@@ -48,11 +43,6 @@ class User(Base, TimestampMixin):
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     display_name: Mapped[str | None] = mapped_column(String(255))
     locale: Mapped[str | None] = mapped_column(String(16), default="en-US")
-    role: Mapped[str] = mapped_column(
-        str_enum("user_role", "owner", "member", "viewer"),
-        nullable=False,
-        default="owner",
-    )
     mfa_secret: Mapped[str | None] = mapped_column(String(64))
     mfa_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)

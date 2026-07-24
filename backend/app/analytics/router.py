@@ -17,7 +17,7 @@ from app.analytics.schemas import (
     RecommendationOut,
     TimeSeriesOut,
 )
-from app.auth.deps import get_current_user, require_role
+from app.auth.deps import get_current_user
 from app.db import get_session
 from app.models.core import User
 
@@ -96,7 +96,7 @@ async def list_budgets(
 @router.post("/budgets", response_model=BudgetOut, status_code=status.HTTP_201_CREATED, tags=["budgets"])
 async def create_budget(
     data: BudgetIn,
-    user: User = Depends(require_role("owner", "member")),
+    user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> BudgetOut:
     try:
@@ -109,7 +109,7 @@ async def create_budget(
 async def update_budget(
     budget_id: uuid.UUID,
     data: BudgetPatch,
-    user: User = Depends(require_role("owner", "member")),
+    user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> BudgetOut:
     try:
@@ -121,7 +121,7 @@ async def update_budget(
 @router.delete("/budgets/{budget_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["budgets"])
 async def delete_budget(
     budget_id: uuid.UUID,
-    user: User = Depends(require_role("owner", "member")),
+    user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
     try:
@@ -141,7 +141,7 @@ async def list_recommendations(
 @router.post("/recommendations/{recommendation_id}/dismiss", status_code=status.HTTP_204_NO_CONTENT, tags=["recommendations"])
 async def dismiss_recommendation(
     recommendation_id: uuid.UUID,
-    user: User = Depends(require_role("owner", "member")),
+    user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
     try:

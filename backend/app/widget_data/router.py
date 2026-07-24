@@ -5,7 +5,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.deps import get_current_user, require_role
+from app.auth.deps import get_current_user
 from app.db import get_session
 from app.models.core import User
 from app.widget_data import service
@@ -42,7 +42,7 @@ async def payment_methods(user: User = Depends(get_current_user), session: Async
 
 
 @router.post("/payment-methods", response_model=PaymentMethodOut, status_code=status.HTTP_201_CREATED)
-async def create_payment_method(data: PaymentMethodIn, user: User = Depends(require_role("owner", "member")), session: AsyncSession = Depends(get_session)):
+async def create_payment_method(data: PaymentMethodIn, user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
     try:
         return await service.create_payment_method(session, user, data)
     except (service.NotFound, service.InvalidReference) as exc:
@@ -50,7 +50,7 @@ async def create_payment_method(data: PaymentMethodIn, user: User = Depends(requ
 
 
 @router.patch("/payment-methods/{method_id}", response_model=PaymentMethodOut)
-async def patch_payment_method(method_id: uuid.UUID, data: PaymentMethodPatch, user: User = Depends(require_role("owner", "member")), session: AsyncSession = Depends(get_session)):
+async def patch_payment_method(method_id: uuid.UUID, data: PaymentMethodPatch, user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
     try:
         return await service.patch_payment_method(session, user, method_id, data)
     except (service.NotFound, service.InvalidReference) as exc:
@@ -58,7 +58,7 @@ async def patch_payment_method(method_id: uuid.UUID, data: PaymentMethodPatch, u
 
 
 @router.delete("/payment-methods/{method_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_payment_method(method_id: uuid.UUID, user: User = Depends(require_role("owner", "member")), session: AsyncSession = Depends(get_session)):
+async def delete_payment_method(method_id: uuid.UUID, user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
     try:
         await service.delete_payment_method(session, user, method_id)
     except service.NotFound as exc:
@@ -71,7 +71,7 @@ async def credit_cards(user: User = Depends(get_current_user), session: AsyncSes
 
 
 @router.put("/loans/{loan_id}/credit-card-detail", response_model=CreditCardOut)
-async def put_credit_card_detail(loan_id: uuid.UUID, data: CreditCardDetailIn, user: User = Depends(require_role("owner", "member")), session: AsyncSession = Depends(get_session)):
+async def put_credit_card_detail(loan_id: uuid.UUID, data: CreditCardDetailIn, user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
     try:
         return await service.upsert_credit_card_detail(session, user, loan_id, data)
     except (service.NotFound, service.InvalidReference) as exc:
@@ -84,7 +84,7 @@ async def recurring_series(status_filter: str | None = Query(default=None, alias
 
 
 @router.post("/recurring-series", response_model=RecurringSeriesOut, status_code=status.HTTP_201_CREATED)
-async def create_recurring_series(data: RecurringSeriesIn, user: User = Depends(require_role("owner", "member")), session: AsyncSession = Depends(get_session)):
+async def create_recurring_series(data: RecurringSeriesIn, user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
     try:
         return await service.create_recurring(session, user, data)
     except (service.NotFound, service.InvalidReference) as exc:
@@ -92,7 +92,7 @@ async def create_recurring_series(data: RecurringSeriesIn, user: User = Depends(
 
 
 @router.patch("/recurring-series/{series_id}", response_model=RecurringSeriesOut)
-async def patch_recurring_series(series_id: uuid.UUID, data: RecurringSeriesPatch, user: User = Depends(require_role("owner", "member")), session: AsyncSession = Depends(get_session)):
+async def patch_recurring_series(series_id: uuid.UUID, data: RecurringSeriesPatch, user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
     try:
         return await service.patch_recurring(session, user, series_id, data)
     except (service.NotFound, service.InvalidReference) as exc:
@@ -100,7 +100,7 @@ async def patch_recurring_series(series_id: uuid.UUID, data: RecurringSeriesPatc
 
 
 @router.delete("/recurring-series/{series_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_recurring_series(series_id: uuid.UUID, user: User = Depends(require_role("owner", "member")), session: AsyncSession = Depends(get_session)):
+async def delete_recurring_series(series_id: uuid.UUID, user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
     try:
         await service.delete_recurring(session, user, series_id)
     except service.NotFound as exc:
@@ -113,7 +113,7 @@ async def holdings(user: User = Depends(get_current_user), session: AsyncSession
 
 
 @router.post("/holdings", response_model=HoldingOut, status_code=status.HTTP_201_CREATED)
-async def create_holding(data: HoldingIn, user: User = Depends(require_role("owner", "member")), session: AsyncSession = Depends(get_session)):
+async def create_holding(data: HoldingIn, user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
     try:
         return await service.create_holding(session, user, data)
     except (service.NotFound, service.InvalidReference) as exc:
@@ -121,7 +121,7 @@ async def create_holding(data: HoldingIn, user: User = Depends(require_role("own
 
 
 @router.patch("/holdings/{holding_id}", response_model=HoldingOut)
-async def patch_holding(holding_id: uuid.UUID, data: HoldingPatch, user: User = Depends(require_role("owner", "member")), session: AsyncSession = Depends(get_session)):
+async def patch_holding(holding_id: uuid.UUID, data: HoldingPatch, user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
     try:
         return await service.patch_holding(session, user, holding_id, data)
     except (service.NotFound, service.InvalidReference) as exc:
@@ -129,7 +129,7 @@ async def patch_holding(holding_id: uuid.UUID, data: HoldingPatch, user: User = 
 
 
 @router.delete("/holdings/{holding_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_holding(holding_id: uuid.UUID, user: User = Depends(require_role("owner", "member")), session: AsyncSession = Depends(get_session)):
+async def delete_holding(holding_id: uuid.UUID, user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
     try:
         await service.delete_holding(session, user, holding_id)
     except service.NotFound as exc:
@@ -145,7 +145,7 @@ async def valuations(holding_id: uuid.UUID, user: User = Depends(get_current_use
 
 
 @router.post("/holdings/{holding_id}/valuations", response_model=ValuationOut, status_code=status.HTTP_201_CREATED)
-async def create_valuation(holding_id: uuid.UUID, data: ValuationIn, user: User = Depends(require_role("owner", "member")), session: AsyncSession = Depends(get_session)):
+async def create_valuation(holding_id: uuid.UUID, data: ValuationIn, user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
     try:
         return await service.add_valuation(session, user, holding_id, data)
     except service.NotFound as exc:

@@ -1,4 +1,4 @@
-"""Request/response models for the auth and household routers."""
+"""Request/response models for the auth and private-workspace routers."""
 
 from __future__ import annotations
 
@@ -13,9 +13,7 @@ class SignupIn(BaseModel):
     email: EmailStr
     password: str = Field(min_length=8, max_length=256)
     display_name: str | None = Field(default=None, max_length=255)
-    # Optional label for the account's private workspace. Sharing was removed, so
-    # this no longer opts into a multi-user household — it is purely cosmetic.
-    household_name: str | None = Field(default=None, max_length=255)
+    workspace_name: str | None = Field(default=None, max_length=255)
     base_currency: str = Field(default="USD", min_length=3, max_length=3)
 
 
@@ -54,15 +52,14 @@ class MfaVerifyIn(BaseModel):
     totp_code: str = Field(max_length=10)
 
 
-# --- Household (private workspace; sharing/membership removed) ----------------
+# --- Private workspace -------------------------------------------------------
 
-class HouseholdOut(BaseModel):
+class WorkspaceOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: uuid.UUID
     name: str
     base_currency: str
-    sharing_enabled: bool
 
 
-class HouseholdBaseCurrencyPatch(BaseModel):
+class WorkspaceBaseCurrencyPatch(BaseModel):
     base_currency: str = Field(min_length=3, max_length=3)

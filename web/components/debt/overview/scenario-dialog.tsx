@@ -41,7 +41,7 @@ export function ScenarioDialog({
   currency: string;
   initialExtra: number;
   initialStrategy: PayoffMethod;
-  /** Monthly surplus the household can realistically direct at debt. Caps the slider. */
+  /** Monthly surplus the private workspace can realistically direct at debt. Caps the slider. */
   affordableExtra?: number;
 }) {
   const [method, setMethod] = useState<PayoffMethod>(initialStrategy);
@@ -64,7 +64,7 @@ export function ScenarioDialog({
   const totalMonthly = rows.reduce((a, r) => a + r.total, 0);
   const activeMethod = METHODS.find((m) => m.value === method)!;
 
-  // Slider tops out at what the household can actually afford (when known);
+  // Slider tops out at what the workspace can actually afford (when known);
   // the number input below still lets the user type past it.
   const sliderMax = useMemo(() => {
     const typedFloor = Math.ceil(extra / 250) * 250;

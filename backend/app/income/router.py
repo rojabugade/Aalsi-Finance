@@ -5,7 +5,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.deps import get_current_user, require_role
+from app.auth.deps import get_current_user
 from app.db import get_session
 from app.income import service
 from app.income.schemas import (
@@ -36,12 +36,12 @@ async def list_income_sources(user: User = Depends(get_current_user), session: A
 
 
 @router.post("/income-sources", response_model=IncomeSourceOut, status_code=status.HTTP_201_CREATED)
-async def create_income_source(data: IncomeSourceIn, user: User = Depends(require_role("owner", "member")), session: AsyncSession = Depends(get_session)):
+async def create_income_source(data: IncomeSourceIn, user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
     return await service.create_income_source(session, user, data)
 
 
 @router.patch("/income-sources/{source_id}", response_model=IncomeSourceOut)
-async def patch_income_source(source_id: uuid.UUID, data: IncomeSourcePatch, user: User = Depends(require_role("owner", "member")), session: AsyncSession = Depends(get_session)):
+async def patch_income_source(source_id: uuid.UUID, data: IncomeSourcePatch, user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
     try:
         return await service.patch_income_source(session, user, source_id, data)
     except service.NotFound as exc:
@@ -49,7 +49,7 @@ async def patch_income_source(source_id: uuid.UUID, data: IncomeSourcePatch, use
 
 
 @router.post("/paystubs", response_model=PaystubOut, status_code=status.HTTP_201_CREATED)
-async def create_paystub(data: PaystubIn, user: User = Depends(require_role("owner", "member")), session: AsyncSession = Depends(get_session)):
+async def create_paystub(data: PaystubIn, user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
     try:
         return await service.create_paystub(session, user, data)
     except service.NotFound as exc:
@@ -70,7 +70,7 @@ async def list_equity_grants(user: User = Depends(get_current_user), session: As
 
 
 @router.post("/equity/grants", response_model=EquityGrantOut, status_code=status.HTTP_201_CREATED)
-async def create_equity_grant(data: EquityGrantIn, user: User = Depends(require_role("owner", "member")), session: AsyncSession = Depends(get_session)):
+async def create_equity_grant(data: EquityGrantIn, user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
     try:
         return await service.create_equity_grant(session, user, data)
     except service.NotFound as exc:
@@ -83,7 +83,7 @@ async def list_equity_events(user: User = Depends(get_current_user), session: As
 
 
 @router.post("/equity/events", response_model=EquityEventOut, status_code=status.HTTP_201_CREATED)
-async def create_equity_event(data: EquityEventIn, user: User = Depends(require_role("owner", "member")), session: AsyncSession = Depends(get_session)):
+async def create_equity_event(data: EquityEventIn, user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
     try:
         return await service.create_equity_event(session, user, data)
     except service.NotFound as exc:

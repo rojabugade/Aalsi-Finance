@@ -6,7 +6,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Path, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.deps import get_current_user, require_role
+from app.auth.deps import get_current_user
 from app.db import get_session
 from app.fx.service import FXRateUnavailable
 from app.guidance import service
@@ -47,7 +47,7 @@ async def list_plan_items(
 )
 async def create_plan_item(
     data: GuidancePlanItemCreate,
-    user: User = Depends(require_role("owner", "member")),
+    user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
     return await service.create_plan_item(session, user, data)
@@ -57,7 +57,7 @@ async def create_plan_item(
 async def update_plan_item(
     item_id: uuid.UUID,
     data: GuidancePlanItemUpdate,
-    user: User = Depends(require_role("owner", "member")),
+    user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
     try:
@@ -114,7 +114,7 @@ async def list_transfers(user: User = Depends(get_current_user), session: AsyncS
 
 
 @router.post("/cross-border/transfers", response_model=CrossBorderTransferOut, status_code=status.HTTP_201_CREATED)
-async def create_transfer(data: CrossBorderTransferIn, user: User = Depends(require_role("owner", "member")), session: AsyncSession = Depends(get_session)):
+async def create_transfer(data: CrossBorderTransferIn, user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
     try:
         return await service.create_transfer(session, user, data)
     except FXRateUnavailable as exc:

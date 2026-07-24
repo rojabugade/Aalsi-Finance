@@ -67,7 +67,7 @@ app/
     guidance/              # ask (cited, govt vs community), wizard, remittance tracker
     notifications/         # center + preferences
     connections/           # Plaid, Gmail, SMS token+guide, bot linking
-    settings/              # members/roles, base currency, language, data controls (export/delete)
+    settings/              # private-workspace preferences, base currency, language, data controls (export/delete)
   providers.tsx            # QueryClientProvider + NextIntlClientProvider + theme
 lib/
   api/                     # generated client + typed query hooks
@@ -120,7 +120,7 @@ pass Playwright smoke, and `REBUILD_PROGRESS.md` is updated.
 - Guidance → M10 `guidance/ask`, `guidance/wizard`, `cross-border/*`
 - Notifications → M13 `notifications/*`, preferences; web push VAPID
 - Connections → M11 `plaid/*`, `email/*`, `sms/*`; bot (on hold — `/bot/link` unmounted)
-- Settings → M2 household/members/MFA, M16 `settings`, `export`, `consents`, `account`
+- Settings → M2 private workspace/MFA, M16 `settings`, `export`, `consents`, `account`
 
 ## Continuation doc
 
