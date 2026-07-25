@@ -44,6 +44,7 @@ from app.llm.errors import (
     map_openai_error,
 )
 from app.llm.pricing import estimate_cost
+from app.llm.quota import check_quota
 from app.models.core import Household, LLMUsageLog, User
 
 log = structlog.get_logger()
@@ -439,6 +440,9 @@ class LLMClient:
         user_id: uuid.UUID | None,
         session: AsyncSession | None,
     ) -> dict[str, Any]:
+        # Checked here rather than in each public entrypoint so chat and vision are
+        # both covered, and before any request is billed.
+        await check_quota(session, user_id)
         kwargs: dict[str, Any] = {
             "model": model,
             "temperature": temperature,

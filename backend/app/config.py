@@ -109,6 +109,14 @@ class Settings(BaseSettings):
     # they are both a spam vector and an enumeration-by-timing surface. Kept tight.
     rate_limit_password_reset: str = "5/hour"
 
+    # --- Error tracking ---
+    # Blank disables Sentry entirely. Events are scrubbed of request bodies,
+    # cookies, headers and user identity before sending — see app/observability.py.
+    sentry_dsn: str = ""
+    sentry_release: str = ""
+    # Performance tracing is off by default; it samples spans, not just errors.
+    sentry_traces_sample_rate: float = 0.0
+
     # --- Outbound email (M34) ---
     # Account recovery is impossible without this: password reset, email
     # verification and the notification email channel all go through it. Blank
@@ -156,6 +164,12 @@ class Settings(BaseSettings):
     # Redis response cache for idempotent calls (categorization, embeddings).
     llm_cache_enabled: bool = True
     llm_cache_ttl_seconds: int = 86400
+    # Rolling per-user spend caps in USD, measured against llm_usage_log.cost_est.
+    # 0 disables a cap. The default is uncapped, which suits a single-user
+    # self-hosted install; ANY deployment with open signup must set these, or one
+    # account can run up an unbounded bill on the deployment's own API key.
+    llm_daily_cost_limit_usd: float = 0.0
+    llm_monthly_cost_limit_usd: float = 0.0
 
     # --- M10/M11 integrations ---
     corpus_dir: str = "../corpus"

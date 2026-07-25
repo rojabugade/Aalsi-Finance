@@ -16,11 +16,14 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.config import get_settings
 from app.logging import configure_logging
+from app.observability import configure_error_tracking
 from app.rate_limit import limiter
-from app.version import COMMIT, VERSION
+from app.version import VERSION
 
 settings = get_settings()
 configure_logging(debug=settings.debug)
+# Before the app is built, so import-time failures in routers are still captured.
+configure_error_tracking()
 log = structlog.get_logger()
 
 
@@ -61,14 +64,10 @@ app.add_middleware(
 )
 
 
-@app.get("/health", tags=["meta"])
-async def health() -> dict[str, str]:
-    return {"status": "ok"}
+# /health (liveness), /health/ready (dependency readiness) and /version.
+from app.health import router as health_router  # noqa: E402
 
-
-@app.get("/version", tags=["meta"])
-async def version() -> dict[str, str]:
-    return {"version": VERSION, "commit": COMMIT}
+app.include_router(health_router)
 
 
 # Feature routers (mounted as modules land).

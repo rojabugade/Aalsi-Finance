@@ -9,8 +9,13 @@ from celery import Celery
 from celery.schedules import crontab
 
 from app.config import get_settings
+from app.observability import configure_error_tracking
 
 _settings = get_settings()
+
+# Workers are the least observable part of the stack — a task that dies silently
+# just stops producing alerts or OCR results — so they report errors too.
+configure_error_tracking()
 
 celery = Celery(
     "finance",

@@ -45,6 +45,14 @@ class LLMUnsupported(LLMError):
     """Capability the configured provider doesn't offer (e.g. vision on a text model)."""
 
 
+class LLMQuotaExceeded(LLMError):
+    """The caller has spent its allowance for the current window.
+
+    Not retryable: retrying cannot help until the window rolls over. Raised before
+    any request reaches the provider, so it costs nothing.
+    """
+
+
 def map_openai_error(exc: Exception) -> LLMError:
     """Translate an OpenAI SDK exception into the gateway taxonomy.
 
