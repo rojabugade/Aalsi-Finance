@@ -1,5 +1,6 @@
 import createNextIntlPlugin from "next-intl/plugin";
 import withSerwistInit from "@serwist/next";
+import { withSentryConfig } from "@sentry/nextjs";
 import { fileURLToPath } from "node:url";
 
 const withNextIntl = createNextIntlPlugin("./lib/i18n/request.ts");
@@ -72,4 +73,11 @@ const nextConfig = {
   },
 };
 
-export default withSerwist(withNextIntl(nextConfig));
+// Sentry wraps last so it can see the fully-composed config. Source-map upload is
+// skipped unless SENTRY_AUTH_TOKEN is present, so builds work without Sentry creds.
+export default withSentryConfig(withSerwist(withNextIntl(nextConfig)), {
+  silent: true,
+  disableLogger: true,
+  telemetry: false,
+  sourcemaps: { disable: !process.env.SENTRY_AUTH_TOKEN },
+});
