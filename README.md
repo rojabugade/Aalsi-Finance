@@ -10,8 +10,7 @@
 
 ### Multi-modal ingestion
 - **Document OCR** — snap a receipt, upload a PDF statement, or drop a CSV/XLSX export. PaddleOCR + vision-LLM extraction reads it; you confirm what lands.
-- **Plaid bank linking** — connect US checking/savings/credit cards/loans. Transactions sync automatically, with refund detection, loan-payment auto-registration, and daily balance snapshots.
-- **Gmail ingestion** — inbox scanning parses bank alerts and merchant receipts into draft transactions. Attachments flow through the OCR pipeline.
+- **Plaid bank linking** — connect US checking/savings/credit cards/loans. A scheduled sweep re-syncs every linked item every 6 hours (manual Sync for an immediate refresh), with refund detection, loan-payment auto-registration, and daily balance snapshots.
 - **SMS ingestion** — Android forwarder webhook for SMS-based transaction alerts.
 - **Manual entry** — quick-add transactions with category, merchant, and amount.
 - **Batch uploads** — drag multiple receipts at once; the app auto-groups pages of the same receipt and keeps different purchases separate.
@@ -52,15 +51,34 @@ The analyst sees **every** transaction, debt, and document you upload. It retain
 - **Financial guidance** — AI ask + planning wizard with RAG-backed citations from the /corpus
 - **Cross-border module** — India/US compliance checklists, remittance guidance, tax-year overviews
 
-### Multi-user & security
-- **Household model** — invite family members, shared visibility with per-user accounts
-- **Auth** — email+password (argon2), TOTP MFA, JWT + rotating refresh tokens, optional WebAuthn/passkeys in the PWA
-- **Rate limiting** — auth, ingestion, and analyst surfaces hardened
+### Security
+- **Private workspace** — one account per workspace; every query is scoped to it
+- **Auth** — email+password (argon2), TOTP MFA with one-time recovery codes, JWT + rotating refresh tokens with reuse detection
+- **Account recovery** — emailed password reset (single-use, expiring) and email verification
+- **Rate limiting** — auth, password reset, ingestion, and analyst surfaces hardened
 - **Encryption at rest** — AES-256-GCM for all uploaded documents (MinIO)
 - **LLM awareness** — your data goes through your own LLM gateway; privacy-first by default
+- **Spend caps** — optional rolling per-user limits on AI cost
 
 ### PWA (offline-tolerant)
 Install on iOS/Android home screen. Capture receipts offline — they sync when you're back online.
+
+## Not built yet
+
+Listed so nothing above reads as a promise it doesn't keep:
+
+| | Status |
+|---|---|
+| **Gmail ingestion** | Endpoints return `410`. Needs a Google restricted-scope assessment — see below. |
+| **Web push notifications** | No VAPID keys and no subscription endpoint. The toggle records a preference; nothing is delivered. In-app and email notifications do work. |
+| **WebAuthn / passkeys** | Not implemented. TOTP MFA with recovery codes is. |
+| **Household sharing** | Removed. Each account is a single-user private workspace. |
+| **Telegram / Discord bot** | On hold; only the data model exists. |
+| **Plaid webhooks** | `/webhooks/plaid` accepts and echoes events but does no work. Scheduled sync is what keeps accounts current. Wiring it up requires verifying Plaid's `Plaid-Verification` JWT first. |
+
+Before a public launch, also see the privacy policy and terms placeholders in
+`web/app/(legal)/` — both need review by someone qualified, and Plaid production
+access and Google OAuth verification each require them to be published.
 
 ---
 
@@ -125,9 +143,14 @@ make plaid-sync       # local (docker exec)
 make plaid-sync-prod  # production
 ```
 
-### Enabling Gmail ingestion (optional)
+### Gmail ingestion — currently disabled
 
-Set `GMAIL_CLIENT_ID` and `GMAIL_CLIENT_SECRET` in `.env`. Register the redirect URI as `http://localhost:3000/api/gmail/oauth/callback` in GCP. Authorize from the Connections page.
+The `/email/*` endpoints return `410 Gone`. Mailbox-wide Gmail OAuth needs a Google
+restricted-scope security assessment, which this project has not been through, so
+the flow is switched off rather than shipped half-approved. The parsing pipeline
+still exists behind `EMAIL_LLM_PROCESSING_ENABLED` for when that changes.
+
+Upload statements and receipts through Capture in the meantime.
 
 ---
 

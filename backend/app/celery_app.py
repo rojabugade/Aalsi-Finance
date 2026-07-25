@@ -30,7 +30,7 @@ celery.conf.update(
     accept_content=["json"],
     timezone="UTC",
     enable_utc=True,
-    imports=("app.tasks.ocr", "app.tasks.fx", "app.tasks.notifications", "app.tasks.analyst"),
+    imports=("app.tasks.ocr", "app.tasks.fx", "app.tasks.notifications", "app.tasks.analyst", "app.tasks.plaid"),
     beat_schedule={
         "fx-refresh-daily": {
             "task": "fx.refresh_daily",
@@ -51,6 +51,13 @@ celery.conf.update(
         "notifications-dispatch-due": {
             "task": "notifications.dispatch_due",
             "schedule": 60.0,
+        },
+        # Plaid's own transaction data updates roughly daily, so a 6-hourly sweep
+        # keeps balances current without burning API quota. Manual Sync in the UI
+        # still works for an immediate refresh.
+        "plaid-sync-all": {
+            "task": "plaid.sync_all",
+            "schedule": crontab(hour="*/6", minute=20),
         },
     },
 )

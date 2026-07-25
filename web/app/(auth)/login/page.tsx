@@ -221,6 +221,15 @@ export default function LoginPage() {
               {busy ? "…" : t(mode === "login" ? "submit" : "signupSubmit")}
             </Button>
           </form>
+          <p className="mt-6 text-center text-xs text-muted-foreground">
+            <Link href="/privacy" className="underline underline-offset-4">
+              Privacy Policy
+            </Link>
+            {" · "}
+            <Link href="/terms" className="underline underline-offset-4">
+              Terms of Service
+            </Link>
+          </p>
         </div>
       </main>
     </div>
