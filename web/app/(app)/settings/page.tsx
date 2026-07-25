@@ -31,6 +31,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MemoryCard } from "./memory-card";
+import { SecurityCard } from "./security-card";
 
 export default function SettingsPage() {
   return (
@@ -43,6 +44,7 @@ export default function SettingsPage() {
           <InstallButton />
         </div>
       </div>
+      <SecurityCard />
       <LlmSettingsCard />
       <PreferencesCard />
       <ConsentsCard />

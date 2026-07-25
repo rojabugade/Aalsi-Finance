@@ -11,6 +11,8 @@ import structlog
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import get_settings
+from app.email.sender import EmailNotConfigured, send_email
 from app.models.core import User
 from app.models.debt import Loan, PaymentSchedule
 from app.models.documents import Document
@@ -185,7 +187,7 @@ async def dispatch_due_notifications(session: AsyncSession, *, limit: int = 100)
             note.scheduled_for = next_time
             deferred += 1
             continue
-        if await _dispatch_channel(note):
+        if await _dispatch_channel(note, user):
             note.status = "sent"
             _merge_payload(note, {"dispatched_at": now.isoformat()})
             sent += 1
@@ -249,12 +251,53 @@ def _merge_payload(note: Notification, values: dict) -> None:
     note.payload = payload
 
 
-async def _dispatch_channel(note: Notification) -> bool:
+async def _dispatch_channel(note: Notification, user: User | None) -> bool:
     if note.channel == "inapp":
         return True
+    if note.channel == "email":
+        return await _dispatch_email(note, user)
     _fail(note, f"{note.channel}_adapter_not_configured")
     log.info("notification.dispatch_adapter_boundary", notification_id=str(note.id), channel=note.channel)
     return False
+
+
+async def _dispatch_email(note: Notification, user: User | None) -> bool:
+    if user is None:
+        _fail(note, "no_recipient")
+        return False
+    # Never mail an address nobody has confirmed: a typo'd signup would otherwise
+    # send a stranger someone else's financial reminders.
+    if user.email_verified_at is None:
+        _fail(note, "email_not_verified")
+        return False
+    subject, body = _email_body(note)
+    try:
+        await send_email(user.email, subject, body)
+    except EmailNotConfigured:
+        _fail(note, "email_adapter_not_configured")
+        return False
+    except Exception:  # noqa: BLE001 — one bad send must not stop the sweep
+        log.exception("notification.email_failed", notification_id=str(note.id))
+        _fail(note, "email_delivery_failed")
+        return False
+    return True
+
+
+def _email_body(note: Notification) -> tuple[str, str]:
+    payload = note.payload or {}
+    title = str(payload.get("title") or _humanize(note.type))
+    lines = [str(payload.get("message") or payload.get("detail") or title)]
+    if payload.get("amount") is not None:
+        lines.append(f"Amount: {payload['amount']}")
+    if payload.get("due_date"):
+        lines.append(f"Due: {payload['due_date']}")
+    origin = get_settings().app_origin.rstrip("/")
+    lines.append(f"\nOpen the app: {origin}/notifications")
+    return title, "\n".join(lines)
+
+
+def _humanize(value: str) -> str:
+    return value.replace("_", " ").capitalize()
 
 
 def _next_after_quiet_hours(user: User, now: datetime) -> datetime | None:

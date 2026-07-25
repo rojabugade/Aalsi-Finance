@@ -20,8 +20,9 @@ class SignupIn(BaseModel):
 class LoginIn(BaseModel):
     email: EmailStr
     password: str
-    # Required only once MFA is enabled for the account.
-    totp_code: str | None = Field(default=None, max_length=10)
+    # Required only once MFA is enabled. Accepts either a 6-digit TOTP code or a
+    # recovery code, which is longer (XXXX-XXXX-XXXX-XXXX, or 16 chars unpunctuated).
+    totp_code: str | None = Field(default=None, max_length=32)
 
 
 class AccessToken(BaseModel):
@@ -50,6 +51,41 @@ class MfaEnrollOut(BaseModel):
 
 class MfaVerifyIn(BaseModel):
     totp_code: str = Field(max_length=10)
+
+
+class MfaRecoveryCodesOut(BaseModel):
+    """Recovery codes are returned once, at generation time, and never again."""
+
+    recovery_codes: list[str]
+
+
+class MfaStatusOut(BaseModel):
+    mfa_enabled: bool
+    unused_recovery_codes: int
+
+
+# --- Account recovery --------------------------------------------------------
+
+class PasswordResetRequestIn(BaseModel):
+    email: EmailStr
+
+
+class PasswordResetConfirmIn(BaseModel):
+    token: str = Field(min_length=1, max_length=512)
+    new_password: str = Field(min_length=8, max_length=256)
+
+
+class EmailVerificationConfirmIn(BaseModel):
+    token: str = Field(min_length=1, max_length=512)
+
+
+class MeOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    email: EmailStr
+    display_name: str | None
+    email_verified: bool
+    mfa_enabled: bool
 
 
 # --- Private workspace -------------------------------------------------------

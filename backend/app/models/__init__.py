@@ -16,9 +16,11 @@ from app.models import conversation  # noqa: F401
 from app.models.conversation import AnalystMessage, AnalystThread
 from app.models.core import (
     AuditLog,
+    AuthToken,
     ConsentRecord,
     Household,
     LLMUsageLog,
+    MfaRecoveryCode,
     RefreshToken,
     User,
 )
@@ -52,6 +54,7 @@ __all__ = [
     "AnalystMessage",
     "AnalystThread",
     "AuditLog",
+    "AuthToken",
     "BotLink",
     "Budget",
     "Category",
@@ -77,6 +80,7 @@ __all__ = [
     "MemoryChunk",
     "MemoryFact",
     "Merchant",
+    "MfaRecoveryCode",
     "Notification",
     "Paystub",
     "PaymentSchedule",

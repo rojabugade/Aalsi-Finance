@@ -19,6 +19,16 @@ x-backend-env: &backend-env
   S3_REGION: ${S3_REGION:-us-east-1}
   STORAGE_ENCRYPTION_KEY: ${STORAGE_ENCRYPTION_KEY:?Set STORAGE_ENCRYPTION_KEY in Coolify}
   JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in Coolify}
+  # Account recovery depends on outbound mail: without SMTP there is no password
+  # reset and no email verification, so a locked-out user stays locked out.
+  SMTP_HOST: ${SMTP_HOST:?Set SMTP_HOST in Coolify — password reset needs it}
+  SMTP_PORT: ${SMTP_PORT:-587}
+  SMTP_USERNAME: ${SMTP_USERNAME:-}
+  SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+  SMTP_STARTTLS: ${SMTP_STARTTLS:-true}
+  SMTP_SSL: ${SMTP_SSL:-false}
+  EMAIL_FROM: ${EMAIL_FROM:?Set EMAIL_FROM in Coolify}
+  EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-Alsi Finance}
   LLM_PROVIDER: ${LLM_PROVIDER:-openai}
   LLM_BASE_URL: ${LLM_BASE_URL:-}
   LLM_API_KEY: ${LLM_API_KEY:-}

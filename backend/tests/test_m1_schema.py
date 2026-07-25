@@ -224,6 +224,9 @@ async def test_insert_one_row_per_table(engine):
                           balance_after=915),
             m.GuidancePlanItem(household_id=hh.id, user_id=user.id, domain="investment",
                                title="Open a 401k", rationale="Employer match"),
+            m.AuthToken(user_id=user.id, purpose="password_reset", token_hash="h",
+                        expires_at=now + timedelta(hours=1)),
+            m.MfaRecoveryCode(user_id=user.id, code_hash="h"),
         ])
         await s.flush()
 

@@ -50,6 +50,47 @@ def hash_refresh_token(raw: str) -> str:
     return hashlib.sha256(raw.encode()).hexdigest()
 
 
+# --- Emailed single-use tokens (password reset, email verification) ----------
+
+def new_auth_token() -> tuple[str, str]:
+    """Return (raw_token, sha256_hash) for an emailed link."""
+    raw = secrets.token_urlsafe(48)
+    return raw, hash_auth_token(raw)
+
+
+def hash_auth_token(raw: str) -> str:
+    return hashlib.sha256(raw.encode()).hexdigest()
+
+
+# --- MFA recovery codes ------------------------------------------------------
+
+# Crockford-style alphabet: no I, L, O or U, so a handwritten code can't be
+# misread and there are no accidental words.
+_RECOVERY_ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
+_RECOVERY_GROUPS = 4
+_RECOVERY_GROUP_LEN = 4
+
+
+def new_recovery_code() -> tuple[str, str]:
+    """Return (display_code, sha256_hash).
+
+    16 alphabet characters is ~80 bits, so a fast hash is safe here for the same
+    reason it is for refresh tokens: guessing is infeasible regardless of speed.
+    """
+    groups = [
+        "".join(secrets.choice(_RECOVERY_ALPHABET) for _ in range(_RECOVERY_GROUP_LEN))
+        for _ in range(_RECOVERY_GROUPS)
+    ]
+    code = "-".join(groups)
+    return code, hash_recovery_code(code)
+
+
+def hash_recovery_code(code: str) -> str:
+    """Hash a recovery code, tolerating user-entered case and missing dashes."""
+    normalized = code.strip().upper().replace("-", "").replace(" ", "")
+    return hashlib.sha256(normalized.encode()).hexdigest()
+
+
 # --- JWTs --------------------------------------------------------------------
 
 def _now() -> datetime:

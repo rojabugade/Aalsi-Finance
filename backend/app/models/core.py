@@ -46,6 +46,10 @@ class User(Base, TimestampMixin):
     mfa_secret: Mapped[str | None] = mapped_column(String(64))
     mfa_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    # Null until the address is confirmed. Login is not gated on this — a deployment
+    # with no SMTP configured would otherwise lock every account out — but unverified
+    # addresses are surfaced to the user and to the notification dispatcher.
+    email_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     notification_preferences: Mapped[dict | None] = mapped_column(JSONB)
 
     household: Mapped[Household] = relationship(back_populates="users")
@@ -61,6 +65,53 @@ class RefreshToken(Base):
     token_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     revoked: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+
+
+class AuthToken(Base):
+    """Single-use, emailed token for password reset and email verification.
+
+    Only the SHA-256 hash is stored, exactly as for refresh tokens — a database
+    leak must not hand an attacker working reset links. `purpose` keeps both flows
+    in one table so they share expiry, single-use and revocation logic.
+    """
+
+    __tablename__ = "auth_token"
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    user_id: Mapped[uuid.UUID] = fk_uuid(
+        ForeignKey("user.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    purpose: Mapped[str] = mapped_column(
+        str_enum("auth_token_purpose", "password_reset", "email_verification"),
+        nullable=False,
+    )
+    token_hash: Mapped[str] = mapped_column(String(255), index=True, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class MfaRecoveryCode(Base):
+    """One-time code that substitutes for a TOTP code at login.
+
+    Issued as a batch when MFA is switched on; without them a lost authenticator
+    app means a permanently inaccessible account. Codes carry ~80 bits of entropy,
+    so a fast hash is sufficient here for the same reason it is for refresh tokens.
+    """
+
+    __tablename__ = "mfa_recovery_code"
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    user_id: Mapped[uuid.UUID] = fk_uuid(
+        ForeignKey("user.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    code_hash: Mapped[str] = mapped_column(String(255), index=True, nullable=False)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
 
 
 class ConsentRecord(Base):

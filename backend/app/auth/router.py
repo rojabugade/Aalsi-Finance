@@ -13,10 +13,16 @@ from app.auth.cookies import clear_auth_cookies, read_refresh_token, set_auth_co
 from app.auth.deps import get_current_user
 from app.auth.schemas import (
     AccessToken,
+    EmailVerificationConfirmIn,
     LoginIn,
     LogoutIn,
+    MeOut,
     MfaEnrollOut,
+    MfaRecoveryCodesOut,
+    MfaStatusOut,
     MfaVerifyIn,
+    PasswordResetConfirmIn,
+    PasswordResetRequestIn,
     RefreshIn,
     SignupIn,
 )
@@ -73,10 +79,94 @@ async def mfa_enroll(
     return MfaEnrollOut(secret=secret, otpauth_uri=uri)
 
 
-@router.post("/mfa/verify", status_code=status.HTTP_204_NO_CONTENT)
+@router.post("/mfa/verify", response_model=MfaRecoveryCodesOut)
 async def mfa_verify(
     data: MfaVerifyIn,
     session: AsyncSession = Depends(get_session),
     user: User = Depends(get_current_user),
+) -> MfaRecoveryCodesOut:
+    """Activate MFA. The recovery codes in this response are shown only once."""
+    codes = await service.mfa_verify(session, user, data.totp_code)
+    return MfaRecoveryCodesOut(recovery_codes=codes)
+
+
+@router.get("/mfa/status", response_model=MfaStatusOut)
+async def mfa_status(
+    session: AsyncSession = Depends(get_session),
+    user: User = Depends(get_current_user),
+) -> MfaStatusOut:
+    remaining = await service.count_unused_recovery_codes(session, user)
+    return MfaStatusOut(mfa_enabled=user.mfa_enabled, unused_recovery_codes=remaining)
+
+
+@router.post("/mfa/recovery-codes", response_model=MfaRecoveryCodesOut)
+async def regenerate_recovery_codes(
+    session: AsyncSession = Depends(get_session),
+    user: User = Depends(get_current_user),
+) -> MfaRecoveryCodesOut:
+    """Issue a fresh batch, invalidating every previously issued code."""
+    codes = await service.regenerate_recovery_codes(session, user)
+    return MfaRecoveryCodesOut(recovery_codes=codes)
+
+
+# --- Account recovery --------------------------------------------------------
+
+@router.post("/password-reset/request", status_code=status.HTTP_202_ACCEPTED)
+@limiter.limit(settings.rate_limit_password_reset)
+async def password_reset_request(
+    request: Request,
+    data: PasswordResetRequestIn,
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, str]:
+    """Always 202, whether or not the address is registered.
+
+    A different status or body for unknown addresses would let anyone test which
+    emails have accounts here.
+    """
+    await service.request_password_reset(session, data.email)
+    return {"status": "accepted"}
+
+
+@router.post("/password-reset/confirm", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit(settings.rate_limit_password_reset)
+async def password_reset_confirm(
+    request: Request,
+    data: PasswordResetConfirmIn,
+    response: Response,
+    session: AsyncSession = Depends(get_session),
 ):
-    await service.mfa_verify(session, user, data.totp_code)
+    await service.confirm_password_reset(session, data.token, data.new_password)
+    # Every session was revoked server-side; drop this client's cookies to match.
+    clear_auth_cookies(response)
+
+
+@router.post("/verify-email/request", status_code=status.HTTP_202_ACCEPTED)
+@limiter.limit(settings.rate_limit_password_reset)
+async def verify_email_request(
+    request: Request,
+    session: AsyncSession = Depends(get_session),
+    user: User = Depends(get_current_user),
+) -> dict[str, str]:
+    await service.request_email_verification(session, user)
+    return {"status": "accepted"}
+
+
+@router.post("/verify-email/confirm", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit(settings.rate_limit_password_reset)
+async def verify_email_confirm(
+    request: Request,
+    data: EmailVerificationConfirmIn,
+    session: AsyncSession = Depends(get_session),
+):
+    await service.confirm_email_verification(session, data.token)
+
+
+@router.get("/me", response_model=MeOut)
+async def me(user: User = Depends(get_current_user)) -> MeOut:
+    return MeOut(
+        id=user.id,
+        email=user.email,
+        display_name=user.display_name,
+        email_verified=user.email_verified_at is not None,
+        mfa_enabled=user.mfa_enabled,
+    )

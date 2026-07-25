@@ -1,5 +1,7 @@
 {
-  "app": { "name": "CodeName-Finance" },
+  "app": {
+    "name": "CodeName-Finance"
+  },
   "nav": {
     "dashboard": "Dashboard",
     "capture": "Capture",
@@ -32,10 +34,27 @@
     "displayNamePlaceholder": "Your name",
     "baseCurrency": "Currency",
     "totp": "Authenticator code",
-    "totpHint": "Enter your 6-digit code if MFA is enabled.",
+    "totpHint": "Enter your 6-digit code, or a recovery code if you've lost your authenticator.",
     "submit": "Sign in",
     "signupSubmit": "Create account",
     "error": "Sign in failed. Check your credentials.",
-    "signupError": "Account creation failed. The email may already be in use."
+    "signupError": "Account creation failed. The email may already be in use.",
+    "forgotPassword": "Forgot your password?",
+    "forgotTitle": "Reset your password",
+    "forgotDescription": "Enter your email and we'll send you a link to choose a new password.",
+    "forgotSubmit": "Send reset link",
+    "forgotSent": "If that address has an account, a reset link is on its way. Check your inbox and spam folder.",
+    "backToLogin": "Back to sign in",
+    "resetTitle": "Choose a new password",
+    "resetDescription": "Pick a password you don't use anywhere else.",
+    "resetSubmit": "Save new password",
+    "resetDone": "Password updated. You've been signed out everywhere — sign in with your new password.",
+    "resetInvalid": "This link is invalid or has expired. Request a new one.",
+    "resetMissingToken": "This link is missing its token. Request a new reset email.",
+    "newPassword": "New password",
+    "verifyTitle": "Confirming your email",
+    "verifyPending": "Checking your link…",
+    "verifyDone": "Email confirmed. Thanks — account recovery and alerts are now enabled.",
+    "verifyInvalid": "This confirmation link is invalid or has expired. Request a new one from Settings."
   }
 }

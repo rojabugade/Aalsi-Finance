@@ -114,7 +114,9 @@ async def test_signup_login_and_mfa_flow(client, session_factory):
     verify = await client.post(
         "/auth/mfa/verify", headers=_auth(access), json={"totp_code": code}
     )
-    assert verify.status_code == 204
+    # Enabling MFA hands back the one-time recovery codes (see test_m34).
+    assert verify.status_code == 200
+    assert len(verify.json()["recovery_codes"]) == 10
 
     # 3. Login now requires the TOTP code.
     bad = await client.post(

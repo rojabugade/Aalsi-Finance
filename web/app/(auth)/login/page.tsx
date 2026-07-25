@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { authApi } from "@/lib/api/auth";
@@ -161,7 +162,17 @@ export default function LoginPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="password">{t("password")}</Label>
+              <div className="flex items-baseline justify-between gap-3">
+                <Label htmlFor="password">{t("password")}</Label>
+                {mode === "login" && (
+                  <Link
+                    href="/forgot-password"
+                    className="text-xs text-muted-foreground underline underline-offset-4"
+                  >
+                    {t("forgotPassword")}
+                  </Link>
+                )}
+              </div>
               <Input
                 id="password"
                 name="password"

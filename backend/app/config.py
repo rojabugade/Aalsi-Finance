@@ -105,6 +105,31 @@ class Settings(BaseSettings):
     rate_limit_login: str = "10/minute"
     rate_limit_refresh: str = "60/minute"
     rate_limit_sms_webhook: str = "120/minute"
+    # Reset and verification requests send mail to an address the caller chose, so
+    # they are both a spam vector and an enumeration-by-timing surface. Kept tight.
+    rate_limit_password_reset: str = "5/hour"
+
+    # --- Outbound email (M34) ---
+    # Account recovery is impossible without this: password reset, email
+    # verification and the notification email channel all go through it. Blank
+    # smtp_host leaves the app running with those surfaces disabled rather than
+    # failing to boot, so local dev needs no mail server.
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_username: str = ""
+    smtp_password: str = ""
+    # STARTTLS on the standard submission port. Set smtp_ssl for implicit TLS (465).
+    smtp_starttls: bool = True
+    smtp_ssl: bool = False
+    smtp_timeout_seconds: float = 15.0
+    email_from: str = ""
+    email_from_name: str = "Alsi Finance"
+    # How long a password-reset or email-verification link stays valid.
+    password_reset_ttl_minutes: int = 60
+    email_verification_ttl_hours: int = 48
+    # Recovery codes issued when TOTP is switched on. Without these, losing the
+    # authenticator app means losing the account.
+    mfa_recovery_code_count: int = 10
 
     # --- Embeddings (must match M1 vector(N) dimension) ---
     embed_dim: int = 1536
@@ -211,6 +236,11 @@ class Settings(BaseSettings):
             elif self.plaid_environment.lower() == "sandbox":
                 self.plaid_webhook_url = "https://example.com/webhooks/plaid"
         return self
+
+    @property
+    def email_configured(self) -> bool:
+        """True when outbound mail can actually be delivered."""
+        return bool(self.smtp_host.strip() and self.email_from.strip())
 
     @property
     def cors_origin_list(self) -> list[str]:
