@@ -31,7 +31,7 @@ test.describe("pwa", () => {
     const res = await request.get("/manifest.webmanifest");
     expect(res.ok()).toBeTruthy();
     const json = await res.json();
-    expect(json.name).toBe("CodeName-Finance");
+    expect(json.name).toBe("Alsi Finance");
     expect(json.theme_color).toBe("#f1f1fa");
   });
 

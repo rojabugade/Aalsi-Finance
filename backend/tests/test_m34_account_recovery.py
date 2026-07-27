@@ -101,6 +101,8 @@ async def _signup(client, name_suffix: str) -> tuple[str, str, str]:
             "email": email,
             "password": password,
             "workspace_name": f"{HOUSEHOLD_PREFIX}{name_suffix}",
+            "age_confirmed": True,
+            "terms_accepted": True,
         },
     )
     assert r.status_code == 201, r.text

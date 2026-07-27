@@ -1,8 +1,9 @@
 {
-  "name": "CodeName-Finance",
-  "short_name": "Finance",
+  "name": "Alsi Finance",
+  "short_name": "Alsi",
   "description": "Document-driven, AI-assisted personal finance.",
-  "start_url": "/",
+  "id": "/",
+  "start_url": "/dashboard",
   "scope": "/",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone", "browser"],

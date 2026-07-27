@@ -19,6 +19,7 @@ from app.analyst.schemas import (
     ReindexOut,
 )
 from app.auth.deps import get_current_user
+from app.beta.limits import enforce_ai_quota
 from app.db import get_session
 from app.llm.client import LLMClient, get_llm_client
 from app.models.core import User
@@ -48,7 +49,7 @@ async def thread_history(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
-@router.post("/ask", response_model=AnalystAskOut)
+@router.post("/ask", response_model=AnalystAskOut, dependencies=[Depends(enforce_ai_quota)])
 async def ask(
     data: AnalystAskIn,
     user: User = Depends(get_current_user),
@@ -73,7 +74,7 @@ async def acknowledge(
     return result
 
 
-@router.post("/scan")
+@router.post("/scan", dependencies=[Depends(enforce_ai_quota)])
 async def scan(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
@@ -90,7 +91,7 @@ async def memory_status(
     return await service.memory_status(session, user)
 
 
-@router.post("/reindex", response_model=ReindexOut)
+@router.post("/reindex", response_model=ReindexOut, dependencies=[Depends(enforce_ai_quota)])
 async def reindex(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
@@ -99,7 +100,7 @@ async def reindex(
     return await service.run_reindex(session, user, llm)
 
 
-@router.post("/debt-plan", response_model=DebtPlanOut)
+@router.post("/debt-plan", response_model=DebtPlanOut, dependencies=[Depends(enforce_ai_quota)])
 async def debt_plan(
     data: DebtPlanRequest | None = None,
     force: bool = Query(False, description="Bypass the cache and recompute the plan fresh."),

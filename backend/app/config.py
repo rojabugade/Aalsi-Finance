@@ -108,6 +108,24 @@ class Settings(BaseSettings):
     # Reset and verification requests send mail to an address the caller chose, so
     # they are both a spam vector and an enumeration-by-timing surface. Kept tight.
     rate_limit_password_reset: str = "5/hour"
+    # The beta application form is unauthenticated and writes a row. Kept tight
+    # for the same reason as password reset.
+    rate_limit_beta_apply: str = "5/hour"
+
+    # --- Closed beta ---
+    # Sign-up requires an unredeemed invite code. Flip to false to open the
+    # product to the public without shipping new code paths.
+    beta_invite_required: bool = True
+    # Beta accounts get every feature; what they get bounded is volume on the
+    # paths that spend our money rather than theirs. 0 disables an individual
+    # limit — which is how this whole layer retires at launch. See
+    # app/beta/limits.py for why these are counted rather than metered.
+    beta_limit_ai_requests_per_day: int = 40
+    beta_limit_ai_requests_per_minute: int = 6
+    beta_limit_documents_per_day: int = 25
+    # Upper bound on a free-text question. Prompt cost scales with this, and
+    # without it one request can be arbitrarily expensive.
+    beta_limit_question_chars: int = 4000
 
     # --- Error tracking ---
     # Blank disables Sentry entirely. Events are scrubbed of request bodies,
@@ -165,11 +183,12 @@ class Settings(BaseSettings):
     llm_cache_enabled: bool = True
     llm_cache_ttl_seconds: int = 86400
     # Rolling per-user spend caps in USD, measured against llm_usage_log.cost_est.
-    # 0 disables a cap. The default is uncapped, which suits a single-user
-    # self-hosted install; ANY deployment with open signup must set these, or one
-    # account can run up an unbounded bill on the deployment's own API key.
-    llm_daily_cost_limit_usd: float = 0.0
-    llm_monthly_cost_limit_usd: float = 0.0
+    # 0 disables a cap, and the default is deliberately NOT 0: this is a hosted
+    # product where every account spends our API key, so an unset cap is an
+    # unbounded bill. Raise these per plan once there are plans; a self-hosted
+    # install paying its own gateway can set both to 0.
+    llm_daily_cost_limit_usd: float = 0.50
+    llm_monthly_cost_limit_usd: float = 5.00
 
     # --- M10/M11 integrations ---
     corpus_dir: str = "../corpus"

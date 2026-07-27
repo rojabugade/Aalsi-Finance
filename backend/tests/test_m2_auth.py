@@ -19,7 +19,7 @@ import pyotp
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy import text
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.auth.deps import scoped_query
@@ -90,6 +90,8 @@ async def _signup(client, workspace_name: str) -> tuple[dict, str]:
             "password": "hunter2pass",
             "display_name": "Owner",
             "workspace_name": workspace_name,
+            "age_confirmed": True,
+            "terms_accepted": True,
         },
     )
     assert r.status_code == 201, r.text
@@ -205,3 +207,45 @@ async def test_scoped_query_workspace_isolation(session_factory):
         assert foreign.id not in ids
 
         await s.rollback()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "attestations",
+    [
+        pytest.param({}, id="both-omitted"),
+        pytest.param({"age_confirmed": True}, id="terms-omitted"),
+        pytest.param({"terms_accepted": True}, id="age-omitted"),
+        pytest.param(
+            {"age_confirmed": False, "terms_accepted": True}, id="age-declined"
+        ),
+        pytest.param(
+            {"age_confirmed": True, "terms_accepted": False}, id="terms-declined"
+        ),
+    ],
+)
+async def test_signup_requires_age_and_terms_attestation(client, attestations):
+    """The form checkboxes are `required`, but a client that skips the form must
+    not get an account either — the gate is only worth anything server-side."""
+    r = await client.post(
+        "/auth/signup",
+        json={
+            "email": _email(),
+            "password": "hunter2pass",
+            "workspace_name": f"{HOUSEHOLD_PREFIX}gate",
+            **attestations,
+        },
+    )
+    assert r.status_code == 422, r.text
+
+
+@pytest.mark.asyncio
+async def test_signup_records_when_attestations_were_given(client, session_factory):
+    """Enforcing the gate without recording it leaves nothing to point at later."""
+    _tokens, email = await _signup(client, f"{HOUSEHOLD_PREFIX}attested")
+
+    async with session_factory() as s:
+        user = await s.scalar(select(User).where(User.email == email.lower()))
+        assert user is not None
+        assert user.age_confirmed_at is not None
+        assert user.terms_accepted_at is not None

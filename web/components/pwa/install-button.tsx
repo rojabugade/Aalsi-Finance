@@ -52,7 +52,7 @@ export function InstallButton({ className }: { className?: string }) {
             <span className="grid size-5 flex-none place-items-center rounded-chip bg-accent-soft text-[11px] font-bold text-accent">
               ✓
             </span>
-            Tap <b>Add</b> — CodeName-Finance opens full-screen from your home screen.
+            Tap <b>Add</b> — Alsi Finance opens full-screen from your home screen.
           </li>
         </ol>
       </ResponsiveSheet>

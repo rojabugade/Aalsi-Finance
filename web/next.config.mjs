@@ -28,6 +28,9 @@ const nextConfig = {
       "/admin/:path*",
       "/analytics/:path*",
       "/auth/:path*",
+      // Same-origin like /auth: the application form is posted from the public
+      // marketing page, where a cross-origin call would need CORS for no gain.
+      "/beta/:path*",
       "/budgets",
       "/budgets/:path*",
       "/categories",

@@ -50,6 +50,10 @@ class User(Base, TimestampMixin):
     # with no SMTP configured would otherwise lock every account out — but unverified
     # addresses are surfaced to the user and to the notification dispatcher.
     email_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Signup attestations. Null on accounts created before the gate existed, which
+    # is why neither is NOT NULL: absence means "never attested", not "declined".
+    age_confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    terms_accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     notification_preferences: Mapped[dict | None] = mapped_column(JSONB)
 
     household: Mapped[Household] = relationship(back_populates="users")

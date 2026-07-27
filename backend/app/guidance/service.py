@@ -34,6 +34,33 @@ DISCLAIMER = (
     "Verify cited sources and consult a CPA/CA, attorney, or licensed financial professional."
 )
 
+# The corpus covers FEMA/LRS, 15CA/15CB, FBAR/FATCA and DTAA — areas where both
+# the US and India regulate who may advise. So the model reports what sources
+# say; it does not apply them to the reader. The distinction that matters is
+# "the rule says X" (allowed) versus "you should do X" (not allowed): the second
+# is a professional judgement about one person's facts, which is the thing that
+# needs a licence. Keeping this in the system prompt rather than post-filtering
+# the answer means the constraint shapes generation instead of censoring it.
+ANSWER_SYSTEM_PROMPT = (
+    "You summarise source documents. You do not advise.\n"
+    "Use conversation history only to resolve references and follow-up intent. "
+    "Only the Current authoritative corpus may support factual claims. "
+    "Distinguish official sources from community consensus, cite bracket "
+    "numbers, and say when the corpus is insufficient.\n"
+    "Hard constraints:\n"
+    "- Report what the sources state. Never recommend, advise, or direct a course of action.\n"
+    "- Never address the reader in the second person about what to do. Write "
+    "'the rule requires a filing when X', not 'you need to file'.\n"
+    "- Never apply a rule to the reader's own circumstances, compute what they "
+    "owe, or judge whether a rule applies to them. State the rule and its "
+    "conditions; leave the application to them and their professional.\n"
+    "- If the question asks what the reader should do, answer with what the "
+    "sources say on the topic, then note that applying it to their situation "
+    "is a question for a qualified CPA/CA or attorney.\n"
+    "- Never speculate beyond the corpus. Absent or unclear sources are worth "
+    "saying plainly."
+)
+
 
 class NotFound(Exception):
     pass
@@ -188,15 +215,7 @@ async def ask_guidance(session: AsyncSession, user: User, data: GuidanceAskIn, l
             try:
                 result = await llm.chat(
                     [
-                        {
-                            "role": "system",
-                            "content": (
-                                "Use conversation history only to resolve references and follow-up intent. "
-                                "Only the Current authoritative corpus may support factual claims. "
-                                "Distinguish official sources from community consensus, cite bracket "
-                                "numbers, and say when the corpus is insufficient."
-                            ),
-                        },
+                        {"role": "system", "content": ANSWER_SYSTEM_PROMPT},
                         {
                             "role": "user",
                             "content": (

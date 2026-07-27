@@ -230,6 +230,17 @@ async def test_insert_one_row_per_table(engine):
         ])
         await s.flush()
 
+        # Closed beta (M36). The application has to land before the code, which
+        # carries an optional FK to it.
+        application = m.BetaApplication(email="applicant@example.com", name="Sam",
+                                        country="US")
+        s.add(application)
+        await s.flush()
+
+        s.add(m.InviteCode(code_hash="h", issued_to_email="applicant@example.com",
+                           application_id=application.id))
+        await s.flush()
+
         # Every mapped table now has at least the row(s) we added in this txn.
         for table in Base.metadata.sorted_tables:
             count = await s.scalar(select(func.count()).select_from(table))

@@ -11,6 +11,7 @@ in the household base currency, and the `fx_rate` used.
 
 from app.models.accounts import AccountBalance, AccountLogical, PaymentMethod, PlaidItem
 from app.models import alerts  # noqa: F401
+from app.models.beta import BetaApplication, InviteCode
 from app.models.alerts import AnalystAlertRow
 from app.models import conversation  # noqa: F401
 from app.models.conversation import AnalystMessage, AnalystThread
@@ -55,6 +56,7 @@ __all__ = [
     "AnalystThread",
     "AuditLog",
     "AuthToken",
+    "BetaApplication",
     "BotLink",
     "Budget",
     "Category",
@@ -72,6 +74,7 @@ __all__ = [
     "IncomeSource",
     "IngestionConnection",
     "InvestmentHolding",
+    "InviteCode",
     "LineItem",
     "LineItemTag",
     "LLMUsageLog",

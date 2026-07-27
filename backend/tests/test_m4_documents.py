@@ -364,6 +364,7 @@ async def test_upload_lifecycle_end_to_end(engine, monkeypatch):
                 json={
                     "email": email, "password": "hunter2pass", "display_name": "Owner",
                     "workspace_name": f"{HOUSEHOLD_PREFIX}docs",
+                    "age_confirmed": True, "terms_accepted": True,
                 },
             )
             assert su.status_code == 201, su.text
@@ -459,6 +460,7 @@ async def test_documents_list_includes_provenance(engine, monkeypatch):
                 json={
                     "email": email, "password": "hunter2pass", "display_name": "Owner",
                     "workspace_name": f"{HOUSEHOLD_PREFIX}prov",
+                    "age_confirmed": True, "terms_accepted": True,
                 },
             )
             assert su.status_code == 201, su.text

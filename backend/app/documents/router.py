@@ -27,6 +27,7 @@ from fastapi import (
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.deps import get_current_user
+from app.beta.limits import enforce_document_quota
 from app.auth.security import (
     DOWNLOAD_TOKEN_TYPE,
     create_download_token,
@@ -69,7 +70,7 @@ def _to_out(document: Document, txn_refs: list[dict] | None = None) -> DocumentO
     )
 
 
-@router.post("", status_code=status.HTTP_201_CREATED, response_model=DocumentOut)
+@router.post("", status_code=status.HTTP_201_CREATED, response_model=DocumentOut, dependencies=[Depends(enforce_document_quota)])
 async def upload_document(
     request: Request,
     file: UploadFile = File(...),

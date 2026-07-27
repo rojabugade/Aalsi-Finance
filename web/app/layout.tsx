@@ -29,10 +29,10 @@ const inter = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "CodeName-Finance",
+  title: "Alsi Finance",
   description: "Document-driven, AI-assisted personal finance.",
   manifest: "/manifest.webmanifest",
-  appleWebApp: { capable: true, statusBarStyle: "default", title: "Finance" },
+  appleWebApp: { capable: true, statusBarStyle: "default", title: "Alsi" },
 };
 
 export async function generateViewport(): Promise<Viewport> {

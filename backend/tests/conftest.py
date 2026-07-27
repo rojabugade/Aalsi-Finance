@@ -10,6 +10,19 @@ import os
 
 os.environ.setdefault("RATE_LIMIT_ENABLED", "false")
 
+# The closed-beta gate is on by default in production, which would make every
+# existing test's signup call need a minted code. Off here; test_m36_beta_invites
+# turns it back on for the cases that are actually about the gate.
+os.environ.setdefault("BETA_INVITE_REQUIRED", "false")
+# Likewise the per-user AI ceilings: they count rows in llm_usage_log, so a suite
+# that exercises the analyst repeatedly would start tripping them.
+os.environ.setdefault("BETA_LIMIT_AI_REQUESTS_PER_DAY", "0")
+os.environ.setdefault("BETA_LIMIT_AI_REQUESTS_PER_MINUTE", "0")
+os.environ.setdefault("BETA_LIMIT_DOCUMENTS_PER_DAY", "0")
+# And the spend cap, which now defaults to a real dollar figure rather than 0.
+os.environ.setdefault("LLM_DAILY_COST_LIMIT_USD", "0")
+os.environ.setdefault("LLM_MONTHLY_COST_LIMIT_USD", "0")
+
 
 def pytest_sessionfinish(session, exitstatus):
     """Fail the run when REQUIRE_NO_SKIPPED_TESTS=1 and anything skipped.

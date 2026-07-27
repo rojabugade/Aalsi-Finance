@@ -57,6 +57,24 @@ async def send_email_verification(to: str, token: str, ttl_hours: int) -> None:
     )
 
 
+async def send_beta_invite(to: str, code: str) -> None:
+    """Hand someone their invite. Sent by the operator CLI, not by any endpoint —
+    nothing a visitor can trigger mails out a code."""
+    origin = get_settings().app_origin.rstrip("/")
+    url = f"{origin}/login?mode=signup"
+    paragraphs = [
+        "You're in. Here is your invite code for the Alsi Finance beta:",
+        code,
+        "It works once, for one account. Enter it on the sign-up form.",
+    ]
+    await send_email(
+        to,
+        "Your Alsi Finance invite",
+        "\n\n".join(paragraphs + [url]),
+        _wrap_html("Your invite code", paragraphs, url, "Create your account"),
+    )
+
+
 async def send_password_changed(to: str) -> None:
     """Notify after a completed reset so an unexpected change is visible."""
     paragraphs = [

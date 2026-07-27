@@ -89,7 +89,20 @@ async function bearerFetch(
   });
 }
 
-export type AuthResult = { ok: boolean; status: number };
+// `detail` carries the server's own message on failure. Signup needs it: an
+// invite code that is unknown, spent or expired is a 400 whose reason only the
+// server knows, and a generic "account creation failed" would send someone to
+// re-check their password instead of their code.
+export type AuthResult = { ok: boolean; status: number; detail?: string };
+
+async function detailOf(res: Response): Promise<string | undefined> {
+  try {
+    const body = (await res.clone().json()) as { detail?: unknown };
+    return typeof body.detail === "string" ? body.detail : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 export type Me = {
   id: string;
@@ -110,8 +123,11 @@ export const authApi = {
   },
   async signup(body: Record<string, unknown>): Promise<AuthResult> {
     const res = await authFetch("/auth/signup", body);
-    if (res.ok) authStore.set((await res.json()) as AccessToken);
-    return { ok: res.ok, status: res.status };
+    if (res.ok) {
+      authStore.set((await res.json()) as AccessToken);
+      return { ok: true, status: res.status };
+    }
+    return { ok: false, status: res.status, detail: await detailOf(res) };
   },
   // Uses the httpOnly refresh cookie + CSRF header. Returns whether a session is live.
   async refresh(): Promise<boolean> {

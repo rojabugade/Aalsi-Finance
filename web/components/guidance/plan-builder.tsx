@@ -3,6 +3,7 @@
 import { useId, useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import { GuidanceDisclaimer } from "@/components/guidance/guidance-disclaimer";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -174,16 +175,19 @@ export function PlanBuilder() {
 
       {result && (
         <div className="space-y-3 border-t border-border pt-4">
+          <GuidanceDisclaimer text={result.disclaimer ?? ""} />
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h3 className="font-semibold">Your suggested checklist</h3>
-              <p className="text-sm text-muted">Review each item before saving it to My Plan.</p>
+              <h3 className="font-semibold">Sources that may apply</h3>
+              <p className="text-sm text-muted">
+                Source documents matched to what you entered — not a recommendation.
+                Review each one before saving it to My Plan.
+              </p>
             </div>
             <Button type="button" variant="secondary" onClick={() => setConfirmingAll(true)} disabled={remaining.length === 0 || create.isPending}>
               Add all to My Plan
             </Button>
           </div>
-          {result.disclaimer && <p className="text-xs text-muted">{result.disclaimer}</p>}
           <div className="space-y-3">
             {checklist.map((item) => {
               const key = `${item.domain}:${normalize(item.title)}`;

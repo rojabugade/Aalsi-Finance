@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "CodeName-Finance"
+    "name": "Alsi Finance"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -30,6 +30,8 @@
     "passwordHint": "Use at least 8 characters.",
     "confirmPassword": "Confirm password",
     "passwordMismatch": "Passwords do not match.",
+    "ageConfirm": "I confirm I am at least 18 years old.",
+    "termsAccept": "I have read and agree to the <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy>.",
     "displayName": "Display name (optional)",
     "displayNamePlaceholder": "Your name",
     "baseCurrency": "Currency",
@@ -55,6 +57,206 @@
     "verifyTitle": "Confirming your email",
     "verifyPending": "Checking your link…",
     "verifyDone": "Email confirmed. Thanks — account recovery and alerts are now enabled.",
-    "verifyInvalid": "This confirmation link is invalid or has expired. Request a new one from Settings."
+    "verifyInvalid": "This confirmation link is invalid or has expired. Request a new one from Settings.",
+    "submitting": "Signing in…",
+    "sending": "Sending…",
+    "signupSubmitting": "Creating account…",
+    "backToHome": "Back to home",
+    "backToLanding": "Alsi Finance",
+    "inviteCode": "Invite code",
+    "inviteCodePlaceholder": "ALSI-XXXXX-XXXXX-XXXXX",
+    "inviteCodeHint": "Alsi is in closed beta. Your code arrived by email and works once.",
+    "inviteCodeMissing": "Enter the invite code from your email.",
+    "inviteCodeInvalid": "That invite code isn't valid, or it has already been used.",
+    "requestInvite": "Don't have a code? Request an invite.",
+    "privacy": "Privacy",
+    "terms": "Terms"
+  },
+  "marketing": {
+    "meta": {
+      "title": "Alsi Finance — every receipt, statement and swipe, reconciled",
+      "description": "Photograph receipts, drop in PDF statements and spreadsheet exports, or link a US bank account. Alsi reads them, you confirm what lands, and an analyst that has seen all of it explains the rest. Now in closed beta."
+    },
+    "skip": "Skip to main content",
+    "nav": {
+      "label": "Marketing",
+      "signIn": "Sign in",
+      "apply": "Request access"
+    },
+    "ticks": {
+      "label": "Sections",
+      "t0": "The pile",
+      "t1": "Capture",
+      "t2": "Confirm",
+      "t3": "Understand",
+      "t4": "The archive",
+      "t5": "Invite"
+    },
+    "hero": {
+      "badge": "Closed beta",
+      "line1": "Every receipt,",
+      "line2": "statement and swipe,",
+      "line3": "down to one honest number.",
+      "leftoverLabel": "Left to spend this month",
+      "formula": "income − recurring − EMIs − card minimums − spend",
+      "sample": "Sample data",
+      "lede": "A shoebox of paper goes in. Alsi reads it under one lamp, you approve it, and nothing else moves.",
+      "scrollHint": "Scroll — the paper does the talking"
+    },
+    "capture": {
+      "label": "01 — Capture",
+      "heading": "Everything goes under the same lamp.",
+      "body": "A receipt is a photo. A statement is forty pages. A card alert is one line of SMS. They all queue up, pass the reader once, and come out printed as rows — merchant, date, tax, total.",
+      "foot": "No format to learn · no spreadsheet to keep"
+    },
+    "sources": {
+      "label": "Sources",
+      "heading": "Eight ways in. One shape out.",
+      "hint": "Scroll",
+      "receipt": {
+        "title": "Receipt photo",
+        "body": "Snap it at the counter. Merchant, date, tax and total come off the paper."
+      },
+      "statement": {
+        "title": "PDF statement",
+        "body": "Chase, Amex, HDFC. Every page parsed, every row matched to an account."
+      },
+      "csv": {
+        "title": "Spreadsheet export",
+        "body": "CSV or XLSX, whatever your bank gives you. Columns get mapped once, then remembered."
+      },
+      "sms": {
+        "title": "Bank SMS",
+        "body": "Forward and forget. Card alerts become rows before you get home."
+      },
+      "bank": {
+        "title": "Bank link",
+        "body": "US accounts through Plaid. Balances and transactions re-sync every six hours."
+      },
+      "paystub": {
+        "title": "Paystub",
+        "body": "Gross, deductions, net — so income is a fact and not an estimate."
+      },
+      "loan": {
+        "title": "Loan schedule",
+        "body": "Principal and interest split for every month still ahead of you."
+      },
+      "fx": {
+        "title": "FX receipt",
+        "body": "Converted at the day's rate, with both sides of the trade kept."
+      }
+    },
+    "confirm": {
+      "label": "02 — Confirm",
+      "heading": "Nothing is filed until you stamp it.",
+      "body": "Every read is a proposal, not a fact. Most pass in a glance. The ones Alsi isn't sure about wait in amber until you look — and once you correct a merchant, it never asks about that merchant again.",
+      "confirmed": "Confirmed",
+      "needsYou": "Needs you"
+    },
+    "ledger": {
+      "label": "The ledger",
+      "heading": "One row per event, and the paper it came from.",
+      "hint": "Keep going",
+      "colDate": "Date",
+      "colMerchant": "Merchant",
+      "colCategory": "Category",
+      "colAccount": "Account",
+      "colEvidence": "Evidence",
+      "colStatus": "Status",
+      "colAmount": "Amount",
+      "colBalance": "Balance after",
+      "cats": {
+        "groceries": "Groceries",
+        "utilities": "Utilities",
+        "salary": "Salary",
+        "travel": "Travel",
+        "rideshare": "Rideshare",
+        "subscriptions": "Subscriptions",
+        "fuel": "Fuel"
+      },
+      "statusConfirmed": "confirmed",
+      "statusWaiting": "needs you",
+      "footEvents": "{count} events",
+      "footDocuments": "{count} documents",
+      "footWaiting": "{count} waiting",
+      "sample": "Sample data"
+    },
+    "understand": {
+      "label": "03 — Understand",
+      "heading": "The pile, finally shaped like a year.",
+      "body": "Twelve stacks of evidence, one line across the top. Ask it anything in plain language — every answer comes back with the rows it was drawn from, and nothing invented in between.",
+      "question": "“Why was June heavy?”",
+      "answer": "→ Marriott 412.00 + Delta 388.10, both Travel, both new."
+    },
+    "archive": {
+      "label": "04 — The archive",
+      "ledger": {
+        "key": "Ledger",
+        "body": "Everything in, one reviewed ledger out — normalised across currencies and accounts."
+      },
+      "analyst": {
+        "key": "Analyst",
+        "body": "Ask in plain language, get an answer drawn only from your own file."
+      },
+      "debt": {
+        "key": "Debt",
+        "body": "A payoff order, with the interest each choice costs you shown in full."
+      }
+    },
+    "apply": {
+      "heading": "Ask for an invite.",
+      "lede": "Every account comes from a code, issued by hand. Leave an address and we'll send one when there's room.",
+      "email": "Email",
+      "emailPlaceholder": "you@example.com",
+      "submit": "Request",
+      "sending": "Sending",
+      "more": "Tell us a bit more (optional)",
+      "name": "Name",
+      "country": "Country",
+      "how": "How do you track money today?",
+      "howPlaceholder": "A spreadsheet, another app, a shoebox of receipts…",
+      "note": "One code per person · it works once.",
+      "haveCode": "Already have a code? Create your account.",
+      "error": "That didn't go through. Check the address and try again.",
+      "doneTitle": "Request received.",
+      "doneBody": "If there's room in the current round, your invite code arrives by email. Codes are issued by hand, so it won't be instant."
+    },
+    "footer": {
+      "roadmap": "Roadmap",
+      "privacy": "Privacy",
+      "terms": "Terms",
+      "contact": "Contact",
+      "contactAddress": "hello@alsi.finance",
+      "copyright": "© {year} Alsi Finance",
+      "legal": "a record keeper, not an adviser"
+    },
+    "auth": {
+      "lineLead": "Photograph the receipt.",
+      "lineResolve": "Keep the number.",
+      "receiptMerchant": "Trader Joe's",
+      "receiptDate": "2026-07-21",
+      "receiptAmount": "86.42",
+      "sample": "Sample data",
+      "assurance": "AES-256-GCM · TOTP · nothing posts without you"
+    },
+    "roadmap": {
+      "title": "Roadmap — Alsi Finance",
+      "heading": "What's in the beta, and what isn't.",
+      "lede": "Beta accounts get the whole product, not a cut-down tier. Here is what that means today, and what is still being built. The README in the repository keeps the authoritative list.",
+      "shippedHeading": "In the beta today",
+      "s1": "Receipt photos, PDF statements, CSV and XLSX exports, and forwarded bank SMS, all read into a review queue you approve.",
+      "s2": "US bank, card and loan accounts through Plaid, re-syncing every six hours, plus manual sync on demand.",
+      "s3": "The analyst, across your transactions, debts and documents, with sources attached and a memory store you can review and delete from.",
+      "s4": "Budgets, categories, recurring series and rules that stick once you've corrected them.",
+      "s5": "Debt payoff planning across cards and loans, with the interest each ordering costs you.",
+      "s6": "TOTP two-factor with one-time recovery codes, AES-256-GCM document encryption, and full data export.",
+      "laterHeading": "Not built yet",
+      "l1": "Gmail ingestion. The endpoint is switched off and returns 410.",
+      "l2": "Web push delivery. The preference saves, but nothing is sent — in-app and email notifications do work.",
+      "l3": "WebAuthn passkeys. TOTP two-factor is what exists today.",
+      "l4": "Shared workspaces. Alsi is one account, one workspace, by design for now.",
+      "foot": "Something here a deal-breaker for you?",
+      "footLink": "Say so when you apply."
+    }
   }
 }

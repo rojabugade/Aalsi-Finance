@@ -4,9 +4,6 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { authApi } from "@/lib/api/auth";
 import { AuthShell } from "../auth-shell";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 export default function ForgotPasswordPage() {
   const t = useTranslations("auth");
@@ -27,18 +24,19 @@ export default function ForgotPasswordPage() {
   if (sent) {
     return (
       <AuthShell title={t("forgotTitle")}>
-        <p className="rounded-md bg-muted px-3 py-2.5 text-sm">{t("forgotSent")}</p>
+        <p className="m-auth-notice">{t("forgotSent")}</p>
       </AuthShell>
     );
   }
 
   return (
     <AuthShell title={t("forgotTitle")} description={t("forgotDescription")}>
-      <form onSubmit={onSubmit} className="space-y-5">
-        <div className="space-y-1.5">
-          <Label htmlFor="email">{t("email")}</Label>
-          <Input
+      <form onSubmit={onSubmit} className="m-auth-fields" style={{ marginTop: 0 }}>
+        <div className="m-field">
+          <label htmlFor="email">{t("email")}</label>
+          <input
             id="email"
+            className="m-input"
             name="email"
             type="email"
             required
@@ -46,9 +44,9 @@ export default function ForgotPasswordPage() {
             placeholder="you@example.com"
           />
         </div>
-        <Button type="submit" className="w-full" size="lg" disabled={busy}>
-          {busy ? "…" : t("forgotSubmit")}
-        </Button>
+        <button type="submit" className="m-auth-submit" disabled={busy}>
+          <span>{busy ? t("sending") : t("forgotSubmit")}</span>
+        </button>
       </form>
     </AuthShell>
   );

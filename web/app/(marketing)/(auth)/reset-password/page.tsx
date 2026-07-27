@@ -6,9 +6,6 @@ import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { authApi } from "@/lib/api/auth";
 import { AuthShell } from "../auth-shell";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 function ResetPasswordForm() {
   const t = useTranslations("auth");
@@ -40,9 +37,7 @@ function ResetPasswordForm() {
   if (!token) {
     return (
       <AuthShell title={t("resetTitle")}>
-        <p className="rounded-md bg-destructive/10 px-3 py-2.5 text-sm text-destructive">
-          {t("resetMissingToken")}
-        </p>
+        <p className="m-auth-error">{t("resetMissingToken")}</p>
       </AuthShell>
     );
   }
@@ -50,20 +45,21 @@ function ResetPasswordForm() {
   if (done) {
     return (
       <AuthShell title={t("resetTitle")} showBackLink={false}>
-        <p className="rounded-md bg-muted px-3 py-2.5 text-sm">{t("resetDone")}</p>
-        <Button asChild className="mt-5 w-full" size="lg">
-          <Link href="/login">{t("submit")}</Link>
-        </Button>
+        <p className="m-auth-notice">{t("resetDone")}</p>
+        <Link href="/login" className="m-auth-submit">
+          <span>{t("submit")}</span>
+        </Link>
       </AuthShell>
     );
   }
 
   return (
     <AuthShell title={t("resetTitle")} description={t("resetDescription")}>
-      <form onSubmit={onSubmit} className="space-y-5">
-        <div className="space-y-1.5">
-          <Label htmlFor="password">{t("newPassword")}</Label>
-          <Input
+      <form onSubmit={onSubmit} className="m-auth-fields" style={{ marginTop: 0 }}>
+        <div className="m-field">
+          <label htmlFor="password">{t("newPassword")}</label>
+          <input
+            className="m-input"
             id="password"
             name="password"
             type="password"
@@ -72,11 +68,14 @@ function ResetPasswordForm() {
             autoComplete="new-password"
             placeholder="••••••••"
           />
-          <p className="text-xs text-muted-foreground">{t("passwordHint")}</p>
+          <p className="m-note" style={{ marginTop: 0 }}>
+            {t("passwordHint")}
+          </p>
         </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="confirmPassword">{t("confirmPassword")}</Label>
-          <Input
+        <div className="m-field">
+          <label htmlFor="confirmPassword">{t("confirmPassword")}</label>
+          <input
+            className="m-input"
             id="confirmPassword"
             name="confirmPassword"
             type="password"
@@ -87,13 +86,13 @@ function ResetPasswordForm() {
           />
         </div>
         {error && (
-          <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          <p role="alert" className="m-auth-error">
             {error}
           </p>
         )}
-        <Button type="submit" className="w-full" size="lg" disabled={busy}>
-          {busy ? "…" : t("resetSubmit")}
-        </Button>
+        <button type="submit" className="m-auth-submit" disabled={busy}>
+          <span>{busy ? t("sending") : t("resetSubmit")}</span>
+        </button>
       </form>
     </AuthShell>
   );

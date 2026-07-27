@@ -18,6 +18,7 @@ import structlog
 
 from app.auth import security
 from app.auth.schemas import SignupIn
+from app.beta import service as beta_service
 from app.config import get_settings
 from app.email import messages as email_messages
 from app.email.sender import EmailNotConfigured
@@ -88,14 +89,25 @@ async def signup(session: AsyncSession, data: SignupIn) -> tuple[str, str]:
     session.add(household)
     await session.flush()  # populate household.id
 
+    # SignupIn rejects anything but true, so reaching here means both were given.
+    # Stamping at creation keeps the record on the same transaction as the account.
+    attested_at = datetime.now(timezone.utc)
     user = User(
         household_id=household.id,
         email=data.email.lower(),
         password_hash=security.hash_password(data.password),
         display_name=data.display_name,
+        age_confirmed_at=attested_at,
+        terms_accepted_at=attested_at,
     )
     session.add(user)
     await session.flush()
+
+    # Same transaction as the account on purpose: a failure between the two
+    # would otherwise burn a code with no account behind it, or create an
+    # account without spending the code that paid for it.
+    if settings.beta_invite_required:
+        await beta_service.redeem_code(session, data.invite_code or "", user.id)
 
     await _audit(session, household.id, user.id, "account.create", "user")
     tokens = await _issue_tokens(session, user)

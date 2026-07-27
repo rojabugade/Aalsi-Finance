@@ -72,7 +72,9 @@ class PageContext(BaseModel):
 
 class AnalystAskIn(BaseModel):
     mode: Mode
-    question: str = Field(min_length=1)
+    # Bounded because prompt cost scales with it: unbounded, a single request is
+    # a single unbounded charge. Matches GuidanceAskIn.
+    question: str = Field(min_length=1, max_length=4000)
     range_from: str | None = None
     range_to: str | None = None
     focus_kind: Literal["merchant", "category"] | None = None

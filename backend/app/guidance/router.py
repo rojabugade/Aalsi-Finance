@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Path, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.deps import get_current_user
+from app.beta.limits import enforce_ai_quota
 from app.db import get_session
 from app.fx.service import FXRateUnavailable
 from app.guidance import service
@@ -66,7 +67,7 @@ async def update_plan_item(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
 
-@router.post("/guidance/ask", response_model=GuidanceAskOut)
+@router.post("/guidance/ask", response_model=GuidanceAskOut, dependencies=[Depends(enforce_ai_quota)])
 async def ask_guidance(data: GuidanceAskIn, user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session), llm: LLMClient = Depends(get_llm_client)):
     return await service.ask_guidance(session, user, data, llm)
 
@@ -83,7 +84,7 @@ async def guidance_thread_messages(
     return await service.guidance_thread_history(session, user, key)
 
 
-@router.post("/cross-border/ask", response_model=GuidanceAskOut)
+@router.post("/cross-border/ask", response_model=GuidanceAskOut, dependencies=[Depends(enforce_ai_quota)])
 async def cross_border_ask(data: GuidanceAskIn, user: User = Depends(get_current_user), session: AsyncSession = Depends(get_session), llm: LLMClient = Depends(get_llm_client)):
     return await service.ask_guidance(
         session,

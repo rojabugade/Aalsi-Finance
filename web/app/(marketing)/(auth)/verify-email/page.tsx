@@ -32,14 +32,7 @@ function VerifyEmail() {
 
   return (
     <AuthShell title={t("verifyTitle")}>
-      <p
-        className={
-          state === "invalid"
-            ? "rounded-md bg-destructive/10 px-3 py-2.5 text-sm text-destructive"
-            : "rounded-md bg-muted px-3 py-2.5 text-sm"
-        }
-        role="status"
-      >
+      <p className={state === "invalid" ? "m-auth-error" : "m-auth-notice"} role="status">
         {message}
       </p>
     </AuthShell>

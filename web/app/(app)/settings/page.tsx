@@ -30,12 +30,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { BetaCard } from "./beta-card";
 import { MemoryCard } from "./memory-card";
 import { SecurityCard } from "./security-card";
 
 export default function SettingsPage() {
   return (
     <div className="space-y-4">
+      {/* First card: an allowance you only discover by hitting it is a bug. */}
+      <BetaCard />
       <div className="rounded-card-sm border border-border bg-card p-4 shadow-card">
         <h2 className="text-base font-bold tracking-tight">Appearance</h2>
         <p className="text-sm text-muted">Palette and light/dark mode.</p>

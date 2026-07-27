@@ -4,7 +4,14 @@ from __future__ import annotations
 
 import uuid
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+
+
+# The strictest of the regimes this product serves. India's DPDP Act treats
+# everyone under 18 as a child requiring verifiable parental consent; the US
+# floor (COPPA) is 13. Serving both means the higher bar governs, so there is
+# one number here rather than a per-region table.
+MINIMUM_AGE = 18
 
 
 # --- Auth --------------------------------------------------------------------
@@ -15,6 +22,29 @@ class SignupIn(BaseModel):
     display_name: str | None = Field(default=None, max_length=255)
     workspace_name: str | None = Field(default=None, max_length=255)
     base_currency: str = Field(default="USD", min_length=3, max_length=3)
+    # Both are required and must be true. No defaults: a client that omits them
+    # gets a 422 rather than silently creating an unattested account, which is
+    # the whole point of enforcing this server-side instead of in the form.
+    age_confirmed: bool
+    terms_accepted: bool
+    # Required only while `beta_invite_required` is set. Optional here rather
+    # than mandatory so the gate can be lifted by config alone; the service
+    # decides whether a missing code is fatal.
+    invite_code: str | None = Field(default=None, max_length=64)
+
+    @field_validator("age_confirmed")
+    @classmethod
+    def require_age_confirmation(cls, value: bool) -> bool:
+        if not value:
+            raise ValueError(f"you must confirm you are at least {MINIMUM_AGE} years old")
+        return value
+
+    @field_validator("terms_accepted")
+    @classmethod
+    def require_terms_acceptance(cls, value: bool) -> bool:
+        if not value:
+            raise ValueError("you must accept the Terms of Service and Privacy Policy")
+        return value
 
 
 class LoginIn(BaseModel):
